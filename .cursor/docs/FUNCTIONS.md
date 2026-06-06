@@ -1,6 +1,6 @@
 # Appwrite functions
 
-All serverless handlers for WP Hub Pro. **Deploy metadata** comes from [`appwrite.config.json`](../../appwrite.config.json) at the repo root. **Handler source** lives in **`functions/`** inside the monorepo.
+All serverless handlers for WP Hub Pro (13 functions). **Deploy metadata** comes from [`appwrite.config.json`](../../appwrite.config.json) at the repo root. **Handler source** lives in **`functions/`** inside the monorepo.
 
 **Related:** [WORKSPACE.md](WORKSPACE.md) · [SHARED.md](SHARED.md) · [MODULAR-LAYERS.md](MODULAR-LAYERS.md) · [AGENTS.md](AGENTS.md)
 
@@ -24,7 +24,7 @@ appwrite push functions              # full deploy (code + settings)
 appwrite push functions --all --no-code   # after appwrite.config.json edits (settings only)
 ```
 
-**VCS (Git deploy):** all 12 functions use repo `1260883337` (`github.com/wphub-pro/wphub-pro`), branch `main`, root `/functions/<id>`.
+**VCS (Git deploy):** all 13 functions use repo `1260883337` (`github.com/wphub-pro/wphub-pro`), branch `main`, root `/functions/<id>`.
 
 Restore VCS after push (when remote drifts):
 
@@ -37,7 +37,7 @@ node .cursor/scripts/restore-function-vcs.js --check   # verify only
 
 ---
 
-## Handler layout (all 12 — TypeScript, Node.js 22)
+## Handler layout (TypeScript, Node.js 22)
 
 | File / folder | Role |
 |---------------|------|
@@ -79,8 +79,11 @@ npm install && npm run build    # messaging: pnpm install && pnpm run build
 | `user-mailbox` | node-22 | 120 | npm install | any | `/functions/user-mailbox` | Admin mailbox (IMAP) |
 | `users` | node-22 | 120 | npm install | any | `/functions/users` | Teams, users |
 | `wp-proxy` | node-22 | 120 | npm install | any | `/functions/wp-proxy` | WordPress proxy / ZIP installs |
+| `github-config-sync` | node-22 | 15 | npm install | — (events only) | `/functions/github-config-sync` | Triggers GitHub config sync on schema events |
 
 Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 1260883337`, branch `main`, `providerSilentMode: true`.
+
+**`github-config-sync`:** event-triggered; set `GITHUB_PAT` on the function. Optional vars: `GITHUB_REPO`, `GITHUB_DISPATCH_EVENT`. Alternative webhook proxy: `workers/appwrite-github-dispatch/`.
 
 **Extra deps (beyond shared):** `library` → adm-zip · `stripe-api` → stripe · `user-mailbox` → imapflow, nodemailer, mailparser · `recovery-manager` → jsonwebtoken.
 
@@ -90,7 +93,7 @@ Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 12608
 
 | Script | Purpose |
 |--------|---------|
-| `functions/scripts/function-ids.mjs` | Canonical list of 12 function ids |
+| `functions/scripts/function-ids.mjs` | Canonical list of function ids |
 | `functions/scripts/update-function-readmes.mjs` | Regenerate per-function README deploy sections |
 
 See `functions/README.md`.

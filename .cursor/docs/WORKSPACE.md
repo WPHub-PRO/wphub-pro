@@ -59,17 +59,16 @@ Pulls **tables**, **buckets**, and **function settings** (incl. Git/VCS) from cl
 
 **GitHub Action** (`.github/workflows/sync-appwrite-config.yml`): scheduled every 6h + manual + webhook trigger. Set secret `APPWRITE_API_KEY` on the repo.
 
-**Appwrite webhook (optional):** In Console → Webhooks, subscribe to schema/config events and POST to GitHub `repository_dispatch`:
+**Near-real-time sync (kies één):**
 
-| Event prefix | When |
-|--------------|------|
-| `tablesdb.*.tables.*` | Table create/update/delete |
-| `tablesdb.*.tables.*.columns.*` | Column changes |
-| `tablesdb.*.tables.*.indexes.*` | Index changes |
-| `buckets.*` | Bucket create/update/delete |
-| `functions.*.update` | Function settings changed |
+| Optie | Setup |
+|-------|--------|
+| **A — Appwrite function** (aanbevolen) | Deploy `functions/github-config-sync`. Zet function variable **`GITHUB_PAT`** (secret). Function luistert naar schema-events en roept GitHub `repository_dispatch` aan. Geen webhook nodig. |
+| **B — Cloudflare Worker** | Deploy `workers/appwrite-github-dispatch/`. Appwrite Console → Webhooks → URL = Worker-URL. Worker zet Authorization + body goed voor GitHub. Zie `workers/appwrite-github-dispatch/README.md`. |
 
-Target: `POST https://api.github.com/repos/wphub-pro/wphub-pro/dispatches` with header `Authorization: Bearer <GITHUB_PAT>` and body `{"event_type":"appwrite-config-changed"}`. PAT needs `repo` scope (fine-grained: Contents read/write).
+Appwrite webhooks kunnen **geen** Bearer-header of custom body — daarom A of B, niet rechtstreeks naar `api.github.com`.
+
+**Secrets:** `GITHUB_PAT` (fine-grained: Contents read/write op `wphub-pro`). GitHub Action gebruikt daarnaast `APPWRITE_API_KEY`.
 
 ---
 
@@ -96,7 +95,8 @@ functions/
   bridge/
   library/
   messaging/
-  …                       # 12 function folders total
+  github-config-sync/
+  …                       # 13 function folders total
 ```
 
 Each `functions/<id>/` has: `package.json`, `main.ts`, `handler.ts`, `handlers/`, `lib/`, `tsconfig.json`.

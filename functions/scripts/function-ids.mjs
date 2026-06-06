@@ -12,4 +12,5 @@ export const FUNCTION_IDS = [
   'library',
   'messaging',
   'user-mailbox',
+  'github-config-sync',
 ];

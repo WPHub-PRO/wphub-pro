@@ -1559,6 +1559,52 @@
             "providerPaths": [
                 "functions/user-mailbox/**"
             ]
+        },
+        {
+            "$id": "github-config-sync",
+            "name": "github-config-sync",
+            "runtime": "node-22",
+            "path": "functions/github-config-sync",
+            "entrypoint": "main.ts",
+            "execute": [],
+            "enabled": true,
+            "logging": true,
+            "events": [
+                "tablesdb.*.tables.*.create",
+                "tablesdb.*.tables.*.update",
+                "tablesdb.*.tables.*.delete",
+                "tablesdb.*.tables.*.columns.*.create",
+                "tablesdb.*.tables.*.columns.*.update",
+                "tablesdb.*.tables.*.columns.*.delete",
+                "tablesdb.*.tables.*.indexes.*.create",
+                "tablesdb.*.tables.*.indexes.*.update",
+                "tablesdb.*.tables.*.indexes.*.delete",
+                "tablesdb.*.update",
+                "buckets.*.create",
+                "buckets.*.update",
+                "buckets.*.delete",
+                "functions.*.update"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "commands": "npm install",
+            "scopes": [
+                "project.read"
+            ],
+            "buildSpecification": "s-0.5vcpu-512mb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/github-config-sync",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/github-config-sync/**"
+            ]
         }
     ],
     "sites": [

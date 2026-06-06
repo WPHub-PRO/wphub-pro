@@ -62,7 +62,7 @@ Label each plan todo with **one** tag: **`[React]`** · **`[UI]`** · **`[Appwri
 
 - **Project:** `wphub-pro` · **Endpoint:** `https://fra.cloud.appwrite.io/v1`
 - **Database:** `platform_db` (17 tables) — see config `tables[]`
-- **Functions:** 12 ids — [FUNCTIONS.md](FUNCTIONS.md)
+- **Functions:** 13 ids — [FUNCTIONS.md](FUNCTIONS.md)
 - **Buckets:** 6 — `bridge`, `avatars`, `media_library`, `plugins`, `themes`, `6a0e670d00380379a6d4`
 - **Sites:** `sites/wphubpro` (id `69e016bd001d4315876d`) · `sites/wphubpro-landing` (config only; directory may be absent locally)
 
@@ -82,7 +82,7 @@ node .cursor/scripts/sync-appwrite-config-from-cloud.js
 
 **Automatic:** GitHub Action `.github/workflows/sync-appwrite-config.yml` runs every 6 hours and on `repository_dispatch` (`appwrite-config-changed`). Requires repo secret **`APPWRITE_API_KEY`** (read scopes for tables, buckets, functions).
 
-Optional near-real-time: Appwrite **Webhook** on events `tablesdb.*.tables.*`, `tablesdb.*.tables.*.columns.*`, `buckets.*`, `functions.*.update` → trigger GitHub `repository_dispatch` (see [WORKSPACE.md](WORKSPACE.md)).
+Near-real-time: deploy **`github-config-sync`** function with `GITHUB_PAT`, or Cloudflare Worker in `workers/appwrite-github-dispatch/` (see [WORKSPACE.md](WORKSPACE.md)).
 
 ### Repo → cloud (push)
 

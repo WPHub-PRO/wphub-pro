@@ -1,0 +1,6 @@
+name = "appwrite-github-dispatch"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Set secrets via: wrangler secret put GITHUB_PAT
+# Optional: GITHUB_REPO, GITHUB_DISPATCH_EVENT, APPWRITE_WEBHOOK_SIGNATURE, APPWRITE_WEBHOOK_URL
