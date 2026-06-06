@@ -1546,7 +1546,7 @@
                 "usage.read"
             ],
             "buildSpecification": "s-2vcpu-2gb",
-            "runtimeSpecification": "s-2vcpu-2gb",
+            "runtimeSpecification": "s-2vcpu-4gb",
             "deploymentRetention": 30,
             "installationId": "69e016afb5c72c7bf95c",
             "providerRepositoryId": "1260883337",
