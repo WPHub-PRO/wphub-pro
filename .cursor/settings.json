@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "slack": {
+      "enabled": true
+    },
+    "appwrite-plugin": {
+      "enabled": true
+    }
+  }
+}

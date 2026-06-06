@@ -1,0 +1,52 @@
+---
+description: Import @code045/wphubpro-shared via npm — NEVER functions/shared in imports
+globs: functions/**/*
+alwaysApply: false
+---
+
+# @code045/wphubpro-shared — npm only, never path imports
+
+**Scope:** all `functions/<id>/` handlers, `handlers/`, and `lib/` TypeScript.
+
+## Mandatory import rule
+
+**Always** use the npm package:
+
+```ts
+import { createServerClients, WPHUB_APPWRITE_IDS, ok, fail, Query } from '@code045/wphubpro-shared';
+```
+
+**Never** import from `functions/shared/` or any path into `shared/`:
+
+```ts
+// ❌ FORBIDDEN — never use these patterns in function code
+import { createServerClients } from '../../shared/src/appwrite/client.ts';
+import { WPHUB_APPWRITE_IDS } from '../../../shared/mod.ts';
+import { ok } from '../functionsLib.ts';
+import { Query } from 'node-appwrite';  // use @code045/wphubpro-shared instead
+```
+
+There are **no exceptions** in deployed function code — not for dev, not for “just one helper”. Publish and pin the npm package instead.
+
+## Package source vs consumption
+
+| Context | Location | Import style |
+|---------|----------|--------------|
+| **Editing the library** | `functions/shared/` (`mod.ts`, `src/**`) | Internal `src/` imports only |
+| **Function handlers** | `functions/<id>/` | **`@code045/wphubpro-shared` only** |
+
+`functions/shared/` is the **publish source** for npm `@code045/wphubpro-shared`. Function code must **not** reference it in import paths.
+
+## When adding shared behavior
+
+1. Implement under **`functions/shared/`** (`mod.ts` exports, `src/**`).
+2. Run `npm run build` in `shared/` (esbuild → `mod.js`).
+3. Publish **`@code045/wphubpro-shared`** and update **every** version pin — see **`wphub-shared-publish.mdc`** (all 12 `package.json`, scripts, READMEs).
+4. Import in handlers **only** as `@code045/wphubpro-shared`.
+
+Set **`NPM_TOKEN`** on Appwrite for restricted npm. See [`functions/DEPLOY.md`](../../functions/DEPLOY.md).
+
+## Also avoid
+
+- `functionsLib.ts` — removed; do not recreate.
+- `node-appwrite` directly in handlers — use re-exports from `@code045/wphubpro-shared` (see **`wphub-functions.mdc`**).

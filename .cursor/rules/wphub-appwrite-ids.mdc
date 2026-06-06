@@ -1,0 +1,20 @@
+---
+description: Sync Appwrite resource ids across config, generated SDK, app config, and core package
+globs: appwrite.config.json,sites/wphubpro/generated/appwrite/**,sites/wphubpro/src/config/wphubAppwriteIds.ts,functions/shared/src/appwrite/**
+alwaysApply: false
+---
+
+# Appwrite ID sync
+
+When **`$id`s** change in **`appwrite.config.json`** (or after `appwrite pull`):
+
+1. Regenerate **`sites/wphubpro/generated/appwrite/`** (Appwrite CLI generate / project workflow).
+2. Update **`sites/wphubpro/src/config/wphubAppwriteIds.ts`** to match generated constants.
+3. Update ids in shared package source, publish **`@code045/wphubpro-shared`**, sync all version pins — **`wphub-shared-publish.mdc`**.
+4. From **`.cursor/`**:
+
+```bash
+appwrite push functions --all --no-code
+```
+
+Never hard-code collection/bucket/database ids in handlers when **`WPHUB_APPWRITE_IDS`** exists — import from **`@code045/wphubpro-shared`**, never from `functions/shared/` paths in handler code.

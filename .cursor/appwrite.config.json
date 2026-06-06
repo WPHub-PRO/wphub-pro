@@ -1,0 +1,3408 @@
+{
+    "projectId": "wphub-pro",
+    "projectName": "WPHub PRO",
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "sites": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "protocols": {
+            "rest": true,
+            "graphql": true,
+            "websocket": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": true,
+                "phone": true,
+                "invites": true,
+                "anonymous": true,
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
+    "functions": [
+        {
+            "$id": "wp-proxy",
+            "name": "wp-proxy",
+            "runtime": "node-22",
+            "path": "../functions/wp-proxy",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/wp-proxy",
+            "providerSilentMode": true,
+            "providerPaths": [
+                "wp-proxy/**"
+            ]
+        },
+        {
+            "$id": "recovery-manager",
+            "name": "recovery-manager",
+            "runtime": "node-22",
+            "path": "../functions/recovery-manager",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 60,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/recovery-manager",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "**"
+            ]
+        },
+        {
+            "$id": "stripe-api",
+            "name": "stripe-api",
+            "runtime": "node-22",
+            "path": "../functions/stripe-api",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-2vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/stripe-api",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "stripe-api/**"
+            ]
+        },
+        {
+            "$id": "uptime-robot",
+            "name": "uptime-robot",
+            "runtime": "node-22",
+            "path": "../functions/uptime-robot",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/uptime-robot",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "uptime-robot/**"
+            ]
+        },
+        {
+            "$id": "platform-settings",
+            "name": "platform-settings",
+            "runtime": "node-22",
+            "path": "../functions/platform-settings",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 90,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/platform-settings",
+            "providerSilentMode": true,
+            "providerPaths": [
+                "platform-settings/**"
+            ]
+        },
+        {
+            "$id": "bridge",
+            "name": "bridge",
+            "runtime": "node-22",
+            "path": "../functions/bridge",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/bridge",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "bridge/**"
+            ]
+        },
+        {
+            "$id": "sites",
+            "name": "sites",
+            "runtime": "node-22",
+            "path": "../functions/sites",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 300,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/sites",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "sites/**"
+            ]
+        },
+        {
+            "$id": "users",
+            "name": "users",
+            "runtime": "node-22",
+            "path": "../functions/users",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/users",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "users/**"
+            ]
+        },
+        {
+            "$id": "support",
+            "name": "support",
+            "runtime": "node-22",
+            "path": "../functions/support",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 30,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/support",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "support/**"
+            ]
+        },
+        {
+            "$id": "library",
+            "name": "library",
+            "runtime": "node-22",
+            "path": "../functions/library",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any",
+                "users"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 60,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "usage.read"
+            ],
+            "buildSpecification": "s-2vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/library",
+            "providerSilentMode": true,
+            "providerPaths": [
+                "library/**"
+            ]
+        },
+        {
+            "$id": "messaging",
+            "name": "messaging",
+            "runtime": "node-22",
+            "path": "../functions/messaging",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 60,
+            "commands": "pnpm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/messaging",
+            "providerSilentMode": false,
+            "providerPaths": [
+                "messaging/**"
+            ]
+        },
+        {
+            "$id": "user-mailbox",
+            "name": "user-mailbox",
+            "runtime": "node-22",
+            "path": "../functions/user-mailbox",
+            "entrypoint": "main.ts",
+            "execute": [
+                "any"
+            ],
+            "enabled": true,
+            "logging": true,
+            "events": [],
+            "schedule": "",
+            "timeout": 120,
+            "commands": "npm install",
+            "scopes": [
+                "project.read",
+                "project.write",
+                "keys.read",
+                "keys.write",
+                "platforms.read",
+                "platforms.write",
+                "mocks.read",
+                "mocks.write",
+                "project.policies.read",
+                "project.policies.write",
+                "templates.read",
+                "templates.write",
+                "oauth2.read",
+                "oauth2.write",
+                "users.read",
+                "users.write",
+                "sessions.read",
+                "sessions.write",
+                "teams.read",
+                "teams.write",
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "tables.write",
+                "columns.read",
+                "columns.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "rows.write",
+                "collections.read",
+                "collections.write",
+                "attributes.read",
+                "attributes.write",
+                "documents.read",
+                "documents.write",
+                "buckets.read",
+                "buckets.write",
+                "files.read",
+                "files.write",
+                "tokens.read",
+                "tokens.write",
+                "functions.read",
+                "functions.write",
+                "executions.read",
+                "executions.write",
+                "execution.read",
+                "execution.write",
+                "sites.read",
+                "sites.write",
+                "log.read",
+                "log.write",
+                "providers.read",
+                "providers.write",
+                "topics.read",
+                "topics.write",
+                "subscribers.read",
+                "subscribers.write",
+                "targets.read",
+                "targets.write",
+                "messages.read",
+                "messages.write",
+                "rules.read",
+                "rules.write",
+                "webhooks.read",
+                "webhooks.write",
+                "locale.read",
+                "avatars.read",
+                "health.read",
+                "assistant.read",
+                "migrations.read",
+                "migrations.write",
+                "schedules.read",
+                "schedules.write",
+                "vcs.read",
+                "vcs.write",
+                "insights.read",
+                "insights.write",
+                "reports.read",
+                "reports.write",
+                "presences.read",
+                "presences.write",
+                "backups.policies.read",
+                "backups.policies.write",
+                "domains.read",
+                "domains.write",
+                "events.read",
+                "apps.read",
+                "apps.write",
+                "usage.read"
+            ],
+            "buildSpecification": "s-2vcpu-2gb",
+            "runtimeSpecification": "s-2vcpu-2gb",
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1253976054",
+            "providerBranch": "main",
+            "providerBranches": [
+                "main"
+            ],
+            "providerRootDirectory": "/user-mailbox",
+            "providerSilentMode": true,
+            "providerPaths": [
+                "user-mailbox/**"
+            ]
+        }
+    ],
+    "sites": [
+        {
+            "$id": "69e016bd001d4315876d",
+            "name": "wphubpro",
+            "path": "../sites/wphubpro",
+            "framework": "vite",
+            "logging": true,
+            "timeout": 30,
+            "buildRuntime": "node-25",
+            "adapter": "static",
+            "installCommand": "pnpm install",
+            "buildCommand": "pnpm run build",
+            "outputDirectory": "./dist",
+            "fallbackFile": "index.html",
+            "startCommand": "",
+            "buildSpecification": "s-4vcpu-4gb",
+            "runtimeSpecification": "s-4vcpu-4gb",
+            "deploymentRetention": 0
+        },
+        {
+            "$id": "wphubpro-landing",
+            "name": "wphubpro-landing",
+            "path": "../sites/wphubpro-landing",
+            "framework": "vite",
+            "logging": true,
+            "timeout": 30,
+            "buildRuntime": "node-25",
+            "adapter": "static",
+            "installCommand": "npm install",
+            "buildCommand": "npm run build",
+            "outputDirectory": "./dist",
+            "fallbackFile": "",
+            "startCommand": "",
+            "buildSpecification": "s-0.5vcpu-512mb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0
+        }
+    ],
+    "tablesDB": [
+        {
+            "$id": "platform_db",
+            "name": "Platform",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "library",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Library",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "source",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "version",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "author",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "s3_path",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "wpSlug",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "remoteUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "tags",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "is_default",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "versions_json",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category_ids",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "is_favourite",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "user_id_type_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id",
+                        "type"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "user_id_wpSlug_type_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id",
+                        "wpSlug",
+                        "type"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC",
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "user_id_category_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id",
+                        "category_id"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_type_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id",
+                        "type"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_wpSlug_type_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id",
+                        "wpSlug",
+                        "type"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC",
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "sites",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Sites",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "site_url",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "site_name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "username",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "api_key",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 200,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "site_secret",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 200,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "last_checked",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "meta_data",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "plugins_meta",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "themes_meta",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "bridge_status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": "disconnected",
+                    "format": "enum",
+                    "elements": [
+                        "connected",
+                        "disconnected"
+                    ]
+                },
+                {
+                    "key": "heartbeat_updated_at",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "log_data",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "wp_meta",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "health_meta",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "performance_meta",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "ur_monitor_id",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "monitor_meta",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_site_url_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id",
+                        "site_url"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "library_families",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Library Families",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "member_slugs",
+                    "type": "string",
+                    "required": true,
+                    "array": true,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "member_preferences_json",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "library_collections",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Library Collections",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "items_json",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "team_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "tickets",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Tickets",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "subject",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": "open",
+                    "encrypt": false
+                },
+                {
+                    "key": "priority",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": "medium",
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "site_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "assigned_to_user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "context_json",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "notify_channel",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20,
+                    "default": "platform",
+                    "encrypt": false
+                },
+                {
+                    "key": "follower_ids",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "ticket_messages",
+                    "type": "text",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guest_from_email",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 320,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "status_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "status"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "platform_settings",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"label:admin\")",
+                "read(\"label:admin\")",
+                "update(\"label:admin\")",
+                "delete(\"label:admin\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Platform Settings",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "key",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "value",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "key_index",
+                    "type": "unique",
+                    "status": "available",
+                    "columns": [
+                        "key"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "ticket_messages",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Ticket Messages",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "ticket_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "body",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "is_staff",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "guest_from_email",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 320,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "ticket_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "ticket_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "accounts",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Accounts",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "stripe_customer_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "avatar",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "active_team_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "mail_settings_cipher",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "unique",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "ticket_activities",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Ticket Activities",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "ticket_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "actor_user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "action",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 80,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "summary",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "ticket_id_activity_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "ticket_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "library_categories",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Library Categories",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "color",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "sort_order",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": 0,
+                    "min": 0,
+                    "max": 999999
+                },
+                {
+                    "key": "parent_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category_scope",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "user_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "user_id_parent_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id",
+                        "parent_id"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "bridge",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Bridge",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "file_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "version",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "version_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "version"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "notifications",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Notifications",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "title",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "user_id",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "event_key",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "body",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "metadata",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 2000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_user_created",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "user_id",
+                        "$createdAt"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "DESC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "teams",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Teams",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "stripe_customer_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "max_seats",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": 0,
+                    "max": 999999
+                },
+                {
+                    "key": "owner_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "stripe_subscription_id",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "current_plan",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "stripe_customer_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "stripe_customer_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "owner_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "owner_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "stripe_subscription_id_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "stripe_subscription_id"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "team_invites",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Team invites",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "team_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "invited_by_user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "expires_at",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 32,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "team_id_email_index",
+                    "type": "key",
+                    "status": "available",
+                    "columns": [
+                        "team_id",
+                        "email"
+                    ],
+                    "orders": [
+                        "ASC",
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "system_email_templates",
+            "$permissions": [
+                "create(\"team:admin\")",
+                "read(\"team:admin\")",
+                "update(\"team:admin\")",
+                "delete(\"team:admin\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "System email templates",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "event_key",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "title",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "subject",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "body_html",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "enabled",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "event_key_unique",
+                    "type": "unique",
+                    "status": "available",
+                    "columns": [
+                        "event_key"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "system_email_shell",
+            "$permissions": [
+                "create(\"team:admin\")",
+                "read(\"team:admin\")",
+                "update(\"team:admin\")",
+                "delete(\"team:admin\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "System email shell",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "header_html",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "footer_html",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "platform_events",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "platform_db",
+            "name": "Platform events",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "event_key",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "title",
+                    "type": "varchar",
+                    "required": true,
+                    "array": false,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": "platform",
+                    "format": "enum",
+                    "elements": [
+                        "platform",
+                        "site",
+                        "billing",
+                        "workspace",
+                        "account",
+                        "library",
+                        "team",
+                        "subscription"
+                    ]
+                },
+                {
+                    "key": "severity",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": "info",
+                    "format": "enum",
+                    "elements": [
+                        "info",
+                        "warning",
+                        "high_risk"
+                    ]
+                },
+                {
+                    "key": "notification_enabled",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                },
+                {
+                    "key": "notification_title",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "notification_body",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email_enabled",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "email_template_key",
+                    "type": "varchar",
+                    "required": false,
+                    "array": false,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "platform_events_event_key_unique",
+                    "type": "unique",
+                    "status": "available",
+                    "columns": [
+                        "event_key"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        }
+    ],
+    "buckets": [
+        {
+            "$id": "bridge",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "fileSecurity": false,
+            "name": "Bridge",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        },
+        {
+            "$id": "avatars",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "fileSecurity": true,
+            "name": "avatars",
+            "enabled": true,
+            "maximumFileSize": 2000000,
+            "allowedFileExtensions": [
+                "png",
+                "jpg",
+                "jpeg",
+                "webp",
+                "svg"
+            ],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        },
+        {
+            "$id": "media_library",
+            "$permissions": [
+                "create(\"team:admin\")",
+                "update(\"team:admin\")",
+                "delete(\"team:admin\")",
+                "read(\"any\")"
+            ],
+            "fileSecurity": false,
+            "name": "media_library",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        },
+        {
+            "$id": "plugins",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "fileSecurity": true,
+            "name": "Plugins",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        },
+        {
+            "$id": "themes",
+            "$permissions": [
+                "create(\"any\")",
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "fileSecurity": false,
+            "name": "Themes",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        },
+        {
+            "$id": "6a0e670d00380379a6d4",
+            "$permissions": [],
+            "fileSecurity": false,
+            "name": "dev",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        }
+    ],
+    "teams": [
+        {
+            "$id": "69f733110033ea9064b4",
+            "$createdAt": "2026-05-03T11:35:45.862+00:00",
+            "$updatedAt": "2026-05-14T02:05:24.643+00:00",
+            "name": "Code045",
+            "total": 3,
+            "prefs": {}
+        },
+        {
+            "$id": "69fa516c003bae9c0f9e",
+            "$createdAt": "2026-05-05T20:22:04.998+00:00",
+            "$updatedAt": "2026-05-14T02:09:08.918+00:00",
+            "name": "App King",
+            "total": 2,
+            "prefs": {}
+        },
+        {
+            "$id": "69fef1a0001354ea2181",
+            "$createdAt": "2026-05-09T08:34:40.382+00:00",
+            "$updatedAt": "2026-05-10T10:05:36.420+00:00",
+            "name": "WPHub",
+            "total": 2,
+            "prefs": {}
+        }
+    ],
+    "topics": [
+        {
+            "$id": "wphub-pro-appwrite-update",
+            "name": "WPhub Pro Appwrite Update",
+            "subscribe": [
+                "users"
+            ]
+        }
+    ]
+}

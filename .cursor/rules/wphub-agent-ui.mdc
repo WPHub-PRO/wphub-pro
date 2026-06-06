@@ -1,0 +1,12 @@
+---
+description: UI — layout, SCSS, Bootstrap, views, accessibility in sites/wphubpro
+globs: sites/wphubpro/**/*.{tsx,scss,css}
+alwaysApply: false
+---
+
+# WP Hub Pro — UI agent
+
+- Visual work in **`sites/wphubpro/`** — views, SCSS, Bootstrap / `react-bootstrap`.
+- Prefer existing design tokens and component patterns; avoid drive-by refactors outside the task.
+- Keep business logic in domains/hooks (`src/domains/`), not in presentational components.
+- Domains call server logic via `@/integrations/appwrite/executeFunction` — see **`.cursor/docs/MODULAR-LAYERS.md`**.

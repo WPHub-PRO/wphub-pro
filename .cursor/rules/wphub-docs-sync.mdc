@@ -1,0 +1,74 @@
+---
+description: Keep README and .cursor/docs in sync after codebase or appwrite.config.json changes
+globs: appwrite.config.json,.cursor/appwrite.config.json,functions/**/*,sites/wphubpro/src/**/*
+alwaysApply: false
+---
+
+# Docs & README sync (mandatory)
+
+When you change **behavior, structure, deploy settings, or inventory** in the codebase or **`appwrite.config.json`**, update the matching **README** and **`.cursor/docs/`** in the **same PR / commit** — do not leave docs stale.
+
+Agent reference docs live in the **`.cursor/`** Git repo (nested under wphubpro). Function READMEs live in the **`functions/`** Git repo.
+
+---
+
+## Trigger — update docs when you change…
+
+| Change | Update |
+|--------|--------|
+| **`appwrite.config.json`** (functions, tables, buckets, runtime, VCS, timeouts) | `.cursor/docs/FUNCTIONS.md`, `.cursor/docs/AGENTS.md`; `cd .cursor && appwrite push functions --all --no-code` — **`wphub-appwrite-schema.mdc`** |
+| **New / removed function `$id`** | `FUNCTIONS.md`, `MODULAR-LAYERS.md` (app↔function map), `functions/README.md`, add/remove `functions/<id>/README.md` |
+| **Function handler layout, actions, deps** | `functions/<id>/README.md`, `functions/DEPLOY.md` if deploy steps change |
+| **New / renamed app domain** | `MODULAR-LAYERS.md`, relevant `.cursor/docs/` sections |
+| **`@code045/wphubpro-shared` publish** | All version pins + READMEs — **`wphub-shared-publish.mdc`** |
+| **Workspace layout, clone paths, scripts** | `WORKSPACE.md`, `AGENTS.md`, `wphub-project.mdc` if defaults change |
+| **Import / shared-package conventions** | `SHARED.md`, `wphub-shared-package.mdc` |
+
+Cosmetic-only edits (formatting, rename without behavior change) do **not** require doc updates unless user-facing names in docs would lie.
+
+---
+
+## Where to update
+
+### Agent docs (`.cursor/docs/`)
+
+| File | Keep aligned with |
+|------|-------------------|
+| **README.md** | Doc index |
+| **WORKSPACE.md** | Repo layout, bootstrap, paths |
+| **AGENTS.md** | Dev commands, inventory counts, workflows |
+| **FUNCTIONS.md** | All 12 functions table from `appwrite.config.json` |
+| **SHARED.md** | Package consumption, publish workflow |
+| **MODULAR-LAYERS.md** | Domains, function map, layer rules |
+
+### Function monorepo READMEs (`functions/`)
+
+| File | Keep aligned with |
+|------|-------------------|
+| **functions/README.md** | Monorepo overview, function list |
+| **functions/DEPLOY.md** | Deploy commands, runtime, npm token |
+| **functions/<id>/README.md** | Per-function deploy block, actions, deps |
+| **functions/shared/README.md** | Package version example |
+
+Regenerate per-function README deploy sections when bulk-updating:
+
+```bash
+cd functions && node scripts/update-function-readmes.mjs
+```
+
+---
+
+## Checklist (before marking task done)
+
+1. Code / config change is complete.
+2. Relevant **`.cursor/docs/*.md`** updated (or explicitly N/A).
+3. Relevant **`functions/**/README.md`** and **`DEPLOY.md`** updated (or N/A).
+4. **`appwrite.config.json`** edits followed by **`cd .cursor && appwrite push functions --all --no-code`**.
+5. Docs committed to the **`.cursor/`** repo; function READMEs to the **`functions/`** repo.
+
+---
+
+## Do not
+
+- Ship structural or config changes without updating docs in the same change set.
+- Duplicate long inventories in rules — **rules point here and to `.cursor/docs/`**; docs hold the tables.

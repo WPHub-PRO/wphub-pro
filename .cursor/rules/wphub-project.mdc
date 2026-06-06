@@ -1,0 +1,56 @@
+---
+description: WP Hub Pro workspace — Vite root, path alias, docs, orchestration repo, edits, imports, exhaustive switch, secrets
+alwaysApply: true
+---
+
+# WP Hub Pro — project defaults
+
+## Package
+
+- **App root**: `sites/wphubpro/` (nested Git clone) — `npm run dev`, `npm run build`, `npm run lint`. Restart the dev server after changing `.env`.
+- **Path alias**: `@/` → `sites/wphubpro/src/` (see `vite.config.ts`).
+- **Function calls**: `sites/wphubpro/src/integrations/appwrite/executeFunction.ts`.
+
+## Docs & serverless layout
+
+- **Docs:** [`.cursor/docs/`](.cursor/docs/README.md) — AGENTS · WORKSPACE · FUNCTIONS · SHARED · MODULAR-LAYERS. After codebase or **`appwrite.config.json`** changes, keep docs and READMEs in sync — **`wphub-docs-sync.mdc`**. **Appwrite id sync**: `wphub-appwrite-ids.mdc`. **Schema / CLI**: `wphub-appwrite-schema.mdc`.
+- **Appwrite config:** [`.cursor/appwrite.config.json`](.cursor/appwrite.config.json) in the **`.cursor`** git repo — **source of truth** for deploy. Paths are relative to **`.cursor/`** (`../functions/<id>`, `../sites/wphubpro`). Run Appwrite CLI from **`.cursor/`**.
+- **Appwrite functions:** monorepo at `functions/` (`functions/<id>/` + npm `@code045/wphubpro-shared`). VCS repo: `github.com/wphub-pro/functions`. **Scripts:** `.cursor/scripts/`.
+- **After any `appwrite.config.json` edit:** `cd .cursor && appwrite push functions --all --no-code`, then **`node .cursor/scripts/restore-function-vcs.js`** (push does not sync Git/VCS).
+
+## Shared package imports (mandatory)
+
+In **`functions/<id>/`** handler and lib code:
+
+- **Always** import from **`@code045/wphubpro-shared`** (declared in the function `package.json`).
+- **Never** import from **`functions/shared/`** or any relative path into `shared/` (e.g. `../../shared/src/...`, `../shared/mod.ts`).
+- To change shared behavior: edit the package source under `functions/shared/`, publish npm, sync all version pins — **`wphub-shared-publish.mdc`** — consume **only** via `@code045/wphubpro-shared`.
+
+See **`wphub-shared-package.mdc`**.
+
+## Workspace scope
+
+- **`wphubpro`** is the orchestration repo (config + `.cursor/` + nested clones). Clone **`sites/wphubpro`**, **`functions`**, **`wphubpro-bridge`** as needed — see **`.cursor/docs/WORKSPACE.md`**. UI: **`sites/wphubpro/`**. Functions: **`wphub-functions.mdc`**. Shared: **`wphub-shared-package.mdc`**.
+
+## Plans & todos → sub-agents
+
+When breaking work into a **plan with todos**, **label every todo** with exactly one tag at the **start of the title**: **`[React]`** · **`[UI]`** · **`[Appwrite]`** · **`[Stripe]`**.
+
+| Tag | Assign when the todo is mostly about… |
+|-----|----------------------------------------|
+| **`[React]`** | Components/hooks/domains/routing/query in `sites/wphubpro/`, TypeScript UI logic (not primarily visual). |
+| **`[UI]`** | Layout, SCSS, Bootstrap/`react-bootstrap`, views, spacing, icons, accessibility. |
+| **`[Appwrite]`** | `appwrite.config.json`, CLI push/pull/generate, `functions/`, `@code045/wphubpro-shared`, `.cursor/scripts/`, `sites/wphubpro/generated/appwrite/`, schema/ids — **`.cursor/docs/AGENTS.md`**. |
+| **`[Stripe]`** | `stripe-loader`, billing/Stripe from the app, `functions/stripe-api/`, webhooks/secrets on the server. |
+
+**Execution:** Enable or **@**-include: `wphub-agent-ui.mdc`, `wphub-agent-stripe.mdc`, `wphub-functions.mdc`, `wphub-shared-package.mdc`, `wphub-shared-publish.mdc` (after npm publish), `wphub-docs-sync.mdc` (after code or config changes).
+
+## Edits & TypeScript
+
+- **Scope**: Small, task-focused diffs; match existing naming and import style in files you touch.
+- **Imports**: Top of file only; no inline `import()` except to break a **documented** circular dependency.
+- **Unions / enums**: In `switch`, use a `default` branch that assigns to `never` so new variants fail the typecheck until handled.
+
+## Secrets
+
+- Do not put Appwrite API keys, Stripe **secret** keys, or webhooks in `sites/wphubpro/src/` or committed files. The client may use the Stripe **publishable** key and public Appwrite project id/endpoint only — see `sites/wphubpro/src/services/appwrite.ts` and `sites/wphubpro/src/lib/stripe-loader.ts`.

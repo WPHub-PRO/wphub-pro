@@ -1,0 +1,11 @@
+---
+description: Stripe — billing UI, stripe-api function, webhooks (server-side only)
+globs: sites/wphubpro/**/*stripe*,sites/wphubpro/**/billing/**,functions/stripe-api/**
+alwaysApply: false
+---
+
+# WP Hub Pro — Stripe agent
+
+- **Client:** publishable key only — `sites/wphubpro/src/lib/stripe-loader.ts`. No secret keys in app source.
+- **Server:** `functions/stripe-api/` — webhooks and billing logic; calls via `executeFunction` → `APPWRITE_FUNCTION_IDS.STRIPE_API`.
+- Follow Stripe best practices; never commit webhook secrets or restricted keys.

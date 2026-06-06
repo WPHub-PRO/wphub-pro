@@ -22,7 +22,6 @@ Thumbs.db
 
 .vscode/
 .idea/
-.cursor/
 .cursorignore
 
 *.log
