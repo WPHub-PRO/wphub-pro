@@ -5,16 +5,9 @@ core/*.tgz
 .npmrc.local
 .env
 package-lock.json
-dist/
-
-
-.env
-.env.*
+dist
 !.env.example
 *.local
-
-node_modules
-dist
 
 .DS_Store
 Thumbs.db
@@ -22,7 +15,6 @@ Thumbs.db
 
 .vscode/
 .idea/
-.cursorignore
 
 *.log
 npm-debug.log*
@@ -34,7 +26,4 @@ coverage/
 .vite/
 *.tsbuildinfo
 
-# Nested git checkouts must not live inside this repo
-**/.git/
-.DS_Store
 .git 

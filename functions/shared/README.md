@@ -7,7 +7,7 @@ Private npm package — shared TypeScript library for WP Hub Pro Appwrite **Node
 Each function declares in `package.json`:
 
 ```json
-"@code045/wphubpro-shared": "1.0.10"
+"@code045/wphubpro-shared": "*.*.**"
 ```
 
 Handlers import directly:
@@ -48,4 +48,4 @@ npm run build   # esbuild → mod.js
 
 ## Publish workflow
 
-When changing `src/**`: bump version, `npm run build`, `npm publish --access restricted`, update function pins, then `appwrite push functions`.
+When changing `src/**`: bump version, `npm run build`, `npm publish --access restricted`, update function pins

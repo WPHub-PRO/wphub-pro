@@ -46,19 +46,6 @@ cd functions && pnpm install && cd users && pnpm run build
 
 `user-mailbox` also runs `node scripts/patch-npm-os-hostname.mjs` after build (see `appwrite.config.json`).
 
-## Deploy
-
-From **`.cursor/`** (Appwrite config cwd):
-
-```bash
-cd .cursor
-appwrite push functions
-```
-
-Each function: `path: ../functions/<id>`, `runtime: node-22`, `entrypoint: dist/main.js`, `commands: pnpm install && pnpm run build`.
-
-See [`DEPLOY.md`](DEPLOY.md).
-
 ## @code045/wphubpro-shared
 
 Publish from `shared/` — see [`shared/README.md`](shared/README.md).

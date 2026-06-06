@@ -49,7 +49,7 @@
             "$id": "wp-proxy",
             "name": "wp-proxy",
             "runtime": "node-22",
-            "path": "../functions/wp-proxy",
+            "path": "functions/wp-proxy",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -158,26 +158,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/wp-proxy",
-            "providerSilentMode": true,
-            "providerPaths": [
-                "wp-proxy/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "recovery-manager",
             "name": "recovery-manager",
             "runtime": "node-22",
-            "path": "../functions/recovery-manager",
+            "path": "functions/recovery-manager",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -284,26 +273,15 @@
                 "events.read",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/recovery-manager",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "stripe-api",
             "name": "stripe-api",
             "runtime": "node-22",
-            "path": "../functions/stripe-api",
+            "path": "functions/stripe-api",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -412,26 +390,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-2vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/stripe-api",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "stripe-api/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "uptime-robot",
             "name": "uptime-robot",
             "runtime": "node-22",
-            "path": "../functions/uptime-robot",
+            "path": "functions/uptime-robot",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -540,26 +507,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/uptime-robot",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "uptime-robot/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "platform-settings",
             "name": "platform-settings",
             "runtime": "node-22",
-            "path": "../functions/platform-settings",
+            "path": "functions/platform-settings",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -668,26 +624,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/platform-settings",
-            "providerSilentMode": true,
-            "providerPaths": [
-                "platform-settings/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "bridge",
             "name": "bridge",
             "runtime": "node-22",
-            "path": "../functions/bridge",
+            "path": "functions/bridge",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -796,26 +741,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/bridge",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "bridge/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "sites",
             "name": "sites",
             "runtime": "node-22",
-            "path": "../functions/sites",
+            "path": "functions/sites",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -924,26 +858,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/sites",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "sites/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "users",
             "name": "users",
             "runtime": "node-22",
-            "path": "../functions/users",
+            "path": "functions/users",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -1052,26 +975,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/users",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "users/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "support",
             "name": "support",
             "runtime": "node-22",
-            "path": "../functions/support",
+            "path": "functions/support",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -1170,26 +1082,15 @@
                 "events.read",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/support",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "support/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "library",
             "name": "library",
             "runtime": "node-22",
-            "path": "../functions/library",
+            "path": "functions/library",
             "entrypoint": "main.ts",
             "execute": [
                 "any",
@@ -1289,26 +1190,15 @@
                 "events.read",
                 "usage.read"
             ],
-            "buildSpecification": "s-2vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/library",
-            "providerSilentMode": true,
-            "providerPaths": [
-                "library/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "messaging",
             "name": "messaging",
             "runtime": "node-22",
-            "path": "../functions/messaging",
+            "path": "functions/messaging",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -1417,26 +1307,15 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/messaging",
-            "providerSilentMode": false,
-            "providerPaths": [
-                "messaging/**"
-            ]
+            "deploymentRetention": 0
         },
         {
             "$id": "user-mailbox",
             "name": "user-mailbox",
             "runtime": "node-22",
-            "path": "../functions/user-mailbox",
+            "path": "functions/user-mailbox",
             "entrypoint": "main.ts",
             "execute": [
                 "any"
@@ -1545,27 +1424,16 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-2vcpu-2gb",
-            "runtimeSpecification": "s-2vcpu-2gb",
-            "deploymentRetention": 0,
-            "installationId": "69e016afb5c72c7bf95c",
-            "providerRepositoryId": "1253976054",
-            "providerBranch": "main",
-            "providerBranches": [
-                "main"
-            ],
-            "providerRootDirectory": "/user-mailbox",
-            "providerSilentMode": true,
-            "providerPaths": [
-                "user-mailbox/**"
-            ]
+            "buildSpecification": "s-0.5vcpu-512mb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
+            "deploymentRetention": 0
         }
     ],
     "sites": [
         {
             "$id": "69e016bd001d4315876d",
             "name": "wphubpro",
-            "path": "../sites/wphubpro",
+            "path": "sites/wphubpro",
             "framework": "vite",
             "logging": true,
             "timeout": 30,
@@ -1576,14 +1444,14 @@
             "outputDirectory": "./dist",
             "fallbackFile": "index.html",
             "startCommand": "",
-            "buildSpecification": "s-4vcpu-4gb",
-            "runtimeSpecification": "s-4vcpu-4gb",
+            "buildSpecification": "s-0.5vcpu-512mb",
+            "runtimeSpecification": "s-0.5vcpu-512mb",
             "deploymentRetention": 0
         },
         {
             "$id": "wphubpro-landing",
             "name": "wphubpro-landing",
-            "path": "../sites/wphubpro-landing",
+            "path": "sites/wphubpro-landing",
             "framework": "vite",
             "logging": true,
             "timeout": 30,

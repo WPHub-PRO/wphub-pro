@@ -16,7 +16,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const CURSOR_ROOT = path.resolve(__dirname, '..');
+const CURSOR_ROOT = path.resolve(__dirname, '../../');
 const CONFIG_PATH = path.join(CURSOR_ROOT, 'appwrite.config.json');
 
 function parseArgs(argv) {
