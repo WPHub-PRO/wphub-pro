@@ -1,0 +1,51 @@
+name: Sync Appwrite config from cloud
+
+on:
+  schedule:
+    # Every 6 hours — catches console changes without waiting for a webhook
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [appwrite-config-changed]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Appwrite CLI
+        run: npm install -g appwrite-cli
+
+      - name: Configure Appwrite client (non-interactive)
+        env:
+          APPWRITE_ENDPOINT: https://fra.cloud.appwrite.io/v1
+          APPWRITE_PROJECT_ID: wphub-pro
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: |
+          appwrite client \
+            --endpoint "$APPWRITE_ENDPOINT" \
+            --project-id "$APPWRITE_PROJECT_ID" \
+            --key "$APPWRITE_API_KEY"
+
+      - name: Pull cloud state into appwrite.config.json
+        run: node .cursor/scripts/sync-appwrite-config-from-cloud.js
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet appwrite.config.json; then
+            echo "appwrite.config.json already in sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appwrite.config.json
+          git commit -m "chore(appwrite): sync config from cloud"
+          git push

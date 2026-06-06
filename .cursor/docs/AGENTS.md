@@ -72,6 +72,20 @@ Label each plan todo with **one** tag: **`[React]`** · **`[UI]`** · **`[Appwri
 
 ## Schema & deploy workflow
 
+### Cloud → repo (pull / sync)
+
+When settings change in the **Appwrite Console** (tables, buckets, function config), sync into `appwrite.config.json`:
+
+```bash
+node .cursor/scripts/sync-appwrite-config-from-cloud.js
+```
+
+**Automatic:** GitHub Action `.github/workflows/sync-appwrite-config.yml` runs every 6 hours and on `repository_dispatch` (`appwrite-config-changed`). Requires repo secret **`APPWRITE_API_KEY`** (read scopes for tables, buckets, functions).
+
+Optional near-real-time: Appwrite **Webhook** on events `tablesdb.*.tables.*`, `tablesdb.*.tables.*.columns.*`, `buckets.*`, `functions.*.update` → trigger GitHub `repository_dispatch` (see [WORKSPACE.md](WORKSPACE.md)).
+
+### Repo → cloud (push)
+
 1. Edit **`appwrite.config.json`** at the repo root.
 2. **Always** after function settings change:
 
@@ -103,7 +117,7 @@ Never commit API keys or webhook secrets. Client: public Appwrite endpoint/proje
 
 ### Tooling
 
-Scripts: **`.cursor/scripts/`** — `bridge-release.js` (bridge plugin zip + upload), `restore-function-vcs.js` (optional VCS restore).
+Scripts: **`.cursor/scripts/`** — `sync-appwrite-config-from-cloud.js` (pull tables/buckets/functions from cloud), `bridge-release.js`, `restore-function-vcs.js`.
 
 ### Gotchas
 

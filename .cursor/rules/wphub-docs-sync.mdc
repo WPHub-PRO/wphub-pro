@@ -22,6 +22,7 @@ All docs and code live in the **`wphub-pro`** monorepo ([github.com/wphub-pro/wp
 | **New / renamed app domain** | `MODULAR-LAYERS.md`, relevant `.cursor/docs/` sections |
 | **`@code045/wphubpro-shared` publish** | All version pins + READMEs — **`wphub-shared-publish.mdc`** |
 | **Workspace layout, paths, scripts** | `WORKSPACE.md`, `AGENTS.md`, `wphub-project.mdc` if defaults change |
+| **Cloud ↔ config sync workflow** | `WORKSPACE.md`, `AGENTS.md`, `wphub-appwrite-schema.mdc` |
 | **Import / shared-package conventions** | `SHARED.md`, `wphub-shared-package.mdc` |
 
 Cosmetic-only edits (formatting, rename without behavior change) do **not** require doc updates unless user-facing names in docs would lie.

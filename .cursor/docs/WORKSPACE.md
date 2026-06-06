@@ -49,6 +49,28 @@ node .cursor/scripts/restore-function-vcs.js
 
 See [FUNCTIONS.md](FUNCTIONS.md) · [SHARED.md](SHARED.md).
 
+### Sync config from Appwrite Console
+
+```bash
+node .cursor/scripts/sync-appwrite-config-from-cloud.js
+```
+
+Pulls **tables**, **buckets**, and **function settings** (incl. Git/VCS) from cloud into `appwrite.config.json`. Local function `path` values are kept.
+
+**GitHub Action** (`.github/workflows/sync-appwrite-config.yml`): scheduled every 6h + manual + webhook trigger. Set secret `APPWRITE_API_KEY` on the repo.
+
+**Appwrite webhook (optional):** In Console → Webhooks, subscribe to schema/config events and POST to GitHub `repository_dispatch`:
+
+| Event prefix | When |
+|--------------|------|
+| `tablesdb.*.tables.*` | Table create/update/delete |
+| `tablesdb.*.tables.*.columns.*` | Column changes |
+| `tablesdb.*.tables.*.indexes.*` | Index changes |
+| `buckets.*` | Bucket create/update/delete |
+| `functions.*.update` | Function settings changed |
+
+Target: `POST https://api.github.com/repos/wphub-pro/wphub-pro/dispatches` with header `Authorization: Bearer <GITHUB_PAT>` and body `{"event_type":"appwrite-config-changed"}`. PAT needs `repo` scope (fine-grained: Contents read/write).
+
 ---
 
 ## Path context

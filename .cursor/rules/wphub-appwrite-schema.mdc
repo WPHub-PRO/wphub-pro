@@ -6,6 +6,16 @@ alwaysApply: false
 
 # Appwrite schema workflow
 
+## Cloud → repo (after Console edits)
+
+```bash
+node .cursor/scripts/sync-appwrite-config-from-cloud.js
+```
+
+Or wait for GitHub Action `sync-appwrite-config.yml` (6h schedule / webhook). Then run **`wphub-appwrite-ids.mdc`** if table/bucket ids changed.
+
+## Repo → cloud (after local config edits)
+
 1. Edit **`appwrite.config.json`** at the repo root (`tablesDB`, `tables`, `functions`, attributes, indexes, …).
 2. **Always** push function settings (no code upload):
 

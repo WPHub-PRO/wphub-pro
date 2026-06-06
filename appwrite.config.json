@@ -1545,9 +1545,9 @@
                 "apps.write",
                 "usage.read"
             ],
-            "buildSpecification": "s-0.5vcpu-512mb",
-            "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0,
+            "buildSpecification": "s-2vcpu-2gb",
+            "runtimeSpecification": "s-2vcpu-2gb",
+            "deploymentRetention": 30,
             "installationId": "69e016afb5c72c7bf95c",
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
