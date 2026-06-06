@@ -3316,16 +3316,7 @@
             "name": "test",
             "enabled": true,
             "rowSecurity": false,
-            "columns": [
-                {
-                    "key": "test",
-                    "type": "text",
-                    "required": false,
-                    "array": false,
-                    "default": null,
-                    "encrypt": false
-                }
-            ],
+            "columns": [],
             "indexes": []
         }
     ],
