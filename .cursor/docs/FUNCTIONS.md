@@ -83,7 +83,7 @@ npm install && npm run build    # messaging: pnpm install && pnpm run build
 
 Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 1260883337`, branch `main`, `providerSilentMode: true`.
 
-**`github-config-sync`:** event-triggered; set `GITHUB_PAT` on the function. Optional vars: `GITHUB_REPO`, `GITHUB_DISPATCH_EVENT`. Alternative webhook proxy: `workers/appwrite-github-dispatch/`.
+**`github-config-sync`:** event-triggered (`databases.*` / `buckets.*` — not `tablesdb.*` or `functions.*`); set `GITHUB_PAT` on the function. Function-setting changes: use Worker webhook (`workers/appwrite-github-dispatch/`) or 6h GitHub Action.
 
 **Extra deps (beyond shared):** `library` → adm-zip · `stripe-api` → stripe · `user-mailbox` → imapflow, nodemailer, mailparser · `recovery-manager` → jsonwebtoken.
 

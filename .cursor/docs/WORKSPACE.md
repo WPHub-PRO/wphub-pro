@@ -63,8 +63,8 @@ Pulls **tables**, **buckets**, and **function settings** (incl. Git/VCS) from cl
 
 | Optie | Setup |
 |-------|--------|
-| **A — Appwrite function** (aanbevolen) | Deploy `functions/github-config-sync`. Zet function variable **`GITHUB_PAT`** (secret). Function luistert naar schema-events en roept GitHub `repository_dispatch` aan. Geen webhook nodig. |
-| **B — Cloudflare Worker** | Deploy `workers/appwrite-github-dispatch/`. Appwrite Console → Webhooks → URL = Worker-URL. Worker zet Authorization + body goed voor GitHub. Zie `workers/appwrite-github-dispatch/README.md`. |
+| **A — Appwrite function** | Deploy `functions/github-config-sync`. Zet **`GITHUB_PAT`**. Events: `databases.*.tables.*`, `buckets.*` (Appwrite accepteert geen `tablesdb.*` of `functions.*` als function-events). |
+| **B — Cloudflare Worker** | Voor **alle** config-wijzigingen incl. function settings. Webhook → Worker-URL. Zie `workers/appwrite-github-dispatch/README.md`. |
 
 Appwrite webhooks kunnen **geen** Bearer-header of custom body — daarom A of B, niet rechtstreeks naar `api.github.com`.
 
