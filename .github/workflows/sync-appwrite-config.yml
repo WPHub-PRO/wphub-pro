@@ -26,7 +26,7 @@ jobs:
 
       - name: Configure Appwrite client (non-interactive)
         env:
-          APPWRITE_ENDPOINT: https://fra.cloud.appwrite.io/v1
+          APPWRITE_ENDPOINT: https://cloud.appwrite.io/v1
           APPWRITE_PROJECT_ID: wphub-pro
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
         run: |
