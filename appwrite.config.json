@@ -1597,7 +1597,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/github-config-sync",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -3308,6 +3308,25 @@
                     ]
                 }
             ]
+        },
+        {
+            "$id": "test",
+            "$permissions": [],
+            "databaseId": "platform_db",
+            "name": "test",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "test",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
         }
     ],
     "buckets": [
