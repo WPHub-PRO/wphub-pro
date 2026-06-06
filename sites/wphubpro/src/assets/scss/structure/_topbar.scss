@@ -1,0 +1,305 @@
+//
+// _topbar.scss
+//
+
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+    background: var(--#{$prefix}topbar-bg);
+    box-shadow: $card-box-shadow;
+    height: $topbar-height;
+    margin-inline-start: $sidenav-width;
+    transition: margin-left 0.25s ease-in-out;
+
+    .topbar-menu {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        border-bottom: $card-border-width solid $card-border-color;
+        padding-inline-start: $grid-gutter-width;
+        padding-inline-end: $grid-gutter-width;
+
+        .topbar-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: $topbar-height;
+
+            .topbar-link {
+                z-index: 1;
+                border: none;
+                background-color: transparent;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: $topbar-item-color;
+                position: relative;
+                height: 100%;
+                font-weight: $font-weight-medium;
+
+                &:hover,
+                &:active,
+                &:focus {
+                    color: $topbar-item-hover-color;
+                }
+
+                .topbar-link-icon {
+                    font-size: 20px;
+                }
+            }
+
+            .topbar-badge {
+                position: absolute;
+                top: 12px;
+                inset-inline-end: -1px;
+            }
+
+            .dropdown {
+                height: 100%;
+            }
+        }
+    }
+
+    ul {
+        list-style-type: none;
+        margin-bottom: 0;
+    }
+
+    &.topbar-active {
+        background: var(--#{$prefix}topbar-bg-scrolled, var(--#{$prefix}topbar-bg));
+    }
+}
+
+// Topbar Logo
+.logo-topbar {
+    float: inline-start;
+    display: none;
+    line-height: $topbar-height;
+    padding: 0 $spacer * 0.5;
+
+    .logo-sm {
+        display: none;
+    }
+
+    .logo-light {
+        display: none;
+    }
+
+    .logo-dark {
+        display: block;
+    }
+}
+
+html[data-topbar-color='dark'],
+html[data-bs-theme='dark'] {
+    .logo-topbar {
+        .logo-light {
+            display: block;
+        }
+
+        .logo-dark {
+            display: none;
+        }
+    }
+}
+
+html[data-topbar-color='dark'],
+html[data-topbar-color='gradient'] {
+    .app-topbar {
+        .btn-default {
+            background-color: rgba(var(--#{$prefix}white-rgb), 0.03);
+            border: 1px dashed rgba(var(--#{$prefix}white-rgb), 0.1) !important;
+            color: $white !important;
+        }
+    }
+
+    &:not([data-bs-theme='dark']) {
+        .app-topbar {
+            .app-search {
+                .app-search-icon {
+                    color: rgba(var(--#{$prefix}white-rgb), 0.5) !important;
+                }
+
+                input::placeholder {
+                    color: rgba(var(--#{$prefix}white-rgb), 0.5) !important;
+                }
+            }
+        }
+    }
+}
+
+// Topbar light/Dark Mode icon
+#light-dark-mode {
+    .mode-light-sun {
+        display: none;
+    }
+}
+
+html[data-bs-theme='dark'] {
+    #light-dark-mode {
+        .mode-light-sun {
+            display: block;
+        }
+
+        .mode-light-moon {
+            display: none;
+        }
+    }
+}
+
+// User
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: $topbar-height;
+    transition: none;
+
+    .pro-username {
+        font-size: $font-size-sm;
+    }
+}
+
+@media (max-width: 375px) {
+    .logo-topbar {
+        display: none !important;
+    }
+}
+
+@include media-breakpoint-down(sm) {
+    .app-topbar {
+        .topbar-menu {
+            position: initial;
+
+            .topbar-badge {
+                top: 10px;
+            }
+        }
+
+        .dropdown {
+            position: static;
+
+            .dropdown-menu {
+                width: 90%;
+            }
+        }
+    }
+}
+
+@include media-breakpoint-down(md) {
+    .logo-topbar {
+        display: block;
+
+        span.logo-lg {
+            display: none;
+        }
+
+        span.logo-sm {
+            display: block;
+        }
+    }
+}
+
+//
+.sidenav-toggle-button {
+    flex: none;
+
+    i, svg {
+        font-size: 20px;
+    }
+}
+
+//
+// Topbar Search
+//
+.topbar-search {
+    width: 230px;
+    padding: $input-padding-y $input-padding-x;
+    background-color: $topbar-search-bg !important;
+    color: $topbar-item-color !important;
+    border-color: $topbar-search-border !important;
+    line-height: $input-line-height;
+    @include border-radius($input-border-radius, 0);
+}
+
+//
+// Notification
+//
+.notification-item {
+    position: relative;
+    cursor: pointer;
+
+    .notification-badge {
+        height: 22px;
+        width: 22px;
+        text-align: center;
+        color: $white;
+        top: -12px;
+        inset-inline-end: -8px;
+        border: 2px solid $card-bg;
+        line-height: 18px;
+        font-size: 11px;
+    }
+
+    .notification-item-icon {
+        font-size: 22px;
+    }
+}
+
+//
+// Theme Setting Btn
+//
+.btn-theme-setting {
+    position: relative;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset-inline-end: 6px;
+        top: 22px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: var(--#{$prefix}danger);
+        transform: translateY(-50%);
+        animation: blinkDot 1.2s infinite ease-in-out;
+        z-index: 1;
+    }
+
+    i {
+        height: 22px;
+        width: 22px;
+    }
+}
+
+@keyframes blinkDot {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--#{$prefix}danger-rgb), 0.6);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(var(--#{$prefix}danger-rgb), 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--#{$prefix}danger-rgb), 0);
+    }
+}
+
+// Manage for light & dark logo
+html[data-menu-color='light'][data-topbar-color='dark'],
+html[data-menu-color='light'][data-topbar-color='gradient'] {
+    .sidenav-menu {
+        .logo {
+            background: var(--#{$prefix}topbar-bg);
+            width: calc(100% + 1px);
+        }
+
+        .button-on-hover {
+            color: $white !important;
+        }
+    }
+}

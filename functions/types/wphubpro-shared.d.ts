@@ -1,0 +1,60 @@
+declare module '@code045/wphubpro-shared' {
+  export * from 'node-appwrite';
+  export const WPHUB_APPWRITE_IDS: Record<string, string>;
+  export function readEnv(name: string): string;
+  export function hasAppwriteServerEnv(): boolean;
+  export function createServerClients(req?: unknown): {
+    client: import('node-appwrite').Client;
+    databases: import('node-appwrite').Databases;
+    users: import('node-appwrite').Users;
+    teams: import('node-appwrite').Teams;
+    storage: import('node-appwrite').Storage;
+    functions: import('node-appwrite').Functions;
+  };
+  export function createServerClientAndDatabases(req?: unknown): {
+    client: import('node-appwrite').Client;
+    databases: import('node-appwrite').Databases;
+  };
+  export function parsePayload(req: unknown): Record<string, unknown>;
+  export function ok(res: unknown, data: unknown, status?: number): unknown;
+  export function fail(res: unknown, message: string, status?: number, extra?: unknown): unknown;
+  export function callerUserIdFromReq(req: unknown): string | null;
+  export function userIsAdmin(users: unknown, teams: unknown, userId: string, log?: unknown): Promise<boolean>;
+  export function platformTeamsTableId(): string;
+  export function trimStr(v: unknown): string;
+  export function normalizeAction(raw: unknown): string;
+  export function getProjectEnvVar(client: unknown, key: string): Promise<string>;
+  export function emitPlatformEvent(...args: unknown[]): Promise<unknown>;
+  export function loadPlatformEvent(...args: unknown[]): Promise<unknown>;
+  export function sendSystemEmail(...args: unknown[]): Promise<unknown>;
+  export function sendTransactionalEmail(...args: unknown[]): Promise<unknown>;
+  export function createUserNotification(...args: unknown[]): Promise<unknown>;
+  export function notificationFromTemplate(...args: unknown[]): Promise<unknown>;
+  export function sessionCanAccessSiteDocument(...args: unknown[]): Promise<boolean>;
+  export function sessionCanMutateSiteDocument(...args: unknown[]): Promise<boolean>;
+  export function resolveResourceOwnerUserId(...args: unknown[]): Promise<string | null>;
+  export function bridgeActiveRelease(...args: unknown[]): Promise<unknown>;
+  export function verifyBridgeAuth(...args: unknown[]): Promise<unknown>;
+  export function decryptMailSecretsEnvelope(...args: unknown[]): unknown;
+  export function encryptMailSecretsEnvelope(...args: unknown[]): unknown;
+  export function platformSettingsColl(...args: unknown[]): unknown;
+  export function ticketsColl(...args: unknown[]): unknown;
+  export function sitesColl(...args: unknown[]): unknown;
+  export function libraryColl(...args: unknown[]): unknown;
+  export function notificationsColl(...args: unknown[]): unknown;
+  export function platformEventsColl(...args: unknown[]): unknown;
+  export function platformEventsDatabaseId(...args: unknown[]): string;
+  export function loadPlatformEventById(...args: unknown[]): Promise<unknown>;
+  export function workspaceTeamIdFromReq(...args: unknown[]): string | null;
+  export function resolveWorkspaceContext(...args: unknown[]): Promise<unknown>;
+  export function teamNotificationRecipients(...args: unknown[]): Promise<string[]>;
+  export function renderEmailBlocks(...args: unknown[]): string;
+  export function buildEmailShell(...args: unknown[]): unknown;
+  export const APPWRITE_FUNCTION_RUNTIME: unique symbol;
+  export type AppwriteFunctionHandler = (ctx: {
+    req: unknown;
+    res: { json: (body: unknown, status?: number) => unknown };
+    log: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+  }) => Promise<unknown> | unknown;
+}

@@ -1,0 +1,952 @@
+//
+// _sidenav.scss
+//
+
+.sidenav-menu {
+    z-index: 1005;
+    position: fixed;
+    bottom: 0;
+    top: 0;
+    width: $sidenav-width;
+    background: var(--#{$prefix}sidenav-bg);
+    box-shadow: var(--#{$prefix}box-shadow-sm);
+    border-inline-end: $card-border-width solid $sidenav-border-color;
+    transition: width 0.25s ease-in-out;
+
+    [data-simplebar] {
+        height: calc(100% - $topbar-height);
+    }
+}
+
+// Side-nav
+.side-nav {
+    padding-inline-start: 0;
+    list-style-type: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-bottom: 50px;
+    font-family: $font-family-secondary;
+
+    .side-nav-item {
+        .side-nav-link {
+            display: flex;
+            align-items: center;
+            gap: $sidenav-item-gap;
+            position: relative;
+            white-space: nowrap;
+            color: $sidenav-item-color;
+            transition: color 0.25s ease-in-out;
+            line-height: calc($sidenav-item-font-size * 1.25);
+            font-size: $sidenav-item-font-size;
+            font-weight: $sidenav-item-font-weight;
+            padding: $sidenav-item-padding-y $sidenav-item-padding-x;
+            border-radius: 5px;
+
+            &:hover,
+            &:focus,
+            &:active {
+                color: $sidenav-item-hover-color;
+            }
+
+            .menu-icon {
+                font-size: $sidenav-item-icon-size;
+                line-height: $sidenav-item-icon-size;
+
+                i {
+                    font-size: $sidenav-item-icon-size;
+                    line-height: $sidenav-item-icon-size;
+                }
+
+                svg {
+                    height: $sidenav-item-icon-size;
+                    width: $sidenav-item-icon-size;
+                }
+            }
+
+            .menu-text {
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+
+            .badge {
+                margin-inline-start: auto;
+            }
+
+            .sidenav-notif-count {
+                margin-inline-start: auto;
+                flex-shrink: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 1.35rem;
+                height: 1.35rem;
+                padding: 0 0.35rem;
+                border-radius: 999px;
+                background-color: $white;
+                color: var(--#{$prefix}body-color);
+                font-size: 0.6875rem;
+                font-weight: $font-weight-bold;
+                line-height: 1;
+                box-shadow: 0 0 0 1px rgba($black, 0.06);
+            }
+
+            &.disabled {
+                pointer-events: none;
+                cursor: default;
+                opacity: 0.5;
+            }
+
+            &.special-menu {
+                background-color: var(--#{$prefix}primary) !important;
+                color: $white !important;
+            }
+        }
+    }
+
+    > .side-nav-item {
+        padding: 0 10px;
+    }
+
+    // Multi Level Menu
+    .sub-menu {
+        list-style-type: none;
+        display: flex;
+        flex-direction: column;
+        gap: $sidenav-sub-item-gap;
+        padding-inline-start: 0;
+
+        .side-nav-item {
+            .side-nav-link {
+                font-size: $sidenav-sub-item-font-size;
+                padding-block: $sidenav-sub-item-padding-y;
+                padding-inline: $sidenav-item-padding-x;
+                padding-inline-start: calc($sidenav-item-icon-size + $sidenav-item-padding-x + $sidenav-item-gap);
+                font-weight: $sidenav-sub-item-font-weight;
+            }
+        }
+
+        .sub-menu {
+            padding-inline-start: 15px;
+        }
+    }
+
+    .side-nav-title {
+        letter-spacing: 0.1em;
+        pointer-events: none;
+        cursor: default;
+        white-space: nowrap;
+        text-transform: uppercase;
+        color: $sidenav-item-color;
+        font-weight: $font-weight-bold;
+        font-size: calc($sidenav-item-font-size * 0.7);
+        padding: $sidenav-item-padding-y calc($sidenav-item-padding-x + 10px);
+    }
+
+    // Active Menu
+    > .side-nav-item.active {
+        > a {
+            color: $sidenav-item-active-color !important;
+            background-color: $sidenav-item-active-bg;
+
+            .menu-arrow {
+                transform: rotate(-180deg);
+            }
+        }
+
+        .side-nav-item.active {
+            > a {
+                color: $sidenav-item-hover-color;
+                font-weight: $sidenav-item-font-weight;
+
+                .menu-arrow {
+                    transform: rotate(-180deg);
+                }
+            }
+        }
+    }
+
+    // React-Bootstrap `Collapse` adds `.collapse` / `.collapse.show` on the submenu wrapper. A mistaken
+    // global `.collapse { visibility: collapse; }` (CSS table keyword, not Bootstrap) hides contents;
+    // keep flyout panels visible when open or animating. (No `visibility: collapse` in this repo — override is scoped.)
+    .side-nav-submenu-panel.collapse.show,
+    .side-nav-submenu-panel.collapsing,
+    .side-nav-item.active > .collapse.show,
+    .side-nav-item > .collapse.show.side-nav-submenu-panel {
+        visibility: visible;
+    }
+}
+
+.menu-arrow {
+    margin-inline-start: auto;
+    transition: transform 0.1s ease-in-out;
+    color: var(--#{$prefix}light);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='%239ba6b7'  xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 16a1 1 0 0 1-.64-.23l-6-5a1 1 0 1 1 1.28-1.54L12 13.71l5.36-4.32a1 1 0 0 1 1.41.15a1 1 0 0 1-.14 1.46l-6 4.83A1 1 0 0 1 12 16'/%3E%3C/svg%3E");
+    height: 16px;
+    width: 16px;
+}
+
+[aria-expanded='true'] {
+    .menu-arrow {
+        transform: rotate(-180deg);
+    }
+}
+
+// sidenav user
+.sidenav-user {
+    padding: 20px;
+    display: none;
+    color: $sidenav-item-color;
+    background-size: cover !important;
+    margin-bottom: 10px;
+    border-radius: 5px;
+
+    .sidenav-user-name {
+        white-space: nowrap;
+        display: block;
+        color: $sidenav-item-active-color;
+    }
+}
+
+html[data-sidenav-user='true'] {
+    .sidenav-user {
+        display: block;
+    }
+}
+
+// Enlarge Menu (Condensed md size left sidebar )
+html[data-sidenav-size='condensed'] {
+    .app-topbar {
+        z-index: 1005;
+        margin-inline-start: $sidenav-width-sm;
+    }
+
+    .content-page {
+        margin-inline-start: $sidenav-width-sm;
+        min-height: 1900px;
+    }
+
+    .sidenav-menu {
+        position: absolute;
+        width: $sidenav-width-sm;
+
+        .simplebar-mask,
+        .simplebar-content-wrapper {
+            overflow: visible !important;
+        }
+
+        .simplebar-scrollbar {
+            display: none !important;
+        }
+
+        .simplebar-offset {
+            bottom: 0 !important;
+        }
+
+        .logo {
+            z-index: 1;
+            background: var(--#{$prefix}sidenav-bg);
+            text-align: center;
+            padding: 0;
+
+            span.logo-lg {
+                display: none;
+            }
+
+            span.logo-sm {
+                display: block;
+            }
+        }
+
+        .side-nav {
+            gap: 0;
+
+            > .side-nav-item {
+                padding: 0px;
+            }
+
+            .side-nav-item {
+                position: relative;
+
+                .side-nav-link {
+                    transition: none;
+                    border-radius: 0;
+                    padding: calc($sidenav-item-padding-y * 1.75) $sidenav-item-padding-x;
+
+                    .menu-text,
+                    .menu-arrow,
+                    .badge {
+                        display: none;
+                    }
+
+                    .menu-icon {
+                        display: flex;
+                        justify-content: center;
+                        font-size: calc($sidenav-item-icon-size * 1.25);
+                        line-height: calc($sidenav-item-icon-size * 1.25);
+                        min-width: calc($sidenav-width-sm - $sidenav-item-padding-x - $sidenav-item-padding-x);
+
+                        i {
+                            font-size: calc($sidenav-item-icon-size * 1.25);
+                            line-height: calc($sidenav-item-icon-size * 1.25);
+                        }
+
+                        svg {
+                            height: calc($sidenav-item-icon-size * 1.25);
+                            width: calc($sidenav-item-icon-size * 1.25);
+                        }
+                    }
+                }
+
+                // Only hide the *direct* closed collapse. A nested `.collapse` deeper under this `li`
+                // (inside a child row’s submenu) must not match — it is not a child of this row, but the
+                // old `.side-nav-item .collapse { … }` block matched any descendant and broke nested flyouts.
+                > .collapse:not(.show) {
+                    display: none;
+                }
+
+                // Direct submenu panel only: nested collapses live under inner `.side-nav-item` rows and
+                // must be styled by those rows’ own `> .collapse` rules, not the top-level item’s.
+                > .collapse,
+                > .collapsing {
+                    height: inherit !important;
+                    transition: none !important;
+
+                    .sub-menu {
+                        display: none;
+                        padding: 5px 0;
+                        margin-top: 0;
+                        position: absolute;
+                        inset-inline-start: $sidenav-width-sm;
+                        box-shadow: var(--#{$prefix}box-shadow);
+                        border: $card-border-width solid $sidenav-border-color;
+                        border-top: 0;
+                        background: var(--#{$prefix}sidenav-bg);
+                        border-radius: 0 0 4px 4px;
+
+                        .sub-menu {
+                            border-radius: 4px;
+                        }
+                    }
+                }
+
+                // Open flyout for hover, open state (`.active` on `li` from AppMenu), or focus inside the panel.
+                // Hover alone fails when the pointer moves from the icon row onto the absolutely positioned flyout.
+                &:hover,
+                &.active,
+                &:focus-within {
+                    .side-nav-link {
+                        position: relative;
+
+                        .menu-text,
+                        .badge {
+                            display: flex;
+                            // visibility: visible;
+                        }
+
+                        .side-nav-link::before {
+                            display: none;
+                        }
+                    }
+
+                    > .collapse,
+                    > .collapsing {
+                        display: block !important;
+                        transition: none !important;
+
+                        > .sub-menu {
+                            display: block;
+                            inset-inline-start: $sidenav-width-sm;
+                            width: calc($sidenav-width - calc($sidenav-width-sm * 0.65));
+
+                            .side-nav-item:hover,
+                            .side-nav-item.active,
+                            .side-nav-item:focus-within {
+                                > .collapse,
+                                > .collapsing {
+                                    > .sub-menu {
+                                        // Override `> .collapse .sub-menu { display: none }` above so nested
+                                        // flyout panels render for the hovered/active nested row.
+                                        display: block;
+                                        visibility: visible;
+                                        top: 0;
+                                        inset-inline-start: calc($sidenav-width - calc($sidenav-width-sm * 0.65));
+                                        width: calc($sidenav-width - calc($sidenav-width-sm * 0.65));
+                                    }
+                                }
+                            }
+
+                            .menu-arrow {
+                                transform: rotate(-90deg);
+                                display: flex;
+                            }
+                        }
+                    }
+                }
+
+                .sub-menu {
+                    .collapse.show,
+                    .collapsing,
+                    .side-nav-item.active > .collapse,
+                    .side-nav-item:focus-within > .collapse {
+                        visibility: visible;
+
+                        > .sub-menu {
+                            display: block;
+                            visibility: visible;
+                        }
+                    }
+
+                    // Nested rows: show submenu when open/hovered even if parent chain lost `.active`.
+                    .side-nav-item:hover > .collapse.show,
+                    .side-nav-item:hover > .collapsing {
+                        > .sub-menu {
+                            display: block;
+                            visibility: visible;
+                        }
+                    }
+
+                    .side-nav-item {
+                        .side-nav-link {
+                            transition: $transition-base;
+                            padding: calc($sidenav-sub-item-padding-y * 1.5) calc($sidenav-sub-item-padding-x * 1.5);
+                            white-space: inherit;
+                        }
+                    }
+                }
+            }
+
+            > .side-nav-item:hover,
+            > .side-nav-item.active,
+            > .side-nav-item:focus-within {
+                > .side-nav-link {
+                    color: $sidenav-item-active-color;
+                    background: var(--#{$prefix}sidenav-bg);
+                    box-shadow: var(--#{$prefix}box-shadow);
+                    width: calc($sidenav-width + calc($sidenav-width-sm * 0.35));
+                    border-radius: 4px;
+
+                    &[data-bs-toggle='collapse'] {
+                        border-end-end-radius: 0;
+                    }
+                }
+            }
+        }
+    }
+
+    .side-nav-link::before,
+    .sidenav-user,
+    .side-nav-title {
+        display: none;
+    }
+}
+
+//  Compact Menu
+html[data-sidenav-size='compact'] {
+    .sidenav-menu {
+        width: $sidenav-width-md;
+
+        .sidenav-user {
+            .sidenav-user-set-icon {
+                display: none;
+            }
+        }
+    }
+
+    .content-page,
+    .app-topbar {
+        margin-inline-start: $sidenav-width-md;
+    }
+
+    .menu-arrow {
+        display: none;
+    }
+
+    .sidenav-bridge-panel {
+        width: calc(100% - 2 * (#{$sidenav-item-padding-x} + 6px));
+        padding: 10px 10px 9px;
+    }
+}
+
+// Hover View Menu
+html[data-sidenav-size='on-hover'] {
+    .content-page,
+    .app-topbar {
+        margin-inline-start: $sidenav-width-sm;
+    }
+
+    .sidenav-toggle-button {
+        display: none;
+    }
+
+    .sidenav-menu:not(:hover) {
+        width: $sidenav-width-sm;
+
+        .simplebar-scrollbar:before {
+            background: transparent;
+        }
+
+        .logo {
+            .logo-sm {
+                display: block;
+            }
+
+            .logo-lg {
+                display: none;
+            }
+        }
+
+        .side-nav-item {
+            .side-nav-link {
+                justify-content: center;
+
+                .menu-text,
+                .menu-arrow,
+                .badge {
+                    display: none;
+                }
+            }
+        }
+
+        .side-nav-title {
+            display: none;
+        }
+
+        .button-on-hover,
+        .sidenav-user,
+        .menu-text {
+            display: none;
+        }
+
+        .sub-menu {
+            height: 0;
+            opacity: 0;
+        }
+
+        .menu-icon {
+            font-size: calc($sidenav-item-icon-size * 1.15);
+            line-height: calc($sidenav-item-icon-size * 1.15);
+
+            i {
+                font-size: calc($sidenav-item-icon-size * 1.15);
+                line-height: calc($sidenav-item-icon-size * 1.15);
+            }
+
+            svg {
+                height: calc($sidenav-item-icon-size * 1.15);
+                width: calc($sidenav-item-icon-size * 1.15);
+            }
+        }
+    }
+
+    .sidenav-menu {
+        .simplebar-horizontal .simplebar-scrollbar:before {
+            background: transparent;
+        }
+
+        .logo {
+            text-align: start;
+        }
+
+        &:hover {
+            z-index: 1045;
+            box-shadow: var(--#{$prefix}box-shadow-lg) !important;
+        }
+
+        .button-on-hover {
+            display: block;
+        }
+    }
+}
+
+// Sidebar sm hover Toggle Menu Button (sm hover active button)
+.button-on-hover {
+    cursor: pointer;
+    display: none;
+    inset-inline-end: 10px;
+    top: 0;
+    position: absolute;
+    font-size: 18px;
+    line-height: $topbar-height;
+    background: transparent;
+    border: none;
+    z-index: 1;
+    color: $sidenav-item-color;
+    padding-block: 0;
+
+    &:hover,
+    &:focus,
+    &:active {
+        color: $sidenav-item-hover-color;
+    }
+
+    .btn-on-hover-icon {
+        height: 1em;
+        width: 1em;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        display: inline-block;
+        position: relative;
+        vertical-align: middle;
+    }
+}
+
+html[data-sidenav-size='on-hover-active'] {
+    .sidenav-toggle-button {
+        display: none;
+    }
+
+    .sidenav-menu {
+        .logo {
+            text-align: start;
+        }
+
+        .button-on-hover {
+            display: block;
+
+            .btn-on-hover-icon {
+                &::before {
+                    height: 6px;
+                    width: 6px;
+                    background-color: currentColor;
+                    border-radius: 50%;
+                    position: absolute;
+                    content: "";
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+            }
+        }
+    }
+}
+
+// Fullscreen Close Button
+.button-close-offcanvas {
+    display: none;
+    z-index: 1;
+    position: absolute;
+    background: transparent;
+    border: none;
+    top: 0;
+    inset-inline-end: calc($sidenav-width-sm * 0.5 - $logo-sm-height * 0.7);
+    cursor: pointer;
+    color: $sidenav-item-color;
+    line-height: $topbar-height;
+    font-size: $sidenav-item-icon-size;
+
+    &:hover,
+    &:focus,
+    &:active {
+        color: $sidenav-item-hover-color;
+    }
+}
+
+// Offcanvas Menu
+html[data-sidenav-size='offcanvas'] {
+    .logo-topbar {
+        display: inline-block;
+
+        @include media-breakpoint-up(xl) {
+            min-width: 200px;
+        }
+    }
+
+    .content-page,
+    .app-topbar {
+        margin-inline-start: 0;
+    }
+
+    .button-close-offcanvas {
+        display: block;
+    }
+
+    .sidenav-menu {
+        margin-inline-start: calc($sidenav-width * -1);
+        opacity: 0;
+        transition: all 0.25s ease-in-out;
+
+        .logo {
+            text-align: start;
+        }
+    }
+
+    &.sidebar-enable {
+        .sidenav-menu {
+            opacity: 1;
+            z-index: 1055;
+            margin-inline-start: 0;
+        }
+    }
+}
+
+// Help & docs (footer link — aligned with .side-nav-link + bridge affordances)
+.sidenav-footer {
+    flex-shrink: 0;
+    border-top: $card-border-width solid color-mix(in srgb, $sidenav-border-color 55%, transparent);
+}
+
+.sidenav-footer-inner {
+    padding-inline: 10px;
+}
+
+.sidenav-footer-help {
+    display: flex;
+    align-items: center;
+    gap: $sidenav-item-gap;
+    margin-inline: 0;
+    margin-block-start: 2px;
+    padding: calc($sidenav-item-padding-y + 1px) $sidenav-item-padding-x;
+    border-radius: 8px;
+    text-decoration: none;
+    color: $sidenav-item-color;
+    font-family: $font-family-secondary;
+    font-size: $sidenav-item-font-size;
+    font-weight: $sidenav-item-font-weight;
+    line-height: calc($sidenav-item-font-size * 1.25);
+    transition:
+        color 0.2s ease-in-out,
+        background-color 0.2s ease-in-out,
+        box-shadow 0.2s ease-in-out;
+
+    .menu-text {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .sidenav-footer-help__icon {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 8px;
+        color: var(--#{$prefix}primary);
+        background: color-mix(in srgb, var(--#{$prefix}primary) 12%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--#{$prefix}primary) 18%, transparent);
+
+        svg {
+            width: calc($sidenav-item-icon-size * 0.95);
+            height: calc($sidenav-item-icon-size * 0.95);
+        }
+    }
+
+    &:hover {
+        color: $sidenav-item-hover-color;
+        background-color: $sidenav-item-hover-bg;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, $sidenav-border-color 55%, transparent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--#{$prefix}primary);
+        outline-offset: 2px;
+    }
+
+    &.active {
+        color: $sidenav-item-active-color !important;
+        background-color: $sidenav-item-active-bg;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--#{$prefix}primary) 28%, transparent);
+
+        .sidenav-footer-help__icon {
+            color: var(--#{$prefix}primary);
+            background: color-mix(in srgb, var(--#{$prefix}primary) 16%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--#{$prefix}primary) 26%, transparent);
+        }
+    }
+}
+
+html[data-sidenav-size='condensed'] .sidenav-menu {
+    .sidenav-footer-inner {
+        padding-inline: 0;
+    }
+
+    .sidenav-footer-help {
+        justify-content: center;
+        margin-inline: 0;
+        border-radius: 0;
+        padding-block: calc($sidenav-item-padding-y * 1.75);
+        padding-inline: $sidenav-item-padding-x;
+
+        .menu-text {
+            display: none;
+        }
+    }
+}
+
+// WordPress bridge download (footer card + condensed / on-hover icon)
+.sidenav-bridge-icon-wrap {
+    display: flex;
+    justify-content: center;
+    padding-block: 6px 2px;
+    padding-inline: $sidenav-item-padding-x;
+    min-width: 0;
+}
+
+.sidenav-bridge-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: calc($sidenav-width-sm - $sidenav-item-padding-x * 2);
+    min-height: calc($sidenav-item-icon-size * 2.25);
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: $sidenav-item-color;
+    transition:
+        color 0.2s ease-in-out,
+        background-color 0.2s ease-in-out,
+        box-shadow 0.2s ease-in-out;
+
+    &:hover:not(:disabled) {
+        color: $sidenav-item-hover-color;
+        background-color: $sidenav-item-hover-bg;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, $sidenav-border-color 55%, transparent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--#{$prefix}primary);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+}
+
+.sidenav-bridge-icon-btn__glyph {
+    flex-shrink: 0;
+    width: calc($sidenav-item-icon-size * 1.2);
+    height: calc($sidenav-item-icon-size * 1.2);
+}
+
+.sidenav-bridge-panel {
+    box-sizing: border-box;
+    width: calc(100% - 2 * (#{$sidenav-item-padding-x} + 10px));
+    max-width: 100%;
+    margin-inline: auto;
+    margin-block-start: 10px;
+    padding: 12px 12px 11px;
+    border-radius: 8px;
+    border: $card-border-width solid color-mix(in srgb, $sidenav-border-color 65%, transparent);
+    background: color-mix(in srgb, $sidenav-item-hover-bg 55%, $sidenav-bg);
+    box-shadow: var(--#{$prefix}box-shadow-sm);
+    min-width: 0;
+}
+
+.sidenav-bridge-panel__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+}
+
+.sidenav-bridge-panel__brand {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    color: var(--#{$prefix}primary);
+    background: color-mix(in srgb, var(--#{$prefix}primary) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--#{$prefix}primary) 22%, transparent);
+}
+
+.sidenav-bridge-panel__brand-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.sidenav-bridge-panel__heading {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sidenav-bridge-panel__label {
+    font-size: calc($sidenav-item-font-size * 0.95);
+    font-weight: $font-weight-bold;
+    font-family: $font-family-secondary;
+    line-height: 1.25;
+    color: $sidenav-item-active-color;
+    letter-spacing: 0.01em;
+}
+
+.sidenav-bridge-panel__meta {
+    margin-top: 2px;
+    font-size: calc($sidenav-sub-item-font-size * 0.95);
+    line-height: 1.35;
+    color: $sidenav-item-color;
+    min-width: 0;
+}
+
+.sidenav-bridge-panel__muted {
+    opacity: 0.85;
+}
+
+.sidenav-bridge-panel__spinner {
+    vertical-align: middle;
+    color: currentcolor;
+}
+
+.sidenav-bridge-panel__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin-top: 10px;
+    padding: 0.5rem 0.65rem;
+    border: none;
+    border-radius: 6px;
+    font-size: calc($sidenav-item-font-size * 0.9);
+    font-weight: $font-weight-semibold;
+    font-family: $font-family-secondary;
+    line-height: 1.2;
+    color: $white;
+    background: var(--#{$prefix}primary);
+    box-shadow:
+        0 1px 2px rgba($black, 0.06),
+        inset 0 1px 0 rgba($white, 0.12);
+    transition:
+        filter 0.15s ease-in-out,
+        transform 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out,
+        opacity 0.15s ease-in-out;
+
+    &:hover:not(:disabled) {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+        box-shadow:
+            0 4px 10px rgba($black, 0.1),
+            inset 0 1px 0 rgba($white, 0.14);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+        filter: brightness(0.98);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--#{$prefix}primary);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+.sidenav-bridge-panel__btn-icon {
+    flex-shrink: 0;
+    width: 1.05rem;
+    height: 1.05rem;
+}

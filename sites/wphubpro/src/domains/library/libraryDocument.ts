@@ -1,0 +1,260 @@
+import type {
+  LibraryItem,
+  LibraryItemSource,
+  LibraryItemType,
+  LibraryVersionEntry,
+} from '@/types';
+
+const COMPOSITE_SEP = '::';
+
+export function normalizeWpSlug(slug: string): string {
+  return slug
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+export function pickDefaultVersionKey(versions: Record<string, LibraryVersionEntry>): string | null {
+  const keys = Object.keys(versions);
+  if (!keys.length) return null;
+  const def = keys.find((k) => versions[k].isDefault);
+  return def ?? keys[0];
+}
+
+/** Encode version key for use in composite LibraryItem.$id (doc id is UUID, never contains ::). */
+export function makeCompositeLibraryItemId(libraryDocumentId: string, versionKey: string): string {
+  return `${libraryDocumentId}${COMPOSITE_SEP}${encodeURIComponent(versionKey)}`;
+}
+
+export function parseCompositeLibraryItemId(
+  id: string,
+): { libraryDocumentId: string; versionKey: string } | null {
+  const idx = id.indexOf(COMPOSITE_SEP);
+  if (idx <= 0) return null;
+  const libraryDocumentId = id.slice(0, idx);
+  const enc = id.slice(idx + COMPOSITE_SEP.length);
+  try {
+    const versionKey = decodeURIComponent(enc);
+    return { libraryDocumentId, versionKey };
+  } catch {
+    return null;
+  }
+}
+
+export function parseVersionsJson(raw: string | undefined | null): Record<string, LibraryVersionEntry> | null {
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    const o = JSON.parse(raw) as unknown;
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    const out: Record<string, LibraryVersionEntry> = {};
+    for (const [k, v] of Object.entries(o)) {
+      if (!k || !v || typeof v !== 'object') continue;
+      const src = (v as { source?: string }).source;
+      if (src !== 'official' && src !== 'local' && src !== 'remote') {
+        continue;
+      }
+      const row = v as {
+        location?: string;
+        storage_bucket?: string;
+        storageBucket?: string;
+        is_default?: boolean;
+        isDefault?: boolean;
+      };
+      const sbRaw = row.storageBucket ?? row.storage_bucket;
+      const storageBucket =
+        sbRaw != null && String(sbRaw).trim() ? String(sbRaw).trim() : undefined;
+      out[k] = {
+        source: src as LibraryItemSource,
+        ...(row.location != null && String(row.location).trim()
+          ? { location: String(row.location).trim() }
+          : {}),
+        ...(storageBucket ? { storageBucket } : {}),
+        ...(row.is_default === true || row.isDefault === true ? { isDefault: true } : {}),
+      };
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+export function serializeVersionsJson(versions: Record<string, LibraryVersionEntry>): string {
+  return JSON.stringify(versions);
+}
+
+function toLibraryItemSource(value: string): LibraryItemSource {
+  if (value === 'local') return 'local';
+  if (value === 'remote') return 'remote';
+  return 'official';
+}
+
+function toLibraryItemType(value: string): LibraryItemType {
+  return value === 'theme' ? 'theme' : 'plugin';
+}
+
+/** Build versions map from `versions_json` or legacy flat fields on one document. */
+export function getOrBuildVersionsMap(doc: Record<string, unknown>): Record<string, LibraryVersionEntry> {
+  const raw = doc.versions_json ?? doc.versionsJson;
+  const p = parseVersionsJson(typeof raw === 'string' ? raw : null);
+  if (p && Object.keys(p).length > 0) return { ...p };
+  const v = doc.version != null ? String(doc.version) : '';
+  if (!v) return {};
+  const source = toLibraryItemSource(String(doc.source ?? 'official'));
+  const loc =
+    String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
+    String(doc.remoteUrl || doc.remote_url || '').trim() ||
+    undefined;
+  return {
+    [v]: {
+      source,
+      ...(loc ? { location: loc } : {}),
+      isDefault: true,
+    },
+  };
+}
+
+function parseLibraryCategoryFields(doc: Record<string, unknown>): {
+  categoryIds: string[];
+  categoryId?: string;
+} {
+  const rawMulti = doc.category_ids ?? doc.categoryIds;
+  let categoryIds: string[] = [];
+  if (Array.isArray(rawMulti)) {
+    categoryIds = [...new Set(rawMulti.map((x: unknown) => String(x).trim()).filter(Boolean))];
+  }
+  const legacyRaw = doc.category_id ?? doc.categoryId;
+  const legacy =
+    legacyRaw != null && String(legacyRaw).trim() ? String(legacyRaw).trim() : undefined;
+  if (categoryIds.length === 0 && legacy) categoryIds = [legacy];
+  const categoryId = categoryIds[0];
+  return { categoryIds, ...(categoryId ? { categoryId } : {}) };
+}
+
+/** One Appwrite row → one or many LibraryItems (multi-version documents expand). */
+export function expandLibraryDocumentToItems(doc: Record<string, unknown>): LibraryItem[] {
+  const userId = String(doc.userId || doc.user_id || '');
+  const rawTags = doc.tags;
+  const tags = Array.isArray(rawTags)
+    ? rawTags.map((t: unknown) => String(t).trim()).filter(Boolean)
+    : undefined;
+  const name = String(doc.name ?? '');
+  const author = String(doc.author ?? '');
+  const description = String(doc.description ?? '');
+  const type = toLibraryItemType(String(doc.type ?? 'plugin'));
+  const wpSlug = (doc.wpSlug || doc.wp_slug) as string | undefined;
+  const { categoryIds, categoryId } = parseLibraryCategoryFields(doc);
+  const isFavourite =
+    doc.is_favourite === true || doc.isFavourite === true || doc.is_favourite === 'true';
+
+  const versionsJsonRaw =
+    typeof doc.versions_json === 'string'
+      ? doc.versions_json
+      : typeof doc.versionsJson === 'string'
+        ? doc.versionsJson
+        : null;
+  const parsed = parseVersionsJson(versionsJsonRaw);
+
+  if (parsed && Object.keys(parsed).length > 0) {
+    const items: LibraryItem[] = [];
+    for (const [versionKey, entry] of Object.entries(parsed)) {
+      const id = makeCompositeLibraryItemId(String(doc.$id), versionKey);
+      const source = entry.source;
+      let s3Path: string | undefined;
+      let remoteUrl: string | undefined;
+      const loc = entry.location?.trim();
+      if (loc) {
+        if (source === 'local') s3Path = loc;
+        if (source === 'remote') remoteUrl = loc;
+      }
+      items.push({
+        $id: id,
+        userId,
+        name,
+        type,
+        source,
+        version: versionKey,
+        author,
+        description,
+        ...(wpSlug ? { wpSlug } : {}),
+        ...(s3Path ? { s3Path } : {}),
+        ...(entry.storageBucket && source === 'local' ? { storageBucket: entry.storageBucket } : {}),
+        ...(remoteUrl ? { remoteUrl } : {}),
+        ...(tags && tags.length > 0 ? { tags } : {}),
+        ...(entry.isDefault === true ? { isDefault: true } : {}),
+        libraryDocumentId: String(doc.$id),
+        versionKey,
+        ...(categoryIds.length > 0 ? { categoryIds, categoryId } : {}),
+        ...(isFavourite ? { isFavourite: true } : {}),
+      });
+    }
+    return items;
+  }
+
+  return [
+    {
+      $id: String(doc.$id),
+      userId,
+      name,
+      type,
+      source: toLibraryItemSource(String(doc.source ?? 'official')),
+      version: String(doc.version ?? ''),
+      author,
+      description,
+      libraryDocumentId: String(doc.$id),
+      ...(doc.s3Path || doc.s3_path || doc.s3_key ? { s3Path: String(doc.s3Path || doc.s3_path || doc.s3_key) } : {}),
+      ...(wpSlug ? { wpSlug } : {}),
+      ...(doc.remoteUrl || doc.remote_url ? { remoteUrl: String(doc.remoteUrl || doc.remote_url) } : {}),
+      ...(tags && tags.length > 0 ? { tags } : {}),
+      ...(doc.isDefault === true || doc.is_default === true ? { isDefault: true } : {}),
+      ...(categoryIds.length > 0 ? { categoryIds, categoryId } : {}),
+      ...(isFavourite ? { isFavourite: true } : {}),
+    },
+  ];
+}
+
+/** First expanded row; prefer `expandLibraryDocumentToItems` for multi-version docs. */
+export function mapLibraryDocumentToItem(doc: Record<string, unknown>): LibraryItem {
+  const items = expandLibraryDocumentToItems(doc);
+  return items[0] as LibraryItem;
+}
+
+/** Ensure exactly one version has isDefault in the map (optional explicit defaultVersionKey). */
+export function setDefaultVersionInMap(
+  versions: Record<string, LibraryVersionEntry>,
+  defaultVersionKey: string,
+): Record<string, LibraryVersionEntry> {
+  const next: Record<string, LibraryVersionEntry> = {};
+  for (const [k, v] of Object.entries(versions)) {
+    next[k] = { ...v, isDefault: k === defaultVersionKey };
+  }
+  return next;
+}
+
+/**
+ * Enforces at most one isDefault: true. If none, picks a stable default (first key, else pickDefaultVersionKey).
+ */
+export function ensureSingleDefaultInVersionMap(
+  versions: Record<string, LibraryVersionEntry>,
+): Record<string, LibraryVersionEntry> {
+  const keys = Object.keys(versions);
+  if (keys.length === 0) return versions;
+  const withDefault = keys.filter((k) => versions[k].isDefault);
+  if (withDefault.length === 1) return versions;
+  const key =
+    (withDefault.length > 0 ? withDefault[0] : null) || pickDefaultVersionKey(versions) || keys[0];
+  if (!key) return versions;
+  return setDefaultVersionInMap(versions, key);
+}
+
+/** Top-level legacy fields Appwrite still expects for older indexes / UI. */
+export function mirrorLegacyFieldsFromVersions(versions: Record<string, LibraryVersionEntry>): {
+  version: string;
+  source: LibraryItemSource;
+  is_default: boolean;
+} {
+  const key = pickDefaultVersionKey(versions);
+  if (!key) return { version: '', source: 'official', is_default: false };
+  const e = versions[key];
+  return { version: key, source: e.source, is_default: !!e.isDefault };
+}

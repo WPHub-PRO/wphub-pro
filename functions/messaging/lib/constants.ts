@@ -1,0 +1,11 @@
+import { WPHUB_APPWRITE_IDS, WPHUB_DEFAULT_DATABASE_ID, readEnv } from '@code045/wphubpro-shared';
+
+const DATABASE_ID = readEnv('APPWRITE_DATABASE_ID') || WPHUB_DEFAULT_DATABASE_ID;
+const NOTIFICATIONS_ID = WPHUB_APPWRITE_IDS.platformTables.notifications;
+const NOTIFICATION_READS_ID = WPHUB_APPWRITE_IDS.platformTables.notificationReads;
+
+export {
+  DATABASE_ID,
+  NOTIFICATIONS_ID,
+  NOTIFICATION_READS_ID,
+};

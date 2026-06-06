@@ -1,0 +1,18 @@
+//
+// Library list (split: sidebar / main card)
+//
+
+// Split chrome: divider only. Pane corner radii match email (`rounded-end-0` /
+// `rounded-start-0` on inner `.card` + SimpleBar) — Bootstrap `--#{$prefix}border-radius`.
+.library-split {
+    @include media-breakpoint-up(lg) {
+        > .offcanvas.offcanvas-start {
+            border-inline-end: 1px solid var(--#{$prefix}border-color);
+            overflow: hidden;
+        }
+
+        > .library-split-main.card {
+            overflow: hidden;
+        }
+    }
+}

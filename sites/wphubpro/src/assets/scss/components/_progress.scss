@@ -1,0 +1,34 @@
+//
+// _progress.scss
+//
+
+// Custom height
+.progress-sm {
+    height: 5px;
+}
+
+.progress-md {
+    height: 8px;
+}
+
+.progress-lg {
+    height: 12px;
+}
+
+.progress-xl {
+    height: 15px;
+}
+
+// Horizontal Bar Custom
+.prob-bar {
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+}
+
+// Progressbar With Border
+.progress-with-border {
+    .progress-bar+.progress-bar {
+        border-inline-start: 3px solid var(--#{$prefix}secondary-bg);
+    }
+}

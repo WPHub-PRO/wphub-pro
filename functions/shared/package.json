@@ -1,0 +1,44 @@
+{
+  "name": "@code045/wphubpro-shared",
+  "version": "1.0.11",
+  "description": "Shared server library for WP Hub Pro Appwrite Node functions",
+  "type": "module",
+  "license": "UNLICENSED",
+  "main": "./mod.js",
+  "types": "./mod.ts",
+  "exports": {
+    ".": {
+      "types": "./mod.ts",
+      "import": "./mod.js",
+      "default": "./mod.js"
+    }
+  },
+  "files": [
+    "mod.js",
+    "mod.js.map",
+    "mod.ts",
+    "src"
+  ],
+  "scripts": {
+    "build": "node scripts/build-esbuild.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "node-appwrite": "^23.1.0"
+  },
+  "dependencies": {
+    "node-appwrite": "23.1.0",
+    "stripe": "17.7.0",
+    "jsonwebtoken": "9.0.2",
+    "adm-zip": "0.5.16",
+    "mailparser": "3.7.1",
+    "imapflow": "1.0.177",
+    "nodemailer": "6.9.16"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

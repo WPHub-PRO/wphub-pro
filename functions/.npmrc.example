@@ -1,0 +1,5 @@
+# Copy to .npmrc.local for local npm/deno installs (gitignored), or export NPM_TOKEN.
+# Appwrite: set NPM_TOKEN as a function (or project) secret — do not commit tokens.
+
+@code045:registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}

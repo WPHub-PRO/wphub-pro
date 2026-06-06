@@ -1,0 +1,21 @@
+{
+  "name": "@wphub/function-library",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@code045/wphubpro-shared": "1.0.10",
+    "adm-zip": "0.5.16"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0",
+    "@types/adm-zip": "^0.5.7"
+  }
+}

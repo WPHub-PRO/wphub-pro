@@ -1,0 +1,885 @@
+import DataTable from '@/components/table/DataTable';
+import TablePagination from '@/components/table/TablePagination';
+import { TABLE_ACTION_ICON_DANGER_CLASS, TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS } from '@/components/table/tableActionClasses';
+import { useNotificationContext } from '@/context/useNotificationContext';
+import { ROUTE_PATHS } from '@/config/routePaths';
+import { useAuth } from '@/domains/auth';
+import { useSiteInstalledPluginNavigation } from '@/domains/sites/useSiteInstalledPluginNavigation';
+import {
+  bridgeRowHasPlatformUpdate,
+  useBridgePluginPlatformVersion,
+} from '@/domains/bridge/platformBridgeVersion';
+import { formatAvailableUpdate, hasUpdate } from '@/domains/sites/installedMeta';
+import { findLibraryItemsForInstalledPlugin } from '@/domains/sites/installedPluginLibraryMatch';
+import { findLibraryItemsForInstalledTheme } from '@/domains/sites/installedThemeLibraryMatch';
+import {
+  isBridgePluginFile,
+  runPluginUpdateForSite,
+  siteInstalledPluginSortingFn,
+  sortInstalledPluginsWithBridgeFirst,
+  type SitePluginUpdateChoice,
+} from '@/domains/sites/pluginUpdateFromSite';
+import { runPluginActivateForSite, runPluginDeactivateForSite } from '@/domains/sites/pluginActivateFromSite';
+import { runThemeActivateForSite } from '@/domains/sites/themeActivateFromSite';
+import { runThemeUpdateForSite, type SiteThemeUpdateChoice } from '@/domains/sites/themeUpdateFromSite';
+import { runPluginUninstallForSite, runThemeDeleteForSite } from '@/domains/sites/extensionRemoveFromSite';
+import { useLibraryItems } from '@/hooks/useLibrary';
+import type { WordPressPlugin, WordPressTheme } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  createColumnHelper,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import { useCallback, useMemo, useState } from 'react';
+import { TbProgressBolt, TbTrash } from 'react-icons/tb';
+import { Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Link } from 'react-router';
+import type { MouseEvent } from 'react';
+import PluginUpdateSourceModal from '@/views/sites/detail/PluginUpdateSourceModal';
+import ThemeUpdateSourceModal from '@/views/sites/detail/ThemeUpdateSourceModal';
+import SiteExtensionRemoveConfirmModal from '@/views/sites/detail/SiteExtensionRemoveConfirmModal';
+
+const pluginHelper = createColumnHelper<WordPressPlugin>();
+const themeHelper = createColumnHelper<WordPressTheme>();
+
+type SiteInstalledPluginsTableProps = {
+  siteId?: string;
+  plugins: WordPressPlugin[];
+  emptyMessage: string;
+};
+
+export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: SiteInstalledPluginsTableProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationContext();
+  const { data: platformBridgeVersion } = useBridgePluginPlatformVersion();
+  const { data: libraryItems = [] } = useLibraryItems();
+  const { onPluginClick, getPluginDetailPath } = useSiteInstalledPluginNavigation(siteId);
+  const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [togglingPluginKey, setTogglingPluginKey] = useState<string | null>(null);
+  /** Target state while wp-proxy request is in flight (controlled switch UX). */
+  const [togglingTowardActive, setTogglingTowardActive] = useState<boolean | null>(null);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+  const [modalPlugin, setModalPlugin] = useState<WordPressPlugin | null>(null);
+  const [removePlugin, setRemovePlugin] = useState<WordPressPlugin | null>(null);
+  const [uninstallingKey, setUninstallingKey] = useState<string | null>(null);
+
+  const runPluginUpdate = useCallback(
+    async (plugin: WordPressPlugin, choice: SitePluginUpdateChoice) => {
+      if (!siteId) return;
+      setUpdatingKey(plugin.plugin);
+      try {
+        const res = await runPluginUpdateForSite(siteId, plugin, choice);
+        if (res.ok) {
+          showNotification({ title: 'Update', message: res.message, variant: 'success' });
+          void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+          if (user?.$id) {
+            void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+            void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+          }
+        } else {
+          showNotification({ title: 'Update failed', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Update failed',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setUpdatingKey(null);
+        setShowSourceModal(false);
+        setModalPlugin(null);
+      }
+    },
+    [queryClient, showNotification, siteId, user?.$id],
+  );
+
+  const onTogglePluginStatus = useCallback(
+    async (plugin: WordPressPlugin, wantActive: boolean) => {
+      if (!siteId || !plugin.plugin?.trim()) return;
+      setTogglingPluginKey(plugin.plugin);
+      setTogglingTowardActive(wantActive);
+      try {
+        const res = wantActive
+          ? await runPluginActivateForSite(siteId, plugin.plugin)
+          : await runPluginDeactivateForSite(siteId, plugin.plugin);
+        if (res.ok) {
+          showNotification({
+            title: wantActive ? 'Activated' : 'Deactivated',
+            message: res.message,
+            variant: 'success',
+          });
+          void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+          if (user?.$id) {
+            void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+            void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+          }
+        } else {
+          showNotification({ title: 'Plugin status', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Plugin status',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setTogglingPluginKey(null);
+        setTogglingTowardActive(null);
+      }
+    },
+    [queryClient, showNotification, siteId, user?.$id],
+  );
+
+  const onUpdateClick = useCallback(
+    (p: WordPressPlugin) => {
+      if (!siteId || !p.plugin?.trim()) return;
+      const bridgePlat = bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+      if (isBridgePluginFile(p.plugin)) {
+        if (hasUpdate(p) || bridgePlat) {
+          void runPluginUpdate(p, { kind: 'wordpress_org' });
+        }
+        return;
+      }
+      if (!hasUpdate(p)) return;
+      const forSlug = findLibraryItemsForInstalledPlugin(libraryItems, p);
+      if (forSlug.length > 0) {
+        setModalPlugin(p);
+        setShowSourceModal(true);
+      } else {
+        void runPluginUpdate(p, { kind: 'wordpress_org' });
+      }
+    },
+    [libraryItems, platformBridgeVersion, runPluginUpdate, siteId],
+  );
+
+  const runPluginUninstall = useCallback(
+    async (plugin: WordPressPlugin) => {
+      if (!siteId || !plugin.plugin?.trim()) return;
+      setUninstallingKey(plugin.plugin);
+      try {
+        const res = await runPluginUninstallForSite(siteId, plugin.plugin);
+        if (res.ok) {
+          showNotification({ title: 'Plugin removed', message: res.message, variant: 'success' });
+          void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+          if (user?.$id) {
+            void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+            void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+          }
+        } else {
+          showNotification({ title: 'Remove failed', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Remove failed',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setUninstallingKey(null);
+        setRemovePlugin(null);
+      }
+    },
+    [queryClient, showNotification, siteId, user?.$id],
+  );
+
+  const data = useMemo(() => sortInstalledPluginsWithBridgeFirst(plugins), [plugins]);
+  const columns = useMemo(
+    () => [
+      pluginHelper.accessor('name', {
+        header: 'Name',
+        sortingFn: siteInstalledPluginSortingFn,
+        cell: ({ getValue, row }) => {
+          const name = String(getValue() || '—');
+          const plugin = row.original;
+          const detailPath = getPluginDetailPath(plugin);
+          const inner = (
+            <span className="fw-medium text-truncate d-inline-block align-middle" style={{ maxWidth: '18rem' }} title={name}>
+              {name}
+            </span>
+          );
+          if (detailPath) {
+            return (
+              <Link
+                to={detailPath}
+                className="text-reset text-decoration-none"
+                onClick={(e: MouseEvent<HTMLAnchorElement>) => onPluginClick(plugin, e)}
+              >
+                {inner}
+              </Link>
+            );
+          }
+          return inner;
+        },
+      }),
+      pluginHelper.accessor('version', {
+        id: 'installed',
+        header: 'Installed',
+        sortingFn: siteInstalledPluginSortingFn,
+        cell: ({ getValue, row }) => {
+          const p = row.original;
+          const upd = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+          return (
+            <span className={`fs-xs ${upd ? 'text-warning fw-medium' : ''}`}>{String(getValue() || '—')}</span>
+          );
+        },
+      }),
+      pluginHelper.display({
+        id: 'available',
+        header: 'Available',
+        cell: ({ row }) => {
+          const p = row.original;
+          if (bridgeRowHasPlatformUpdate(p, platformBridgeVersion)) {
+            const v = String(platformBridgeVersion || '').trim() || '—';
+            return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
+          }
+          if (!hasUpdate(p)) {
+            return <span className="text-muted fs-xs">—</span>;
+          }
+          const v = formatAvailableUpdate(p.update ?? null);
+          return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
+        },
+      }),
+      pluginHelper.accessor('author', {
+        header: 'Author',
+        sortingFn: siteInstalledPluginSortingFn,
+        cell: ({ getValue }) => (
+          <span className="fs-xs text-muted text-truncate d-inline-block" style={{ maxWidth: '14rem' }} title={String(getValue() || '')}>
+            {String(getValue() || '—')}
+          </span>
+        ),
+      }),
+      pluginHelper.accessor('status', {
+        header: 'Status',
+        sortingFn: siteInstalledPluginSortingFn,
+        cell: ({ row }) => {
+          const p = row.original;
+          const active = p.status === 'active';
+          const busy = togglingPluginKey === p.plugin;
+          const checked =
+            busy && togglingTowardActive !== null ? togglingTowardActive : active;
+          const bridge = isBridgePluginFile(p.plugin);
+          const cannotDeactivateBridge = bridge && active;
+          const can = Boolean(siteId && p.plugin?.trim());
+          const disabled = !can || busy || cannotDeactivateBridge;
+          const tipId = `plugin-status-tip-${String(p.plugin || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const aria =
+            cannotDeactivateBridge
+              ? 'WPHubPro Bridge cannot be deactivated from the Hub'
+              : checked
+                ? 'Active — click to deactivate'
+                : 'Inactive — click to activate';
+          const control = (
+            <Form.Check
+              type="switch"
+              role="switch"
+              id={`site-plugin-active-${tipId}`}
+              className="mb-0"
+              checked={checked}
+              disabled={disabled}
+              aria-label={aria}
+              aria-busy={busy}
+              onChange={(e) => {
+                void onTogglePluginStatus(p, e.target.checked);
+              }}
+            />
+          );
+          if (cannotDeactivateBridge) {
+            return (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={tipId}>WPHubPro Bridge cannot be deactivated from the Hub.</Tooltip>
+                }
+              >
+                <span className="d-inline-block">{control}</span>
+              </OverlayTrigger>
+            );
+          }
+          return control;
+        },
+      }),
+      pluginHelper.display({
+        id: 'update',
+        header: 'Update',
+        cell: ({ row }) => {
+          const p = row.original;
+          const showUpdate = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+          if (!showUpdate) return null;
+
+          const busy = updatingKey === p.plugin;
+          const can = Boolean(siteId && p.plugin?.trim());
+          const tooltipText =
+            !siteId || !p.plugin?.trim() ? 'Missing site or plugin file' : 'Update this plugin on the site';
+          const tipId = `plugin-update-tip-${String(p.plugin || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const button = (
+            <Button
+              type="button"
+              size="sm"
+              variant="soft-success"
+              className={TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS}
+              disabled={!can || busy}
+              aria-busy={busy}
+              aria-label={tooltipText}
+              title={tooltipText}
+              onClick={() => onUpdateClick(p)}
+            >
+              {busy ? <span className="fs-sm">…</span> : <TbProgressBolt className="fs-lg" aria-hidden />}
+            </Button>
+          );
+          return (
+            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
+              <span className="d-inline-block">{button}</span>
+            </OverlayTrigger>
+          );
+        },
+      }),
+      pluginHelper.display({
+        id: 'remove',
+        header: () => <span className="visually-hidden">Remove</span>,
+        cell: ({ row }) => {
+          const p = row.original;
+          const bridge = isBridgePluginFile(p.plugin);
+          const can = Boolean(siteId && p.plugin?.trim());
+          const busy = uninstallingKey === p.plugin;
+          const tipId = `plugin-remove-tip-${String(p.plugin || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const removeBtn = (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline-danger"
+              className={TABLE_ACTION_ICON_DANGER_CLASS}
+              disabled={!can || busy || bridge}
+              aria-busy={busy}
+              aria-label="Remove plugin from site"
+              title="Remove plugin from site"
+              onClick={() => setRemovePlugin(p)}
+            >
+              <TbTrash className="fs-lg" aria-hidden />
+            </Button>
+          );
+          if (bridge) {
+            return (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={tipId}>WPHubPro Bridge cannot be removed from the Hub.</Tooltip>
+                }
+              >
+                <span className="d-inline-block">{removeBtn}</span>
+              </OverlayTrigger>
+            );
+          }
+          return (
+            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>Remove plugin from site</Tooltip>}>
+              <span className="d-inline-block">{removeBtn}</span>
+            </OverlayTrigger>
+          );
+        },
+      }),
+    ],
+    [
+      onTogglePluginStatus,
+      getPluginDetailPath,
+      onPluginClick,
+      onUpdateClick,
+      siteId,
+      togglingPluginKey,
+      togglingTowardActive,
+      platformBridgeVersion,
+      uninstallingKey,
+      updatingKey,
+    ],
+  );
+
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const totalItems = table.getFilteredRowModel().rows.length;
+  const start = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
+  const end = Math.min(start + pageSize - 1, totalItems);
+
+  return (
+    <>
+      <SiteExtensionRemoveConfirmModal
+        show={removePlugin !== null}
+        title="Remove plugin?"
+        description={
+          removePlugin
+            ? `This will uninstall “${removePlugin.name || removePlugin.plugin}” from the site (run uninstall hooks and delete files). This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Remove plugin"
+        isBusy={removePlugin != null && uninstallingKey === removePlugin.plugin}
+        onHide={() => {
+          if (uninstallingKey) return;
+          setRemovePlugin(null);
+        }}
+        onConfirm={() => {
+          if (removePlugin) void runPluginUninstall(removePlugin);
+        }}
+      />
+      {modalPlugin && (
+        <PluginUpdateSourceModal
+          show={showSourceModal}
+          onHide={() => {
+            if (updatingKey) return;
+            setShowSourceModal(false);
+            setModalPlugin(null);
+          }}
+          plugin={modalPlugin}
+          allLibraryItems={libraryItems}
+          isSubmitting={updatingKey === modalPlugin.plugin}
+          onConfirm={(choice) => {
+            if (modalPlugin) void runPluginUpdate(modalPlugin, choice);
+          }}
+        />
+      )}
+      <div className="table-responsive border rounded">
+        <DataTable<WordPressPlugin>
+          table={table}
+          className="border rounded"
+          emptyMessage={emptyMessage}
+          dashboardUniformRows
+        />
+      </div>
+      {table.getRowModel().rows.length > 0 && (
+        <div className="pt-3">
+          <TablePagination
+            totalItems={totalItems}
+            start={start}
+            end={end}
+            itemsName="plugins"
+            showInfo
+            pageSize={pageSize}
+            onPageSizeChange={(size) => table.setPageSize(size)}
+            previousPage={table.previousPage}
+            canPreviousPage={table.getCanPreviousPage()}
+            pageCount={table.getPageCount()}
+            pageIndex={pageIndex}
+            setPageIndex={table.setPageIndex}
+            nextPage={table.nextPage}
+            canNextPage={table.getCanNextPage()}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+type SiteInstalledThemesTableProps = {
+  siteId?: string;
+  themes: WordPressTheme[];
+  emptyMessage: string;
+};
+
+export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteInstalledThemesTableProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationContext();
+  const { data: libraryItems = [] } = useLibraryItems();
+  const [updatingStylesheet, setUpdatingStylesheet] = useState<string | null>(null);
+  const [activatingStylesheet, setActivatingStylesheet] = useState<string | null>(null);
+  const [togglingTowardActive, setTogglingTowardActive] = useState<boolean | null>(null);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+  const [modalTheme, setModalTheme] = useState<WordPressTheme | null>(null);
+  const [removeTheme, setRemoveTheme] = useState<WordPressTheme | null>(null);
+  const [deletingStylesheet, setDeletingStylesheet] = useState<string | null>(null);
+
+  const invalidateSite = useCallback(() => {
+    if (!siteId) return;
+    void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+    if (user?.$id) {
+      void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+      void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+    }
+  }, [queryClient, siteId, user?.$id]);
+
+  const runThemeUpdate = useCallback(
+    async (theme: WordPressTheme, choice: SiteThemeUpdateChoice) => {
+      if (!siteId) return;
+      setUpdatingStylesheet(theme.stylesheet);
+      try {
+        const res = await runThemeUpdateForSite(siteId, theme, choice);
+        if (res.ok) {
+          showNotification({ title: 'Update', message: res.message, variant: 'success' });
+          invalidateSite();
+        } else {
+          showNotification({ title: 'Update failed', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Update failed',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setUpdatingStylesheet(null);
+        setShowSourceModal(false);
+        setModalTheme(null);
+      }
+    },
+    [invalidateSite, showNotification, siteId],
+  );
+
+  const onToggleThemeStatus = useCallback(
+    async (theme: WordPressTheme, wantActive: boolean) => {
+      if (!siteId || !theme.stylesheet?.trim()) return;
+      if (!wantActive) return;
+      setActivatingStylesheet(theme.stylesheet);
+      setTogglingTowardActive(true);
+      try {
+        const res = await runThemeActivateForSite(siteId, theme.stylesheet);
+        if (res.ok) {
+          showNotification({ title: 'Activated', message: res.message, variant: 'success' });
+          invalidateSite();
+        } else {
+          showNotification({ title: 'Theme status', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Theme status',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setActivatingStylesheet(null);
+        setTogglingTowardActive(null);
+      }
+    },
+    [invalidateSite, showNotification, siteId],
+  );
+
+  const onUpdateClick = useCallback(
+    (t: WordPressTheme) => {
+      if (!siteId || !t.stylesheet?.trim() || !hasUpdate(t)) return;
+      const forSlug = findLibraryItemsForInstalledTheme(libraryItems, t);
+      if (forSlug.length > 0) {
+        setModalTheme(t);
+        setShowSourceModal(true);
+      } else {
+        void runThemeUpdate(t, { kind: 'wordpress_org' });
+      }
+    },
+    [libraryItems, runThemeUpdate, siteId],
+  );
+
+  const runThemeDelete = useCallback(
+    async (theme: WordPressTheme) => {
+      if (!siteId || !theme.stylesheet?.trim()) return;
+      setDeletingStylesheet(theme.stylesheet);
+      try {
+        const res = await runThemeDeleteForSite(siteId, theme.stylesheet);
+        if (res.ok) {
+          showNotification({ title: 'Theme removed', message: res.message, variant: 'success' });
+          invalidateSite();
+        } else {
+          showNotification({ title: 'Remove failed', message: res.message, variant: 'danger' });
+        }
+      } catch (e) {
+        showNotification({
+          title: 'Remove failed',
+          message: e instanceof Error ? e.message : String(e),
+          variant: 'danger',
+        });
+      } finally {
+        setDeletingStylesheet(null);
+        setRemoveTheme(null);
+      }
+    },
+    [invalidateSite, showNotification, siteId],
+  );
+
+  const data = useMemo(() => themes, [themes]);
+  const columns = useMemo(
+    () => [
+      themeHelper.accessor('name', {
+        header: 'Name',
+        cell: ({ getValue, row }) => {
+          const name = String(getValue() || '—');
+          const stylesheet = row.original.stylesheet;
+          const inner = (
+            <span className="fw-medium text-truncate d-inline-block align-middle" style={{ maxWidth: '18rem' }} title={name}>
+              {name}
+            </span>
+          );
+          if (siteId && stylesheet) {
+            return (
+              <Link
+                to={ROUTE_PATHS.siteThemeDetailPath(siteId, stylesheet)}
+                className="text-reset text-decoration-none"
+              >
+                {inner}
+              </Link>
+            );
+          }
+          return inner;
+        },
+      }),
+      themeHelper.accessor('stylesheet', {
+        header: 'Stylesheet',
+        cell: ({ getValue }) => (
+          <span className="fs-xs text-muted text-truncate d-inline-block font-monospace" style={{ maxWidth: '14rem' }} title={String(getValue() || '')}>
+            {String(getValue() || '—')}
+          </span>
+        ),
+      }),
+      themeHelper.accessor('version', {
+        id: 'installed',
+        header: 'Installed',
+        cell: ({ getValue, row }) => {
+          const upd = hasUpdate(row.original);
+          return (
+            <span className={`fs-xs ${upd ? 'text-warning fw-medium' : ''}`}>{String(getValue() || '—')}</span>
+          );
+        },
+      }),
+      themeHelper.display({
+        id: 'available',
+        header: 'Available',
+        cell: ({ row }) => {
+          const t = row.original;
+          if (!hasUpdate(t)) return <span className="text-muted fs-xs">—</span>;
+          const v = formatAvailableUpdate(t.update ?? null);
+          return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
+        },
+      }),
+      themeHelper.accessor('status', {
+        header: 'Status',
+        cell: ({ row }) => {
+          const t = row.original;
+          const active = t.status === 'active';
+          const busy = activatingStylesheet === t.stylesheet;
+          const checked = busy && togglingTowardActive !== null ? togglingTowardActive : active;
+          const cannotDeactivateActive = active;
+          const can = Boolean(siteId && t.stylesheet?.trim());
+          const disabled = !can || busy || cannotDeactivateActive;
+          const tipId = `theme-status-tip-${String(t.stylesheet || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const aria = cannotDeactivateActive
+            ? 'Active theme — activate another theme to switch away'
+            : checked
+              ? 'Active'
+              : 'Inactive — click to activate';
+          const control = (
+            <Form.Check
+              type="switch"
+              role="switch"
+              id={`site-theme-active-${tipId}`}
+              className="mb-0"
+              checked={checked}
+              disabled={disabled}
+              aria-label={aria}
+              aria-busy={busy}
+              onChange={(e) => {
+                if (e.target.checked) void onToggleThemeStatus(t, true);
+              }}
+            />
+          );
+          if (cannotDeactivateActive) {
+            return (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={tipId}>Activate another theme to switch away from this one.</Tooltip>
+                }
+              >
+                <span className="d-inline-block">{control}</span>
+              </OverlayTrigger>
+            );
+          }
+          return control;
+        },
+      }),
+      themeHelper.display({
+        id: 'update',
+        header: 'Update',
+        cell: ({ row }) => {
+          const t = row.original;
+          if (!hasUpdate(t)) return null;
+          const busy = updatingStylesheet === t.stylesheet;
+          const can = Boolean(siteId && t.stylesheet?.trim());
+          const tooltipText =
+            !siteId || !t.stylesheet?.trim() ? 'Missing site or theme slug' : 'Update this theme on the site';
+          const tipId = `theme-update-tip-${String(t.stylesheet || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const button = (
+            <Button
+              type="button"
+              size="sm"
+              variant="soft-success"
+              className={TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS}
+              disabled={!can || busy}
+              aria-busy={busy}
+              aria-label={tooltipText}
+              title={tooltipText}
+              onClick={() => onUpdateClick(t)}
+            >
+              {busy ? <span className="fs-sm">…</span> : <TbProgressBolt className="fs-lg" aria-hidden />}
+            </Button>
+          );
+          return (
+            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
+              <span className="d-inline-block">{button}</span>
+            </OverlayTrigger>
+          );
+        },
+      }),
+      themeHelper.display({
+        id: 'remove',
+        header: () => <span className="visually-hidden">Remove</span>,
+        cell: ({ row }) => {
+          const t = row.original;
+          const active = t.status === 'active';
+          const can = Boolean(siteId && t.stylesheet?.trim());
+          const busy = deletingStylesheet === t.stylesheet;
+          const tipId = `theme-remove-tip-${String(t.stylesheet || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const removeBtn = (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline-danger"
+              className={TABLE_ACTION_ICON_DANGER_CLASS}
+              disabled={!can || busy || active}
+              aria-busy={busy}
+              aria-label="Remove theme from site"
+              title="Remove theme from site"
+              onClick={() => setRemoveTheme(t)}
+            >
+              <TbTrash className="fs-lg" aria-hidden />
+            </Button>
+          );
+          if (active) {
+            return (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={tipId}>Switch to another theme in WordPress before removing this one.</Tooltip>
+                }
+              >
+                <span className="d-inline-block">{removeBtn}</span>
+              </OverlayTrigger>
+            );
+          }
+          return (
+            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>Remove theme from site</Tooltip>}>
+              <span className="d-inline-block">{removeBtn}</span>
+            </OverlayTrigger>
+          );
+        },
+      }),
+    ],
+    [
+      activatingStylesheet,
+      deletingStylesheet,
+      onToggleThemeStatus,
+      onUpdateClick,
+      siteId,
+      togglingTowardActive,
+      updatingStylesheet,
+    ],
+  );
+
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const totalItems = table.getFilteredRowModel().rows.length;
+  const start = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
+  const end = Math.min(start + pageSize - 1, totalItems);
+
+  return (
+    <>
+      {modalTheme && (
+        <ThemeUpdateSourceModal
+          show={showSourceModal}
+          onHide={() => {
+            if (updatingStylesheet) return;
+            setShowSourceModal(false);
+            setModalTheme(null);
+          }}
+          theme={modalTheme}
+          allLibraryItems={libraryItems}
+          isSubmitting={updatingStylesheet === modalTheme.stylesheet}
+          onConfirm={(choice) => {
+            if (modalTheme) void runThemeUpdate(modalTheme, choice);
+          }}
+        />
+      )}
+      <SiteExtensionRemoveConfirmModal
+        show={removeTheme !== null}
+        title="Remove theme?"
+        description={
+          removeTheme
+            ? `This will delete “${removeTheme.name || removeTheme.stylesheet}” from the site. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Remove theme"
+        isBusy={removeTheme != null && deletingStylesheet === removeTheme.stylesheet}
+        onHide={() => {
+          if (deletingStylesheet) return;
+          setRemoveTheme(null);
+        }}
+        onConfirm={() => {
+          if (removeTheme) void runThemeDelete(removeTheme);
+        }}
+      />
+      <div className="table-responsive border rounded">
+        <DataTable<WordPressTheme>
+          table={table}
+          className="border rounded"
+          emptyMessage={emptyMessage}
+          dashboardUniformRows
+        />
+      </div>
+      {table.getRowModel().rows.length > 0 && (
+        <div className="pt-3">
+          <TablePagination
+            totalItems={totalItems}
+            start={start}
+            end={end}
+            itemsName="themes"
+            showInfo
+            pageSize={pageSize}
+            onPageSizeChange={(size) => table.setPageSize(size)}
+            previousPage={table.previousPage}
+            canPreviousPage={table.getCanPreviousPage()}
+            pageCount={table.getPageCount()}
+            pageIndex={pageIndex}
+            setPageIndex={table.setPageIndex}
+            nextPage={table.nextPage}
+            canNextPage={table.getCanNextPage()}
+          />
+        </div>
+      )}
+    </>
+  );
+}

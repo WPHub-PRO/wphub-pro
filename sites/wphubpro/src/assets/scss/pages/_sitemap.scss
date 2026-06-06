@@ -1,0 +1,61 @@
+//
+// _sitemap.scss
+//
+
+.sitemap-list {
+    list-style: none;
+    padding-inline-start: 0;
+    position: relative;
+    margin: 0;
+
+    ul {
+        list-style: none;
+        padding-inline-start: 2rem;
+        position: relative;
+        margin: 0;
+        padding-bottom: 0.75rem;
+
+        ul {
+            padding-bottom: 0;
+        }
+    }
+
+    li {
+        position: relative;
+
+        a {
+            line-height: 1.5rem;
+        }
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            inset-inline-start: 0.5rem;
+            bottom: 0;
+            width: 0;
+            border-inline-start: 1px dashed var(--#{$prefix}border-color);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0.75rem;
+            inset-inline-start: 0.5rem;
+            width: 1rem;
+            border-top: 1px dashed var(--#{$prefix}border-color);
+        }
+
+        &:last-child::before {
+            height: 0.75rem;
+        }
+
+        > span,
+        > a {
+            display: inline-block;
+            position: relative;
+            z-index: 1;
+            padding-inline-start: 2rem;
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@wphub/function-recovery-manager",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@code045/wphubpro-shared": "1.0.10",
+    "jsonwebtoken": "9.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0",
+    "@types/jsonwebtoken": "^9.0.9"
+  }
+}

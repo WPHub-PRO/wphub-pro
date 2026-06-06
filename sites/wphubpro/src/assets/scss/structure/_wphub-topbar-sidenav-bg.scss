@@ -1,0 +1,5 @@
+//
+// WPHubPro — topbar shell uses `data-topbar-color` tokens from `config/_theme-*.scss`.
+// Do not override `--#{$prefix}topbar-bg` from `--#{$prefix}sidenav-bg`; that breaks light mode
+// and ignores hub/customizer `data-topbar-color`.
+//

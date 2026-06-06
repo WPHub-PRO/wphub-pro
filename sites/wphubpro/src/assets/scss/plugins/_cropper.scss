@@ -1,0 +1,15 @@
+//
+// _cropper.scss
+//
+
+.cropper-img-preview {
+    width: 160px;
+    height: 160px;
+    overflow: hidden;
+    border-radius: 0.25rem;
+
+    img {
+        max-width: none !important;
+        display: block;
+    }
+}

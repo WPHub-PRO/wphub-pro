@@ -1,0 +1,18 @@
+//
+// bootstrap-table.scss
+//
+
+.bootstrap-table {
+    .form-check {
+        min-height: 1.25em;
+    }
+}
+
+.bootstrap-table .fixed-table-container .table tfoot th .th-inner,
+.bootstrap-table .fixed-table-container .table thead th .th-inner {
+    vertical-align: middle;
+}
+
+.bootstrap-table .fixed-table-container .table tbody tr.selected td {
+    background-color: rgba(var(--#{$prefix}warning-rgb), 0.1);
+}

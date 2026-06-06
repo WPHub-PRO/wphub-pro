@@ -1,0 +1,21 @@
+import { ok, fail } from '@code045/wphubpro-shared';
+import { callBridgeRest } from '../../lib/connectBridge.ts';
+import { normalizePluginBulkBody } from '../../lib/normalizeBulkBody.ts';
+import type { WpProxyCtx } from '../../lib/types.ts';
+
+export default async function handlePluginsDeactivate(ctx: WpProxyCtx) {
+  const { res, payload } = ctx;
+  const siteId = payload.siteId || payload.site_id;
+  if (!siteId) return fail(res, 'siteId is required.', 400);
+  const rawBody = payload.body && typeof payload.body === 'object' ? payload.body : {};
+  const norm = normalizePluginBulkBody(rawBody);
+  if (!norm.ok) return fail(res, norm.message, 400);
+  const result = await callBridgeRest(ctx, {
+    siteId: String(siteId),
+    bridgePath: 'wphubpro/v1/plugins/manage/deactivate',
+    method: 'POST',
+    body: norm.body,
+  });
+  if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
+  return ok(res, result.responseData);
+}

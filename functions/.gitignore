@@ -1,0 +1,10 @@
+node_modules/
+deno.lock
+.tmp-runtime-sim/
+shared/mod.js
+.DS_Store
+core/*.tgz
+.npmrc.local
+.env
+package-lock.json
+dist/
