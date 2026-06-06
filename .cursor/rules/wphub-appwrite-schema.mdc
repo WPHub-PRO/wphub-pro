@@ -1,22 +1,21 @@
 ---
 description: Appwrite TablesDB schema changes via config and CLI
-globs: appwrite.config.json,.cursor/appwrite.config.json
+globs: appwrite.config.json
 alwaysApply: false
 ---
 
 # Appwrite schema workflow
 
-1. Edit **`appwrite.config.json`** (`tablesDB`, `tables`, `functions`, attributes, indexes, …).
+1. Edit **`appwrite.config.json`** at the repo root (`tablesDB`, `tables`, `functions`, attributes, indexes, …).
 2. **Always** push function settings (no code upload):
 
 ```bash
-cd .cursor
 appwrite push functions --all --no-code
 ```
 
-Run from **`.cursor/`** (where `appwrite.config.json` lives; paths use `../functions/`, `../sites/`).
+Run from the **repo root** (where `appwrite.config.json` lives; paths use `functions/`, `sites/`).
 
-**Git/VCS:** push does **not** restore Git repo links. After push (or `functions update` without provider flags), restore VCS from config:
+**Git/VCS (optional):** push does **not** restore Git repo links. When VCS fields are present in config, restore after push:
 
 ```bash
 node .cursor/scripts/restore-function-vcs.js
@@ -24,10 +23,10 @@ node .cursor/scripts/restore-function-vcs.js --check    # drift report only
 node .cursor/scripts/restore-function-vcs.js --dry-run  # preview commands
 ```
 
-3. When tables/schema changed: `cd .cursor && appwrite push tables`.
+3. When tables/schema changed: `appwrite push tables`.
 4. Run ID sync per **`wphub-appwrite-ids.mdc`** when `$id`s changed.
 5. Update **`.cursor/docs/`** and relevant READMEs — **`wphub-docs-sync.mdc`**.
 
 Do not commit API keys. Use CLI login or CI secrets for push.
 
-**Source of truth:** `.cursor/appwrite.config.json` (endpoint `https://fra.cloud.appwrite.io/v1`, project `wphub-pro`, database `platform_db`).
+**Source of truth:** `appwrite.config.json` at repo root (endpoint `https://fra.cloud.appwrite.io/v1`, project `wphub-pro`, database `platform_db`).

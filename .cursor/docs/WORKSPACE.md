@@ -1,89 +1,94 @@
 # WP Hub Pro — workspace layout
 
-`**wphubpro**` is the workspace root: **`.cursor/`** is the git repo (`github.com/wphub-pro/cursor`) with **`appwrite.config.json`**, agent docs under **`.cursor/docs/`**, scripts under **`.cursor/scripts/`**, and application code in nested Git clones.
+**`wphub-pro`** is a single Git monorepo: [github.com/wphub-pro/wphub-pro](https://github.com/wphub-pro/wphub-pro).
 
-Open the **workspace root** in Cursor so `.cursor/`, nested clones, and `../`-relative Appwrite paths resolve.
-
-Some paths (`functions/`, `sites/wphubpro/`, `wphubpro-bridge/`) may be **gitignored** in the root repo — clone them locally for full indexing.
+Open the **repository root** in Cursor so `appwrite.config.json`, `functions/`, `sites/wphubpro/`, and `.cursor/` resolve together.
 
 ---
 
 ## On-disk tree
 
-
-| Path                                                 | Role                                                               |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `[.cursor/appwrite.config.json](../appwrite.config.json)` | Appwrite CLI source of truth (functions, tables, buckets, sites) — git-tracked in `.cursor` repo |
-| `[.cursor/docs/](README.md)`                         | Agent documentation                                                |
-| `[.cursor/scripts/](../scripts/)`                    | Node tooling (bridge release, Appwrite init, …)                    |
-| `[.cursor/rules/](../rules/)`                        | Cursor agent rules                                                 |
-| `functions/`                                         | Functions monorepo — nested clone `github.com/wphub-pro/functions` |
-| `sites/wphubpro/`                                    | Vite React platform app — nested clone                             |
-| `wphubpro-bridge/`                                   | WordPress bridge plugin — nested clone                             |
-
+| Path | Role |
+|------|------|
+| [`appwrite.config.json`](../../appwrite.config.json) | Appwrite CLI source of truth (functions, tables, buckets, sites) |
+| [`.cursor/docs/`](README.md) | Agent documentation |
+| [`.cursor/scripts/`](../scripts/) | Node tooling (bridge release, VCS restore) |
+| [`.cursor/rules/`](../rules/) | Cursor agent rules |
+| `functions/` | 12 Appwrite handlers + `shared/` npm package source |
+| `sites/wphubpro/` | Vite React platform app |
+| `sites/wphubpro-landing/` | Landing site (in config; may be absent locally) |
 
 ---
 
-## Bootstrap (nested clones)
+## Bootstrap
 
 ```bash
-git clone https://github.com/wphub-pro/cursor .cursor
-
-git clone https://github.com/wphub-pro/functions  functions
-git clone <wphubpro-app-url>                    sites/wphubpro
-git clone <wphubpro-bridge-url>                 wphubpro-bridge
+git clone https://github.com/wphub-pro/wphub-pro.git
+cd wphub-pro
 ```
 
-**Platform app:** `cd sites/wphubpro && npm run dev` (port 5173; restart after `.env` changes).
-
-**Functions deploy:** from **`.cursor/`** (config cwd; paths like `../functions/bridge`):
+**Platform app:**
 
 ```bash
-cd .cursor
-appwrite push functions
-appwrite push tables
-node scripts/restore-function-vcs.js   # after push — restore Git/VCS
+cd sites/wphubpro && npm run dev   # port 5173; restart after .env changes
+```
+
+**Appwrite deploy** (from repo root):
+
+```bash
+appwrite push functions              # full deploy (code + settings)
+appwrite push functions --all --no-code   # settings only after config edits
+appwrite push tables                 # when schema changed
+```
+
+Optional VCS restore (only when VCS fields exist in config):
+
+```bash
+node .cursor/scripts/restore-function-vcs.js
 ```
 
 See [FUNCTIONS.md](FUNCTIONS.md) · [SHARED.md](SHARED.md).
 
 ---
 
-## Two path contexts
+## Path context
 
+All `appwrite.config.json` paths are **repo-root relative**:
 
-| Context                             | Function path example | Notes                                                                               |
-| ----------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
-| **wphubpro workspace**              | `functions/bridge/`   | Local dev + config `"path": "../functions/bridge"` (CLI cwd: `.cursor/`) |
-| **Functions Git repo (VCS deploy)** | `/bridge`             | Appwrite VCS → `github.com/wphub-pro/functions`, `providerRootDirectory: "/bridge"` |
+| Resource | Config `path` example | Local path |
+|----------|----------------------|------------|
+| Function | `functions/bridge` | `functions/bridge/` |
+| Site | `sites/wphubpro` | `sites/wphubpro/` |
 
-
-Both refer to the same handler code; only the repo root differs.
+Run the Appwrite CLI from the **repository root** (where `appwrite.config.json` lives).
 
 ---
 
-## Functions monorepo layout
+## Functions layout
 
 ```text
 functions/
   shared/                 # @code045/wphubpro-shared (npm source)
-  scripts/                # monorepo tooling
+  scripts/                # function-ids.mjs, update-function-readmes.mjs
+  types/                  # IDE shim for shared package
   bridge/
   library/
   messaging/
   …                       # 12 function folders total
 ```
 
-Each `functions/<id>/` has: `package.json`, `main.ts`, `handler.ts`, `handlers/`, `lib/`, `.appwriteignore`, `tsconfig.json`.
+Each `functions/<id>/` has: `package.json`, `main.ts`, `handler.ts`, `handlers/`, `lib/`, `tsconfig.json`.
 
-Handlers import `**@code045/wphubpro-shared**` from npm — not `functions/shared/` by path. See [SHARED.md](SHARED.md).
+**Exception:** `recovery-manager/` is flat (no `handlers/` or `lib/`).
+
+Handlers import **`@code045/wphubpro-shared`** from npm — not `functions/shared/` by path. See [SHARED.md](SHARED.md).
 
 ---
 
 ## Sub-agent tags
 
-Label plan todos: `**[React]**` · `**[UI]**` · `**[Appwrite]**` · `**[Stripe]**`.
+Label plan todos: **`[React]`** · **`[UI]`** · **`[Appwrite]`** · **`[Stripe]`**.
 
-Rules: `**wphub-project.mdc**` (defaults) · `**wphub-agent-ui.mdc**` · `**wphub-agent-stripe.mdc**` · `**wphub-functions.mdc**` · `wphub-shared-package.mdc`..
+Rules: **`wphub-project.mdc`** (defaults) · **`wphub-agent-ui.mdc`** · **`wphub-agent-stripe.mdc`** · **`wphub-functions.mdc`** · **`wphub-shared-package.mdc`**.
 
 See [AGENTS.md](AGENTS.md).

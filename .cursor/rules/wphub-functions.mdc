@@ -9,22 +9,22 @@ alwaysApply: false
 
 ## Where this applies
 
-- Handlers under **`functions/<function-id>/`** in the **functions monorepo**.
+- Handlers under **`functions/<function-id>/`** in the monorepo.
 - Shared lib: npm package **`@code045/wphubpro-shared`** only — see **`wphub-shared-package.mdc`**.
 - Deployed **`$id`s** match folder names and **`appwrite.config.json`** → **`functions[]`**.
 
 ## Folder layout (Node.js + TypeScript)
 
-Each function: **`package.json`**, **`main.ts`**, **`handler.ts`**, **`handlers/`**, **`lib/`**.
+Each function: **`package.json`**, **`main.ts`**, **`handler.ts`**, **`handlers/`**, **`lib/`** (except `recovery-manager` — flat).
 
 Values below match **`appwrite.config.json`** (source of truth):
 
 - **Entrypoint:** `main.ts`
 - **Runtime:** `node-22` (all functions in config)
+- **Config path:** `functions/<id>` (repo-root relative)
 - **Install:** `npm install` (most) or `pnpm install` (`messaging`)
-- **VCS:** `github.com/wphub-pro/functions`, `providerRootDirectory: "/<id>"`
 
-Local verify: `cd functions/<id> && pnpm install && pnpm run build`.
+Local verify: `cd functions/<id> && npm install && npm run build` (or `pnpm` for `messaging`).
 
 ## Strict use of shared
 
@@ -41,6 +41,9 @@ When **`$id`s** change: **`wphub-appwrite-ids.mdc`** — update ids in shared pa
 
 ## Deploy
 
-- Full code deploy: `cd .cursor && appwrite push functions`.
-- After **`appwrite.config.json`** function settings change: **`cd .cursor && appwrite push functions --all --no-code`**.
+Run Appwrite CLI from the **repo root** (where `appwrite.config.json` lives).
+
+- Full code deploy: `appwrite push functions`.
+- After **`appwrite.config.json`** function settings change: **`appwrite push functions --all --no-code`**.
 - Set **`NPM_TOKEN`** on Appwrite for private npm.
+- Optional VCS restore: `node .cursor/scripts/restore-function-vcs.js` (only when VCS fields exist in config).

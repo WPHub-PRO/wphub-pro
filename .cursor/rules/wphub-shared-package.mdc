@@ -44,7 +44,7 @@ There are **no exceptions** in deployed function code — not for dev, not for �
 3. Publish **`@code045/wphubpro-shared`** and update **every** version pin — see **`wphub-shared-publish.mdc`** (all 12 `package.json`, scripts, READMEs).
 4. Import in handlers **only** as `@code045/wphubpro-shared`.
 
-Set **`NPM_TOKEN`** on Appwrite for restricted npm. See [`functions/DEPLOY.md`](../../functions/DEPLOY.md).
+Set **`NPM_TOKEN`** on Appwrite for restricted npm. See [`.cursor/docs/SHARED.md`](../docs/SHARED.md).
 
 ## Also avoid
 

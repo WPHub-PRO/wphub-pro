@@ -55,7 +55,7 @@ export function supportFunction<T>(action: string, body: Record<string, unknown>
 
 - New cross-function logic → **`functions/shared/`** first ([SHARED.md](SHARED.md)).
 - Import shared via **`@code045/wphubpro-shared`** — not `functionsLib.ts` or relative paths into `shared/`.
-- Node.js + TypeScript — verify with `pnpm run build` in `functions/<id>/`.
+- Node.js + TypeScript — verify with `npm run build` in `functions/<id>/` (`pnpm` for `messaging`).
 - One function id = one deploy unit.
 
 ---
@@ -71,7 +71,7 @@ Shared: env, HTTP, ids, notifications, workspace auth, bridge release, query bui
 1. Grep before moving code; delete `lib/` files with zero imports.
 2. No duplicate query blocks beside `queries.ts` / `lib/queries/`.
 3. Run `npm run build` + `lint` in `sites/wphubpro` when touching app.
-4. Run `pnpm run build` for touched function ids.
+4. Run `npm run build` (or `pnpm run build` for `messaging`) for touched function ids.
 
 ---
 

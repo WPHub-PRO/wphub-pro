@@ -1,12 +1,12 @@
 ---
 description: After publishing @code045/wphubpro-shared — bump every version pin and reference
-globs: functions/shared/package.json,functions/**/package.json,functions/scripts/**,functions/DEPLOY.md,functions/README.md
+globs: functions/shared/package.json,functions/**/package.json,functions/scripts/**,functions/README.md
 alwaysApply: false
 ---
 
 # @code045/wphubpro-shared — version sync after publish
 
-When a **new version** of **`@code045/wphubpro-shared`** is published to npm, **every reference** to the package version in the functions monorepo must be updated to match **`functions/shared/package.json` → `version`**.
+When a **new version** of **`@code045/wphubpro-shared`** is published to npm, **every reference** to the package version in the monorepo must be updated to match **`functions/shared/package.json` → `version`**.
 
 Do not leave mixed pins (e.g. `1.0.10` and `^1.0.11` on different functions).
 
@@ -30,9 +30,7 @@ Note the new version (e.g. `1.0.12`).
 | Location | Field / pattern |
 |----------|-----------------|
 | **`functions/<id>/package.json`** (all 12 functions) | `"@code045/wphubpro-shared": "<version>"` |
-| **`functions/scripts/bootstrap-node-functions.mjs`** | default pin in scaffold template |
 | **`functions/scripts/update-function-readmes.mjs`** | `deployBlock` shared line + regex replacements |
-| **`functions/DEPLOY.md`** | documented version in prose |
 | **`functions/README.md`** | monorepo overview line |
 | **`functions/shared/README.md`** | example pin |
 | **`functions/<id>/README.md`** | `**shared:** @code045/wphubpro-shared@<version>` (run or update script) |
@@ -60,8 +58,8 @@ Every `package.json` dependency must equal the new **`shared/package.json` versi
 
 ## After version sync
 
-1. Commit and push the **functions** monorepo (VCS deploy reads updated `package.json` files).
-2. If **`appwrite.config.json`** function settings changed: `cd .cursor && appwrite push functions --all --no-code`.
+1. Commit and push the **monorepo**.
+2. If **`appwrite.config.json`** function settings changed: `appwrite push functions --all --no-code`.
 3. Handlers still import **`@code045/wphubpro-shared`** by package name only — never path imports into `functions/shared/` (`wphub-shared-package.mdc`).
 
 ---

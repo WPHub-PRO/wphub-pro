@@ -1,22 +1,30 @@
 # WP Hub Pro — agents & workspace
 
-**`wphubpro`** — workspace with **`.cursor/appwrite.config.json`** (git repo `github.com/wphub-pro/cursor`), docs in **`.cursor/docs/`**, scripts in **`.cursor/scripts/`**.
+**`wphub-pro`** — monorepo at [github.com/wphub-pro/wphub-pro](https://github.com/wphub-pro/wphub-pro). Appwrite config at **`appwrite.config.json`** (repo root). Agent docs in **`.cursor/docs/`**, scripts in **`.cursor/scripts/`**.
 
 **Doc index:** [README.md](README.md) · [WORKSPACE.md](WORKSPACE.md) · [FUNCTIONS.md](FUNCTIONS.md) · [SHARED.md](SHARED.md) · [MODULAR-LAYERS.md](MODULAR-LAYERS.md)
 
 ---
 
-## Repositories
+## Repository layout
 
-| Path | Git repo | Role |
-|------|----------|------|
-| *(workspace root)* | — | Nested clones only |
-| `.cursor/` | `github.com/wphub-pro/cursor` | Appwrite config, docs, rules, scripts — **CLI cwd** |
-| `sites/wphubpro/` | nested clone | Vite platform — `npm run dev`, `build`, `lint` |
-| `functions/` | `github.com/wphub-pro/functions` | 12 handlers + `shared/` npm package |
-| `wphubpro-bridge/` | nested clone | WordPress bridge plugin |
+| Path | Role |
+|------|------|
+| `appwrite.config.json` | Appwrite CLI source of truth — functions, tables, buckets, sites |
+| `.cursor/docs/` | Agent documentation |
+| `.cursor/rules/` | Cursor agent rules |
+| `.cursor/scripts/` | Node tooling (`bridge-release.js`, `restore-function-vcs.js`) |
+| `sites/wphubpro/` | Vite React platform app |
+| `functions/` | 12 Appwrite handlers + `shared/` npm package source |
 
-Bootstrap: [WORKSPACE.md](WORKSPACE.md).
+Clone once:
+
+```bash
+git clone https://github.com/wphub-pro/wphub-pro.git
+cd wphub-pro
+```
+
+See [WORKSPACE.md](WORKSPACE.md).
 
 ---
 
@@ -56,18 +64,26 @@ Label each plan todo with **one** tag: **`[React]`** · **`[UI]`** · **`[Appwri
 - **Database:** `platform_db` (17 tables) — see config `tables[]`
 - **Functions:** 12 ids — [FUNCTIONS.md](FUNCTIONS.md)
 - **Buckets:** 6 — `bridge`, `avatars`, `media_library`, `plugins`, `themes`, `6a0e670d00380379a6d4`
-- **Sites:** `sites/wphubpro` (Appwrite site id `69e016bd001d4315876d`)
+- **Sites:** `sites/wphubpro` (id `69e016bd001d4315876d`) · `sites/wphubpro-landing` (config only; directory may be absent locally)
 
 **Naming:** function **`messaging`** ≠ table **`notifications`**.
 
 ---
 
-## Schema & id workflow
+## Schema & deploy workflow
 
-1. Edit **`appwrite.config.json`**.
-2. **Always:** `cd .cursor && appwrite push functions --all --no-code`.
-3. When tables changed: `cd .cursor && appwrite push tables`.
-4. **`wphub-appwrite-ids.mdc`:** sync ids, publish `@code045/wphubpro-shared` if needed.
+1. Edit **`appwrite.config.json`** at the repo root.
+2. **Always** after function settings change:
+
+```bash
+appwrite push functions --all --no-code
+```
+
+3. When tables changed: `appwrite push tables`.
+4. Full code deploy: `appwrite push functions` (or per-function push).
+5. **`wphub-appwrite-ids.mdc`:** sync ids, publish `@code045/wphubpro-shared` when shared ids change.
+
+**VCS restore (optional):** if `installationId`, `providerRepositoryId`, `providerBranch`, and `providerRootDirectory` are set per function in config, run `node .cursor/scripts/restore-function-vcs.js` after push. Current config has no VCS fields — deploy uses CLI paths (`functions/<id>`).
 
 ---
 
@@ -82,16 +98,16 @@ Never commit API keys or webhook secrets. Client: public Appwrite endpoint/proje
 | Service | Path | Command |
 |---------|------|---------|
 | Platform UI | `sites/wphubpro/` | `npm run dev` |
-| Function | `functions/<id>/` | `pnpm install && pnpm run build` (local verify) |
+| Function | `functions/<id>/` | `npm install && npm run build` (or `pnpm` for `messaging`) |
 | Shared package | `functions/shared/` | `npm run build` (esbuild → `mod.js`) |
 
 ### Tooling
 
-Scripts: **`.cursor/scripts/`** (e.g. `bridge-release.js`, `appwrite-init-project.js`).
+Scripts: **`.cursor/scripts/`** — `bridge-release.js` (bridge plugin zip + upload), `restore-function-vcs.js` (optional VCS restore).
 
 ### Gotchas
 
 - Publish `@code045/wphubpro-shared` before Appwrite deploy when shared code changed ([SHARED.md](SHARED.md)).
 - Set **`NPM_TOKEN`** on Appwrite for restricted npm reads.
 - Custom dev hosts: `server.allowedHosts` in `sites/wphubpro/vite.config.ts`.
-- VCS deploy uses **`github.com/wphub-pro/functions`**; `providerRootDirectory` is `/<id>` inside that repo.
+- `bridge-release.js` expects bridge plugin sources at `wphubpro-bridge/` (optional; not in monorepo by default).

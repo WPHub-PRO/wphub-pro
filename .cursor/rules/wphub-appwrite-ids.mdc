@@ -11,7 +11,7 @@ When **`$id`s** change in **`appwrite.config.json`** (or after `appwrite pull`):
 1. Regenerate **`sites/wphubpro/generated/appwrite/`** (Appwrite CLI generate / project workflow).
 2. Update **`sites/wphubpro/src/config/wphubAppwriteIds.ts`** to match generated constants.
 3. Update ids in shared package source, publish **`@code045/wphubpro-shared`**, sync all version pins — **`wphub-shared-publish.mdc`**.
-4. From **`.cursor/`**:
+4. From the **repo root**:
 
 ```bash
 appwrite push functions --all --no-code

@@ -1,5 +1,5 @@
 ---
-description: WP Hub Pro workspace — Vite root, path alias, docs, orchestration repo, edits, imports, exhaustive switch, secrets
+description: WP Hub Pro workspace — Vite root, path alias, docs, monorepo, edits, imports, exhaustive switch, secrets
 alwaysApply: true
 ---
 
@@ -7,16 +7,17 @@ alwaysApply: true
 
 ## Package
 
-- **App root**: `sites/wphubpro/` (nested Git clone) — `npm run dev`, `npm run build`, `npm run lint`. Restart the dev server after changing `.env`.
+- **Repository:** [github.com/wphub-pro/wphub-pro](https://github.com/wphub-pro/wphub-pro) — single monorepo.
+- **App root**: `sites/wphubpro/` — `npm run dev`, `npm run build`, `npm run lint`. Restart the dev server after changing `.env`.
 - **Path alias**: `@/` → `sites/wphubpro/src/` (see `vite.config.ts`).
 - **Function calls**: `sites/wphubpro/src/integrations/appwrite/executeFunction.ts`.
 
 ## Docs & serverless layout
 
-- **Docs:** [`.cursor/docs/`](.cursor/docs/README.md) — AGENTS · WORKSPACE · FUNCTIONS · SHARED · MODULAR-LAYERS. After codebase or **`appwrite.config.json`** changes, keep docs and READMEs in sync — **`wphub-docs-sync.mdc`**. **Appwrite id sync**: `wphub-appwrite-ids.mdc`. **Schema / CLI**: `wphub-appwrite-schema.mdc`.
-- **Appwrite config:** [`.cursor/appwrite.config.json`](.cursor/appwrite.config.json) in the **`.cursor`** git repo — **source of truth** for deploy. Paths are relative to **`.cursor/`** (`../functions/<id>`, `../sites/wphubpro`). Run Appwrite CLI from **`.cursor/`**.
-- **Appwrite functions:** monorepo at `functions/` (`functions/<id>/` + npm `@code045/wphubpro-shared`). VCS repo: `github.com/wphub-pro/functions`. **Scripts:** `.cursor/scripts/`.
-- **After any `appwrite.config.json` edit:** `cd .cursor && appwrite push functions --all --no-code`, then **`node .cursor/scripts/restore-function-vcs.js`** (push does not sync Git/VCS).
+- **Docs:** [`.cursor/docs/`](.cursor/docs/README.md) — AGENTS · WORKSPACE · FUNCTIONS · SHARED · MODULAR-LAYERS. After codebase or **`appwrite.config.json`** changes, keep docs in sync — **`wphub-docs-sync.mdc`**. **Appwrite id sync**: `wphub-appwrite-ids.mdc`. **Schema / CLI**: `wphub-appwrite-schema.mdc`.
+- **Appwrite config:** [`appwrite.config.json`](appwrite.config.json) at the **repo root** — **source of truth** for deploy. Paths are repo-root relative (`functions/<id>`, `sites/wphubpro`). Run Appwrite CLI from the **repo root**.
+- **Appwrite functions:** `functions/<id>/` + npm `@code045/wphubpro-shared` (source in `functions/shared/`). **Scripts:** `.cursor/scripts/`.
+- **After any `appwrite.config.json` edit:** `appwrite push functions --all --no-code`. Optionally `node .cursor/scripts/restore-function-vcs.js` when VCS fields are present in config.
 
 ## Shared package imports (mandatory)
 
@@ -30,7 +31,7 @@ See **`wphub-shared-package.mdc`**.
 
 ## Workspace scope
 
-- **`wphubpro`** is the orchestration repo (config + `.cursor/` + nested clones). Clone **`sites/wphubpro`**, **`functions`**, **`wphubpro-bridge`** as needed — see **`.cursor/docs/WORKSPACE.md`**. UI: **`sites/wphubpro/`**. Functions: **`wphub-functions.mdc`**. Shared: **`wphub-shared-package.mdc`**.
+- **`wphub-pro`** is one Git repo: `.cursor/`, `functions/`, `sites/wphubpro/` are subdirectories — see **`.cursor/docs/WORKSPACE.md`**. UI: **`sites/wphubpro/`**. Functions: **`wphub-functions.mdc`**. Shared: **`wphub-shared-package.mdc`**.
 
 ## Plans & todos → sub-agents
 

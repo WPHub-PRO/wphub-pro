@@ -1,6 +1,6 @@
 # @code045/wphubpro-shared
 
-Shared npm library for all Appwrite Node functions. **Source:** `functions/shared/` in the functions monorepo. **Published:** `@code045/wphubpro-shared` on npm (restricted).
+Shared npm library for all Appwrite Node functions. **Source:** `functions/shared/` in the monorepo. **Published:** `@code045/wphubpro-shared` on npm (restricted).
 
 **Related:** [FUNCTIONS.md](FUNCTIONS.md) · [AGENTS.md](AGENTS.md)
 
@@ -8,13 +8,11 @@ Shared npm library for all Appwrite Node functions. **Source:** `functions/share
 
 ## Consumption (in function handlers)
 
-Each function **`package.json`** pins the package:
+Each function **`package.json`** pins the package. Current source version: **1.0.11** (`functions/shared/package.json`). Function pins may differ until synced — see **`wphub-shared-publish.mdc`**.
 
 ```json
-"@code045/wphubpro-shared": "1.0.10"
+"@code045/wphubpro-shared": "1.0.11"
 ```
-
-(`sites` and `wp-proxy` may use `^1.0.11`; package source version is **1.0.11**.)
 
 Handlers import directly:
 
@@ -26,7 +24,7 @@ import { createServerClients, WPHUB_APPWRITE_IDS, ok, fail, Query } from '@code0
 
 **Do not** use `functionsLib.ts` — removed; import from `@code045/wphubpro-shared`.
 
-Deploy: set **`NPM_TOKEN`** on Appwrite for restricted npm. See `functions/DEPLOY.md`.
+Deploy: set **`NPM_TOKEN`** on Appwrite for restricted npm.
 
 ---
 
@@ -68,7 +66,7 @@ cd functions/shared
 npm install && npm run build
 ```
 
-Then in a function folder: `pnpm install && pnpm run build`.
+Then in a function folder: `npm install && npm run build` (or `pnpm` for `messaging`).
 
 For IDE types without npm install, `functions/types/wphubpro-shared.d.ts` provides a minimal shim.
 
@@ -86,9 +84,9 @@ npm publish --access restricted
 ```
 
 1. Bump `version` in `shared/package.json` (via `npm version`).
-2. Update **every** version reference — all 12 `functions/<id>/package.json`, scripts, READMEs — see **`wphub-shared-publish.mdc`**.
+2. Update **every** version reference — all 12 `functions/<id>/package.json`, `functions/scripts/update-function-readmes.mjs` — see **`wphub-shared-publish.mdc`**.
 3. Verify: `rg '@code045/wphubpro-shared'` in `functions/` (no stale pins).
-4. Commit functions monorepo; redeploy via VCS or `appwrite push functions`.
+4. Commit monorepo; redeploy via `appwrite push functions`.
 5. Sync ids in shared package source when schema ids change — `wphub-appwrite-ids.mdc`.
 
 ---
