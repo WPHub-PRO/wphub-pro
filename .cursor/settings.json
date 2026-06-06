@@ -5,6 +5,9 @@
     },
     "appwrite-plugin": {
       "enabled": true
+    },
+    "appwrite-follow": {
+      "enabled": true
     }
   }
 }
