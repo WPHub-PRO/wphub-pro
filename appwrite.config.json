@@ -160,7 +160,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/wp-proxy",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/wp-proxy/**"
+            ]
         },
         {
             "$id": "recovery-manager",
@@ -275,7 +286,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/recovery-manager",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/recovery-manager/**"
+            ]
         },
         {
             "$id": "stripe-api",
@@ -392,7 +414,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/stripe-api",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/stripe-api/**"
+            ]
         },
         {
             "$id": "uptime-robot",
@@ -509,7 +542,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/uptime-robot",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/uptime-robot/**"
+            ]
         },
         {
             "$id": "platform-settings",
@@ -626,7 +670,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/platform-settings",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/platform-settings/**"
+            ]
         },
         {
             "$id": "bridge",
@@ -743,7 +798,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/bridge",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/bridge/**"
+            ]
         },
         {
             "$id": "sites",
@@ -860,7 +926,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/sites",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/sites/**"
+            ]
         },
         {
             "$id": "users",
@@ -977,7 +1054,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/users",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/users/**"
+            ]
         },
         {
             "$id": "support",
@@ -1084,7 +1172,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/support",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/support/**"
+            ]
         },
         {
             "$id": "library",
@@ -1192,7 +1291,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/library",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/library/**"
+            ]
         },
         {
             "$id": "messaging",
@@ -1309,7 +1419,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/messaging",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/messaging/**"
+            ]
         },
         {
             "$id": "user-mailbox",
@@ -1426,7 +1547,18 @@
             ],
             "buildSpecification": "s-0.5vcpu-512mb",
             "runtimeSpecification": "s-0.5vcpu-512mb",
-            "deploymentRetention": 0
+            "deploymentRetention": 0,
+            "installationId": "69e016afb5c72c7bf95c",
+            "providerRepositoryId": "1260883337",
+            "providerBranch": "main",
+            "providerRootDirectory": "/functions/user-mailbox",
+            "providerSilentMode": true,
+            "providerBranches": [
+                "main"
+            ],
+            "providerPaths": [
+                "functions/user-mailbox/**"
+            ]
         }
     ],
     "sites": [

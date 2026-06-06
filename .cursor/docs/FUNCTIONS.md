@@ -24,13 +24,14 @@ appwrite push functions              # full deploy (code + settings)
 appwrite push functions --all --no-code   # after appwrite.config.json edits (settings only)
 ```
 
-**Optional VCS restore** (only when `installationId`, `providerRepositoryId`, `providerBranch`, `providerRootDirectory` are set in config):
+**VCS (Git deploy):** all 12 functions use repo `1260883337` (`github.com/wphub-pro/wphub-pro`), branch `main`, root `/functions/<id>`.
+
+Restore VCS after push (when remote drifts):
 
 ```bash
 node .cursor/scripts/restore-function-vcs.js
+node .cursor/scripts/restore-function-vcs.js --check   # verify only
 ```
-
-Current config has **no VCS fields** — functions deploy from local `functions/<id>` paths via CLI.
 
 **Naming:** function **`messaging`** ≠ table **`notifications`**.
 
@@ -64,20 +65,22 @@ npm install && npm run build    # messaging: pnpm install && pnpm run build
 
 ## Inventory (from `appwrite.config.json`)
 
-| `$id` | Runtime | Timeout | Commands | Execute | UI / domain |
-|-------|---------|---------|----------|---------|-------------|
-| `bridge` | node-22 | 120 | npm install | any | Bridge download, release metadata |
-| `library` | node-22 | 60 | npm install | any, users | Library, WP install |
-| `messaging` | node-22 | 60 | pnpm install | any | Notifications, system email, templates |
-| `platform-settings` | node-22 | 90 | npm install | any | Platform settings |
-| `recovery-manager` | node-22 | 60 | npm install | any | Recovery (flat handler) |
-| `sites` | node-22 | 300 | npm install | any | Sites, health AI |
-| `stripe-api` | node-22 | 120 | npm install | any | Billing (Stripe) |
-| `support` | node-22 | 30 | npm install | any | Support tickets |
-| `uptime-robot` | node-22 | 120 | npm install | any | Uptime monitoring |
-| `user-mailbox` | node-22 | 120 | npm install | any | Admin mailbox (IMAP) |
-| `users` | node-22 | 120 | npm install | any | Teams, users |
-| `wp-proxy` | node-22 | 120 | npm install | any | WordPress proxy / ZIP installs |
+| `$id` | Runtime | Timeout | Commands | Execute | VCS root | UI / domain |
+|-------|---------|---------|----------|---------|----------|-------------|
+| `bridge` | node-22 | 120 | npm install | any | `/functions/bridge` | Bridge download, release metadata |
+| `library` | node-22 | 60 | npm install | any, users | `/functions/library` | Library, WP install |
+| `messaging` | node-22 | 60 | pnpm install | any | `/functions/messaging` | Notifications, system email, templates |
+| `platform-settings` | node-22 | 90 | npm install | any | `/functions/platform-settings` | Platform settings |
+| `recovery-manager` | node-22 | 60 | npm install | any | `/functions/recovery-manager` | Recovery (flat handler) |
+| `sites` | node-22 | 300 | npm install | any | `/functions/sites` | Sites, health AI |
+| `stripe-api` | node-22 | 120 | npm install | any | `/functions/stripe-api` | Billing (Stripe) |
+| `support` | node-22 | 30 | npm install | any | `/functions/support` | Support tickets |
+| `uptime-robot` | node-22 | 120 | npm install | any | `/functions/uptime-robot` | Uptime monitoring |
+| `user-mailbox` | node-22 | 120 | npm install | any | `/functions/user-mailbox` | Admin mailbox (IMAP) |
+| `users` | node-22 | 120 | npm install | any | `/functions/users` | Teams, users |
+| `wp-proxy` | node-22 | 120 | npm install | any | `/functions/wp-proxy` | WordPress proxy / ZIP installs |
+
+Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 1260883337`, branch `main`, `providerSilentMode: true`.
 
 **Extra deps (beyond shared):** `library` → adm-zip · `stripe-api` → stripe · `user-mailbox` → imapflow, nodemailer, mailparser · `recovery-manager` → jsonwebtoken.
 

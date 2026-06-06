@@ -83,7 +83,7 @@ appwrite push functions --all --no-code
 4. Full code deploy: `appwrite push functions` (or per-function push).
 5. **`wphub-appwrite-ids.mdc`:** sync ids, publish `@code045/wphubpro-shared` when shared ids change.
 
-**VCS restore (optional):** if `installationId`, `providerRepositoryId`, `providerBranch`, and `providerRootDirectory` are set per function in config, run `node .cursor/scripts/restore-function-vcs.js` after push. Current config has no VCS fields — deploy uses CLI paths (`functions/<id>`).
+**VCS restore:** Git deploy uses `github.com/wphub-pro/wphub-pro` with `providerRootDirectory: /functions/<id>`. After push, run `node .cursor/scripts/restore-function-vcs.js` if VCS drifts.
 
 ---
 
