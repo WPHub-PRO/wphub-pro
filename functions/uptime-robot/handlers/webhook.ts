@@ -9,8 +9,11 @@
  */
 
 import * as crypto from 'node:crypto';
-const { Client, Databases, Users, Teams } = await import('node-appwrite');
 import {
+  Client,
+  Databases,
+  Teams,
+  Users,
   getAppwriteConnection,
   resolvedAppwriteApiKey,
   httpFromAppwriteError,

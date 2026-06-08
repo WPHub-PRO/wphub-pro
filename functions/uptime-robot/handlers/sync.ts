@@ -16,8 +16,11 @@
  * keywordType ALERT_EXISTS; httpMethodType POST.
  */
 
-const { Client, Account, Databases, Users } = await import('node-appwrite');
 import {
+  Account,
+  Client,
+  Databases,
+  Users,
   getAppwriteConnection,
   resolvedAppwriteApiKey,
   httpFromAppwriteError,
