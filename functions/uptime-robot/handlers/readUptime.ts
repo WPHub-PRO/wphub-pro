@@ -4,8 +4,11 @@
  * Payload uses same JSON envelope as sync (`jwt`, `action`, …). Never expose UPTIME_ROBOT_API_KEY to client.
  */
 
-const { Client, Account, Databases, Users } = await import('node-appwrite');
 import {
+  Account,
+  Client,
+  Databases,
+  Users,
   getAppwriteConnection,
   resolvedAppwriteApiKey,
   httpFromAppwriteError,
