@@ -547,7 +547,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/uptime-robot",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
