@@ -9,3 +9,6 @@ export const uptimeMonitorQueryKey = (siteId: string) => ['uptime-monitor', site
 
 export const dashboardUptimeIncidentsQueryKey = (wsKey: string) =>
   ['dashboard-uptime-incidents', wsKey] as const;
+
+export const dashboardUptimeBarsQueryKey = (wsKey: string) =>
+  ['dashboard-uptime-bars-incidents', wsKey] as const;

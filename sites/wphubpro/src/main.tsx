@@ -9,6 +9,7 @@ import 'react-quill-new/dist/quill.bubble.css'
 import 'react-quill-new/dist/quill.core.css'
 import 'react-quill-new/dist/quill.snow.css'
 import 'simplebar-react/dist/simplebar.min.css'
+import '@tabler/icons-webfont/dist/tabler-icons.min.css'
 
 import '@/tailwind.css'
 import '@/assets/scss/app.scss'

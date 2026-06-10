@@ -22,6 +22,7 @@ import type {
   SitePagespeedScores,
 } from '@/types';
 import { useAuth } from '@/domains/auth';
+import { useTeamsList } from '@/domains/teams';
 import { useWorkspaceContext } from '@/domains/workspace';
 import {
   forEachStoredPagespeed,
@@ -34,7 +35,7 @@ import {
   hasBothPagespeedStrategiesInPerformanceMeta,
   pagespeedResultFromPerformanceMeta,
 } from '../performanceMeta';
-import { siteDocAccessibleForSession, sitesListQueries } from '../queries';
+import { siteDocAccessibleForSession, sitesListQueries, sitesListQueriesForAdminInstall } from '../queries';
 import {
   healthAiDryRunAnalyze,
   healthAiDryRunPlan,
@@ -45,6 +46,7 @@ import {
   type HealthAiDryRunContextOverrides,
 } from '../api';
 import {
+  dashboardUptimeBarsQueryKey,
   dashboardUptimeIncidentsQueryKey,
   siteAppIconPreviewQueryKey,
   sitePagespeedQueryKey,
@@ -53,6 +55,7 @@ import {
 } from '../queryKeys';
 
 export {
+  dashboardUptimeBarsQueryKey,
   dashboardUptimeIncidentsQueryKey,
   healthAiDryRunAnalyze,
   healthAiDryRunPlan,
@@ -114,7 +117,7 @@ export const useRequestBridgeHeartbeatPoke = () => {
 };
 
 /**
- * Proxies `POST wphubpro/v1/health/push` on the site so the bridge sends fresh health data to the Hub.
+ * Triggers `check_site_health` on the sites function so the bridge sends fresh health data to the Hub.
  */
 export const useRequestSiteHealthRefresh = () => {
   const queryClient = useQueryClient();
@@ -122,14 +125,10 @@ export const useRequestSiteHealthRefresh = () => {
 
   return useMutation<{ message: string }, Error, string>({
     mutationFn: async (siteId: string) => {
-      const { statusCode, data } = await postBridgeApiJsonWithMeta<Record<string, unknown>>(
-        '/wp-proxy',
-        {
-          siteId,
-          endpoint: 'wphubpro/v1/health/push',
-          method: 'POST',
-          body: {},
-        },
+      const jwt = jwtFromCreateResponse(await account.createJWT());
+      const { statusCode, data } = await executeFunctionWithMeta<Record<string, unknown>>(
+        SITES_FUNCTION_ID,
+        { action: 'check_site_health', siteId, jwt },
         { timeoutMs: 120_000, throwOnHttpError: false },
       );
       if (statusCode < 200 || statusCode >= 300) {
@@ -174,6 +173,46 @@ export const useSites = () => {
       return response.documents.map((doc) => mapSiteDocumentToSite(doc as Record<string, unknown>));
     },
     enabled: !!user?.$id && (ws.mode !== 'team' || !!ws.activeTeamId),
+  });
+};
+
+/**
+ * Sites available for library → site install pickers.
+ * Platform admins see all personal sites plus sites on every team they belong to.
+ */
+export const useSitesForLibraryInstall = () => {
+  const { user, isAdmin } = useAuth();
+  const ws = useWorkspaceContext();
+  const teamsQ = useTeamsList(Boolean(user && isAdmin));
+
+  const teamIds = useMemo(
+    () => (teamsQ.data ?? []).map((row) => row.team.$id).filter(Boolean),
+    [teamsQ.data],
+  );
+
+  return useQuery<Site[], Error>({
+    queryKey: [
+      'sites',
+      user?.$id,
+      isAdmin ? 'admin-library-install' : ws.workspaceQueryKey,
+      isAdmin ? teamIds.join(',') : '',
+    ],
+    queryFn: async () => {
+      if (!user?.$id) return [];
+      const queries = isAdmin
+        ? sitesListQueriesForAdminInstall(user.$id, teamIds)
+        : sitesListQueries(ws.mode, user.$id, ws.activeTeamId);
+      if (!isAdmin && ws.mode === 'team' && !ws.activeTeamId) return [];
+      const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.SITES, queries);
+      const byId = new Map<string, Site>();
+      for (const doc of response.documents) {
+        const site = mapSiteDocumentToSite(doc as Record<string, unknown>);
+        byId.set(site.$id, site);
+      }
+      return [...byId.values()];
+    },
+    enabled:
+      !!user?.$id && (isAdmin ? !teamsQ.isLoading : ws.mode !== 'team' || !!ws.activeTeamId),
   });
 };
 
@@ -896,6 +935,40 @@ export const useDashboardUptimeIncidents = () => {
           jwt,
           limit: 3,
           maxAgeDays: 7,
+        },
+        { throwOnHttpError: false },
+      );
+      if (statusCode < 200 || statusCode >= 300) return [];
+      return Array.isArray(data?.incidents) ? data.incidents : [];
+    },
+    enabled: Boolean(user?.$id && (ws.mode !== 'team' || ws.activeTeamId)),
+    staleTime: 120_000,
+    retry: 0,
+  });
+};
+
+/**
+ * Incidents for dashboard site uptime bars (24h window; one fetch for the whole table).
+ */
+export const useDashboardUptimeBarsIncidents = () => {
+  const { user } = useAuth();
+  const ws = useWorkspaceContext();
+
+  return useQuery<Record<string, unknown>[], Error>({
+    queryKey: dashboardUptimeBarsQueryKey(ws.workspaceQueryKey),
+    queryFn: async () => {
+      if (!user?.$id) return [];
+      const jwt = jwtFromCreateResponse(await account.createJWT());
+      const { data, statusCode } = await executeFunctionWithMeta<{
+        success?: boolean;
+        incidents?: Record<string, unknown>[];
+      }>(
+        APPWRITE_FUNCTION_IDS.UPTIME_ROBOT,
+        {
+          action: 'get_recent_incidents',
+          jwt,
+          limit: 50,
+          maxAgeDays: 2,
         },
         { throwOnHttpError: false },
       );

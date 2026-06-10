@@ -9,11 +9,17 @@ export type PlatformApiWithMeta<T> = {
   statusCode: number;
 };
 
+/** Body for `wp-proxy` executions: `{ siteId, handler, body? }`. */
+export type WpProxyExecutionBody = {
+  siteId: string;
+  handler: string;
+  body?: Record<string, unknown>;
+};
+
 /**
- * POST JSON to the `wp-proxy` Appwrite function. `_path` is ignored (legacy `/wp-proxy`).
+ * POST JSON to the `wp-proxy` Appwrite function. `_path` is ignored.
  *
- * **Preferred:** `{ siteId, handler, body? }` — `handler` like `plugins/update`, `plugins/uninstall`, `themes/install`, `bridge_force_update`.
- * **Legacy:** `{ siteId, endpoint, method?, body? }` for health and older clients (no `handler`).
+ * Requires `{ siteId, handler, body? }` — `handler` like `plugins/update`, `themes/install`, `bridge/forceUpdate`.
  */
 export async function postBridgeApiJsonWithMeta<T>(
   _path: string,

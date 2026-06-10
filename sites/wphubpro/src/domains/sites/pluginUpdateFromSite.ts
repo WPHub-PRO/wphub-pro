@@ -21,6 +21,7 @@ import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import { getWpPluginInfo } from '@/services/wordpress';
 import type { LibraryItem, WordPressPlugin } from '@/types';
 import type { SortingFn } from '@tanstack/react-table';
+import { summarizeBulkPayload, toBulkPluginItem } from './extensionBulkFromSite';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
 
 const PROXY_TIMEOUT_MS = 180_000;
@@ -123,12 +124,12 @@ export async function runPluginUpdateForSite(
           'Could not resolve a platform download URL for the WPHubPro Bridge. Check bridge releases in the hub.',
       };
     }
+    const base = toBulkPluginItem(plugin);
     const payload = {
       siteId,
       handler: 'plugins/update',
       body: {
-        plugin: file,
-        zip_url: downloadUrl,
+        plugins: [{ ...base, zip_url: downloadUrl }],
       },
     };
     try {
@@ -137,7 +138,8 @@ export async function runPluginUpdateForSite(
         throwOnHttpError: false,
       });
       if (statusCode >= 200 && statusCode < 300) {
-        return { ok: true, message: 'Bridge update completed.' };
+        const s = summarizeBulkPayload(data, statusCode, 'Updated');
+        return { ok: s.ok, message: s.ok ? 'Bridge update completed.' : s.message };
       }
       return {
         ok: false,
@@ -159,14 +161,19 @@ export async function runPluginUpdateForSite(
       if (!libraryDocumentId || !version) {
         return { ok: false, message: 'Missing library document or version for this package.' };
       }
+      const base = toBulkPluginItem(plugin);
       const payload = {
         siteId,
         handler: 'plugins/update',
         body: {
-          plugin: file,
-          libraryItemId: libraryDocumentId,
-          version,
-          source: choice.item.source,
+          plugins: [
+            {
+              ...base,
+              libraryItemId: libraryDocumentId,
+              version,
+              source: choice.item.source,
+            },
+          ],
         },
       };
       try {
@@ -175,7 +182,8 @@ export async function runPluginUpdateForSite(
           throwOnHttpError: false,
         });
         if (statusCode >= 200 && statusCode < 300) {
-          return { ok: true, message: 'Plugin update completed.' };
+          const s = summarizeBulkPayload(data, statusCode, 'Updated');
+          return { ok: s.ok, message: s.ok ? 'Plugin update completed.' : s.message };
         }
         return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Update failed.') };
       } catch (e) {
@@ -212,9 +220,7 @@ export async function runPluginUpdateForSite(
     siteId,
     handler: 'plugins/update',
     body: {
-      plugin: file,
-      slug,
-      version,
+      plugins: [{ plugin: file, slug, version }],
     },
   };
 
@@ -224,7 +230,8 @@ export async function runPluginUpdateForSite(
       throwOnHttpError: false,
     });
     if (statusCode >= 200 && statusCode < 300) {
-      return { ok: true, message: 'Plugin update completed.' };
+      const s = summarizeBulkPayload(data, statusCode, 'Updated');
+      return { ok: s.ok, message: s.ok ? 'Plugin update completed.' : s.message };
     }
     return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Update failed.') };
   } catch (e) {

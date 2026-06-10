@@ -72,12 +72,35 @@ export function defaultBlocksTeamInvite(): EmailBlocksDoc {
   };
 }
 
+const DEFAULT_PARAGRAPH_BY_EVENT: Partial<Record<SystemEmailEventKey, string>> = {
+  team_invite_existing_user:
+    '{{invited_by_name}} invited you to join {{team_name}} on {{platform_title}}. {{summary_line}}',
+  team_invite_user: 'Team invite for {{team_name}}: {{outcome}}. {{summary_line}}',
+  plugin_update_available: 'Plugin updates are available on {{site_name}}. {{detail}}',
+  theme_update_available: 'Theme updates are available on {{site_name}}. {{detail}}',
+  bridge_plugin_update_available:
+    'Update the bridge on {{site_name}} ({{installed_version}} → {{latest_version}}). {{detail}}',
+  site_health_issue: 'Health issue on {{site_name}}: {{detail}}',
+  site_uptime_down: '{{site_name}} appears down ({{status_label}}). {{detail}}',
+  site_uptime_up: '{{site_name}} is back up. {{detail}}',
+  site_connection_issue: 'Connection issue on {{site_name}}: {{detail}}',
+  subscription_renewal_upcoming: 'Your subscription renews soon. {{detail}}',
+  subscription_change: '{{title}} — {{body}}',
+  limit_reached: 'Seat limit reached (max {{max_seats}}). {{detail}}',
+  ticket_reply: '{{title}}\n{{body}}',
+  ticket_status: '{{title}}\n{{body}}',
+  ticket_priority: '{{title}}\n{{body}}',
+};
+
 export function defaultBlocksForEvent(eventKey: SystemEmailEventKey): EmailBlocksDoc {
   if (eventKey === 'team_invite') return defaultBlocksTeamInvite();
+  const text =
+    DEFAULT_PARAGRAPH_BY_EVENT[eventKey] ||
+    'Notification from {{platform_title}}. Open {{app_url}} for details.';
   return {
     wphubEmailBlocks: true,
     version: EMAIL_BLOCKS_VERSION,
-    blocks: [{ id: newBlockId(), type: 'paragraph', text: '' }],
+    blocks: [{ id: newBlockId(), type: 'paragraph', text }],
   };
 }
 

@@ -25,3 +25,4 @@ export {
   removeSitePagespeedFromSession,
   setPagespeedInSession,
 } from './pagespeedSessionCache';
+export { isSiteMonitorDown, parseMonitorMeta } from './monitorMeta';

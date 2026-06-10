@@ -6,7 +6,7 @@ import DataTable, {
 import TablePagination from '@/components/table/TablePagination'
 import ComponentCard from '@/components/cards/ComponentCard'
 import { ROUTE_PATHS } from '@/config/routePaths'
-import { hasUpdate, parsePluginsMeta, parseThemesMeta, useDeleteSite } from '@/domains/sites'
+import { hasUpdate, parsePluginsMeta, parseThemesMeta, useDashboardUptimeBarsIncidents, useDeleteSite } from '@/domains/sites'
 import { useNotificationContext } from '@/context/useNotificationContext'
 import type { Site } from '@/types'
 import {
@@ -24,7 +24,9 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Button, CardFooter, CardHeader, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import DeleteSiteConfirmModal from '@/views/sites/detail/DeleteSiteConfirmModal'
-import SiteHealthScoreDonut from '@/views/sites/detail/SiteHealthScoreDonut.tsx'
+import SiteUptimeBars from '@/components/sites/SiteUptimeBars'
+import SiteUptimeStatusDot from '@/components/sites/SiteUptimeStatusDot'
+import { buildSiteUptimeBarsBySiteId } from '@/lib/uptimeIncidentHours'
 import { LuHeart, LuSearch, LuTag } from 'react-icons/lu'
 import { MdFlashOff, MdFlashOn } from 'react-icons/md'
 import { TbExternalLink, TbListDetails, TbTrash } from 'react-icons/tb'
@@ -112,9 +114,25 @@ const DashboardSitesTable = ({ sites, initialPageSize = 5, embedded = false }: D
   const deleteSite = useDeleteSite();
   const [deleteTarget, setDeleteTarget] = useState<Site | null>(null);
   const data = useMemo(() => sites, [sites]);
+  const { data: uptimeIncidents = [], isLoading: uptimeBarsLoading } = useDashboardUptimeBarsIncidents();
+  const barsBySiteId = useMemo(
+    () => buildSiteUptimeBarsBySiteId(sites, uptimeIncidents),
+    [sites, uptimeIncidents],
+  );
 
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'uptimeStatus',
+        header: '',
+        meta: { headerAlign: 'start' as const },
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="d-flex justify-content-center align-items-center">
+            <SiteUptimeStatusDot site={row.original} />
+          </div>
+        ),
+      }),
       columnHelper.accessor('siteName', {
         header: 'SITE',
         cell: ({ getValue }) => <span className="fw-medium">{String(getValue() || '—')}</span>,
@@ -158,19 +176,19 @@ const DashboardSitesTable = ({ sites, initialPageSize = 5, embedded = false }: D
         },
       ),
       columnHelper.accessor('healthStatus', {
-        header: 'HEALTH',
+        header: 'UPTIME',
+        meta: { headerAlign: 'center' as const },
         filterFn: 'equalsString',
         enableColumnFilter: true,
-        cell: ({ row }) => (
-          <div className="d-flex justify-content-center align-items-center">
-            <SiteHealthScoreDonut
-              site={row.original}
-              size={42}
-              ringColor={CONNECTED_FLASH_COLOR}
-              surface="light"
-            />
-          </div>
-        ),
+        cell: ({ row }) => {
+          const site = row.original;
+          const bars = barsBySiteId.get(site.$id);
+          return (
+            <div className="d-flex justify-content-center align-items-center py-1" style={{ minWidth: '6.5rem' }}>
+              <SiteUptimeBars bars={bars ?? []} isLoading={uptimeBarsLoading} />
+            </div>
+          );
+        },
       }),
       columnHelper.display({
         id: 'actions',
@@ -230,7 +248,7 @@ const DashboardSitesTable = ({ sites, initialPageSize = 5, embedded = false }: D
         },
       }),
     ],
-    [deleteSite.isPending]
+    [deleteSite.isPending, barsBySiteId, uptimeBarsLoading]
   );
 
   const [globalFilter, setGlobalFilter] = useState('');

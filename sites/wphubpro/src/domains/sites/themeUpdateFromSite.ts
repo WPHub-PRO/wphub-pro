@@ -4,6 +4,7 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import { getWpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem, WordPressTheme } from '@/types';
+import { summarizeBulkPayload, toBulkThemeItem } from './extensionBulkFromSite';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
 
 const PROXY_TIMEOUT_MS = 180_000;
@@ -32,14 +33,19 @@ export async function runThemeUpdateForSite(
       if (!libraryDocumentId || !version) {
         return { ok: false, message: 'Missing library document or version for this package.' };
       }
+      const base = toBulkThemeItem(theme);
       const payload = {
         siteId,
         handler: 'themes/update',
         body: {
-          slug,
-          libraryItemId: libraryDocumentId,
-          version,
-          source: choice.item.source,
+          themes: [
+            {
+              ...base,
+              libraryItemId: libraryDocumentId,
+              version,
+              source: choice.item.source,
+            },
+          ],
         },
       };
       try {
@@ -48,7 +54,8 @@ export async function runThemeUpdateForSite(
           throwOnHttpError: false,
         });
         if (statusCode >= 200 && statusCode < 300) {
-          return { ok: true, message: 'Theme update completed.' };
+          const s = summarizeBulkPayload(data, statusCode, 'Updated');
+          return { ok: s.ok, message: s.ok ? 'Theme update completed.' : s.message };
         }
         return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Update failed.') };
       } catch (e) {
@@ -66,14 +73,19 @@ export async function runThemeUpdateForSite(
         if (!libraryDocumentId || !version) {
           return { ok: false, message: 'Missing library document or version for this package.' };
         }
+        const base = toBulkThemeItem(theme);
         const payload = {
           siteId,
           handler: 'themes/update',
           body: {
-            slug,
-            libraryItemId: libraryDocumentId,
-            version,
-            source: 'official',
+            themes: [
+              {
+                ...base,
+                libraryItemId: libraryDocumentId,
+                version,
+                source: 'official',
+              },
+            ],
           },
         };
         try {
@@ -82,7 +94,8 @@ export async function runThemeUpdateForSite(
             throwOnHttpError: false,
           });
           if (statusCode >= 200 && statusCode < 300) {
-            return { ok: true, message: 'Theme update completed.' };
+            const s = summarizeBulkPayload(data, statusCode, 'Updated');
+            return { ok: s.ok, message: s.ok ? 'Theme update completed.' : s.message };
           }
           return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Update failed.') };
         } catch (e) {
@@ -104,7 +117,7 @@ export async function runThemeUpdateForSite(
   const payload = {
     siteId,
     handler: 'themes/update',
-    body: { slug },
+    body: { themes: [toBulkThemeItem(theme)] },
   };
 
   try {
@@ -113,7 +126,8 @@ export async function runThemeUpdateForSite(
       throwOnHttpError: false,
     });
     if (statusCode >= 200 && statusCode < 300) {
-      return { ok: true, message: 'Theme update completed.' };
+      const s = summarizeBulkPayload(data, statusCode, 'Updated');
+      return { ok: s.ok, message: s.ok ? 'Theme update completed.' : s.message };
     }
     return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Update failed.') };
   } catch (e) {

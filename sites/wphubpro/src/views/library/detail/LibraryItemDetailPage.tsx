@@ -14,7 +14,7 @@ import {
   runLibraryBridgeInstallOnSite,
 } from '@/domains/library';
 import { parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
-import { useSites } from '@/domains/sites';
+import { useSitesForLibraryInstall } from '@/domains/sites';
 import { useDeleteLibraryItem, useLibraryItems, useSetLibraryDefaultVersion } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useLibraryCollections, useLibraryFamilies } from '@/hooks/useLibraryFamiliesAndCollections';
@@ -126,7 +126,7 @@ const LibraryItemDetailPage = () => {
 
   const { data: libraryItems = [], isLoading: itemsLoading, isError: itemsError, error: itemsErr } =
     useLibraryItems();
-  const { data: sites = [] } = useSites();
+  const { data: sites = [] } = useSitesForLibraryInstall();
   const { data: families = [] } = useLibraryFamilies();
   const { data: collections = [] } = useLibraryCollections();
   const { data: categories = [] } = useLibraryCategories();
