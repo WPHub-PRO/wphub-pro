@@ -4,7 +4,40 @@ import { storageKeyForToken } from '../lib/aiAccessTokens.ts';
 
 const APPWRITE_TOKEN_EXPIRE_SEC = 900;
 
-export default async function handleRedeemAiAccessLink({ res, error, databases, users, payload }) {
+async function createLoginSecret(users, userId: string, log: (msg: string) => void): Promise<string> {
+  if (typeof users.createSession === 'function') {
+    try {
+      const session = await users.createSession({ userId });
+      const secret = String(session?.secret || '').trim();
+      if (secret) {
+        log('[redeem_ai_access_link] session via users.createSession');
+        return secret;
+      }
+    } catch (e) {
+      log(
+        '[redeem_ai_access_link] users.createSession fallback to createToken: ' +
+          (e instanceof Error ? e.message : String(e)),
+      );
+    }
+  }
+
+  if (typeof users.createToken !== 'function') {
+    throw new Error('Session login is not available in this runtime.');
+  }
+
+  const appwriteToken = await users.createToken({
+    userId,
+    expire: APPWRITE_TOKEN_EXPIRE_SEC,
+  });
+  const secret = String(appwriteToken?.secret || '').trim();
+  if (!secret) {
+    throw new Error('Could not create login secret.');
+  }
+  log('[redeem_ai_access_link] session via users.createToken');
+  return secret;
+}
+
+export default async function handleRedeemAiAccessLink({ res, error, log, databases, users, payload }) {
   const token = String(payload.token || payload.t || '').trim();
   if (!token) {
     return fail(res, 'Missing token.', 400);
@@ -43,23 +76,11 @@ export default async function handleRedeemAiAccessLink({ res, error, databases, 
     return fail(res, 'Access link is no longer valid.', 410);
   }
 
-  if (typeof users.createToken !== 'function') {
-    return fail(res, 'Token login is not available in this runtime.', 500);
-  }
-
-  let appwriteToken;
+  let secret: string;
   try {
-    appwriteToken = await users.createToken({
-      userId,
-      expire: APPWRITE_TOKEN_EXPIRE_SEC,
-    });
+    secret = await createLoginSecret(users, userId, log);
   } catch (e) {
-    error('[redeem_ai_access_link] createToken: ' + (e instanceof Error ? e.message : String(e)));
-    return fail(res, 'Could not start session for this link.', 500);
-  }
-
-  const secret = String(appwriteToken?.secret || '').trim();
-  if (!secret) {
+    error('[redeem_ai_access_link] create login secret: ' + (e instanceof Error ? e.message : String(e)));
     return fail(res, 'Could not start session for this link.', 500);
   }
 
