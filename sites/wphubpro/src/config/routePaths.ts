@@ -79,4 +79,6 @@ export const ROUTE_PATHS = {
   INVITE_TEAM: '/invite/team',
   /** Register after opening a team invite link (`?i=` `&t=`). */
   REGISTER_INVITE: '/register/invite',
+  /** One-time admin access link for AI tools / passwordless review (query: `token`). */
+  AI_ACCESS: '/auth/ai-access',
 } as const;

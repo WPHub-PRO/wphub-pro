@@ -1,11 +1,12 @@
-// Version: 1.3.0 — public_hub_layout guest read for platform shell (data-* on <html>).
+// Version: 1.4.0 — AI access link create (admin) + redeem (guest).
 
 /**
  * platform-settings — platform settings (platform_db / platform_settings).
  * Actions: public_auth_config | public_branding | public_hub_layout | login_methods (guest);
  * bridge_plugin_version (auth read); admin: get | list | create | update | upsert |
  * list_bridge_versions | get_admin_workspace_inbox | save_admin_workspace_inbox |
- * list_api_env | save_api_env
+ * list_api_env | save_api_env | create_ai_access_link (admin);
+ * redeem_ai_access_link (guest).
  * (legacy: omit action with category + settings = upsert).
  */
 import {
@@ -29,12 +30,15 @@ import handleListSettings from './handlers/listSettings.ts';
 import handleUpsertSetting from './handlers/upsertSetting.ts';
 import handleListApiEnv from './handlers/listApiEnv.ts';
 import handleSaveApiEnv from './handlers/saveApiEnv.ts';
+import handleCreateAiAccessLink from './handlers/createAiAccessLink.ts';
+import handleRedeemAiAccessLink from './handlers/redeemAiAccessLink.ts';
 
 const PUBLIC_ACTIONS = new Set([
   'public_auth_config',
   'public_branding',
   'public_hub_layout',
   'login_methods',
+  'redeem_ai_access_link',
 ]);
 
 const AUTH_READ_ACTIONS = new Set(['bridge_plugin_version']);
@@ -50,6 +54,7 @@ const ADMIN_ACTIONS = new Set([
   'create',
   'update',
   'upsert',
+  'create_ai_access_link',
   '',
 ]);
 
@@ -110,6 +115,8 @@ export default async ({ req, res, log, error }) => {
           return await handlePublicHubLayout(ctx);
         case 'login_methods':
           return await handleLoginMethods(ctx);
+        case 'redeem_ai_access_link':
+          return await handleRedeemAiAccessLink(ctx);
         default:
           return fail(res, 'Unknown public action.', 400);
       }
@@ -138,7 +145,7 @@ export default async ({ req, res, log, error }) => {
   if (!needsAdmin) {
     return fail(
       res,
-      'Unknown action. Use bridge_plugin_version, get, list, list_api_env, save_api_env, list_bridge_versions, get_admin_workspace_inbox, save_admin_workspace_inbox, public_auth_config, public_branding, public_hub_layout, login_methods, or omit action for upsert.',
+      'Unknown action. Use bridge_plugin_version, get, list, list_api_env, save_api_env, list_bridge_versions, get_admin_workspace_inbox, save_admin_workspace_inbox, create_ai_access_link, public_auth_config, public_branding, public_hub_layout, login_methods, redeem_ai_access_link, or omit action for upsert.',
       400,
     );
   }
@@ -160,6 +167,8 @@ export default async ({ req, res, log, error }) => {
         return await handleListApiEnv({ ...ctx, actorUserId });
       case 'save_api_env':
         return await handleSaveApiEnv({ ...ctx, actorUserId });
+      case 'create_ai_access_link':
+        return await handleCreateAiAccessLink({ ...ctx, actorUserId });
       case 'get':
       case 'list':
         return await handleListSettings({ ...ctx, actorUserId });

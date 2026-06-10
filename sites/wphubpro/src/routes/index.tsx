@@ -58,6 +58,7 @@ const NewPasswordPage = lazy(() => import('@/views/auth/auth-1/new-password'))
 const RegisterPage = lazy(() => import('@/views/auth/auth-1/sign-up'))
 const InviteRegisterPage = lazy(() => import('@/views/invite/InviteRegisterPage'))
 const InviteTeamPage = lazy(() => import('@/views/invite/InviteTeamPage'))
+const AiAccessPage = lazy(() => import('@/views/auth/AiAccessPage'))
 
 function LegacyFinanceInvoiceRedirect() {
   const { invoiceId } = useParams<{ invoiceId: string }>()
@@ -82,6 +83,14 @@ export const routes: RouteObject[] = [
     element: (
       <Suspensed>
         <InviteRegisterPage />
+      </Suspensed>
+    ),
+  },
+  {
+    path: ROUTE_PATHS.AI_ACCESS,
+    element: (
+      <Suspensed>
+        <AiAccessPage />
       </Suspensed>
     ),
   },
