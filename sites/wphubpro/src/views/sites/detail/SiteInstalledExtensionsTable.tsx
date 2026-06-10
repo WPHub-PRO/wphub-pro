@@ -19,6 +19,14 @@ import {
   sortInstalledPluginsWithBridgeFirst,
   type SitePluginUpdateChoice,
 } from '@/domains/sites/pluginUpdateFromSite';
+import {
+  runPluginsBulkForSite,
+  runThemesBulkForSite,
+  toBulkPluginItem,
+  toBulkThemeItem,
+  type PluginsBulkAction,
+  type ThemesBulkAction,
+} from '@/domains/sites/extensionBulkFromSite';
 import { runPluginActivateForSite, runPluginDeactivateForSite } from '@/domains/sites/pluginActivateFromSite';
 import { runThemeActivateForSite } from '@/domains/sites/themeActivateFromSite';
 import { runThemeUpdateForSite, type SiteThemeUpdateChoice } from '@/domains/sites/themeUpdateFromSite';
@@ -31,6 +39,7 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type RowSelectionState,
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
@@ -67,6 +76,10 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const [modalPlugin, setModalPlugin] = useState<WordPressPlugin | null>(null);
   const [removePlugin, setRemovePlugin] = useState<WordPressPlugin | null>(null);
   const [uninstallingKey, setUninstallingKey] = useState<string | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkPluginAction, setBulkPluginAction] = useState<PluginsBulkAction | ''>('');
+  const [bulkPluginBusy, setBulkPluginBusy] = useState(false);
+  const [bulkPluginsRemove, setBulkPluginsRemove] = useState<WordPressPlugin[] | null>(null);
 
   const runPluginUpdate = useCallback(
     async (plugin: WordPressPlugin, choice: SitePluginUpdateChoice) => {
@@ -191,6 +204,35 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const data = useMemo(() => sortInstalledPluginsWithBridgeFirst(plugins), [plugins]);
   const columns = useMemo(
     () => [
+      pluginHelper.display({
+        id: 'select',
+        header: ({ table: tbl }) => (
+          <input
+            type="checkbox"
+            className="form-check-input m-0"
+            aria-label="Select all plugins on this page"
+            checked={tbl.getIsAllPageRowsSelected()}
+            ref={(el) => {
+              if (el) {
+                el.indeterminate = tbl.getIsSomePageRowsSelected() && !tbl.getIsAllPageRowsSelected();
+              }
+            }}
+            onChange={tbl.getToggleAllPageRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <div data-row-click-ignore onClick={(e) => e.stopPropagation()}>
+            <Form.Check
+              type="checkbox"
+              className="mb-0"
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onChange={row.getToggleSelectedHandler()}
+              aria-label={`Select plugin ${row.original.name || row.original.plugin}`}
+            />
+          </div>
+        ),
+      }),
       pluginHelper.accessor('name', {
         header: 'Name',
         sortingFn: siteInstalledPluginSortingFn,
@@ -244,15 +286,6 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           const v = formatAvailableUpdate(p.update ?? null);
           return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
         },
-      }),
-      pluginHelper.accessor('author', {
-        header: 'Author',
-        sortingFn: siteInstalledPluginSortingFn,
-        cell: ({ getValue }) => (
-          <span className="fs-xs text-muted text-truncate d-inline-block" style={{ maxWidth: '14rem' }} title={String(getValue() || '')}>
-            {String(getValue() || '—')}
-          </span>
-        ),
       }),
       pluginHelper.accessor('status', {
         header: 'Status',
@@ -403,13 +436,88 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, pagination },
+    state: { sorting, pagination, rowSelection },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: (row) => !isBridgePluginFile(row.original.plugin),
+    getRowId: (row) => row.plugin,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  const selectedPluginRows = table.getFilteredSelectedRowModel().rows;
+  const selectedPluginsBulk = selectedPluginRows.map((r) => r.original);
+  const selectedPluginBulkCount = selectedPluginsBulk.length;
+
+  const executeBulkPlugins = useCallback(
+    async (pluginsList: WordPressPlugin[], action: PluginsBulkAction) => {
+      if (!siteId) return;
+      let items = pluginsList.map((p) => toBulkPluginItem(p));
+      if (action === 'update') {
+        items = items.map((i) => ({ ...i, version: '' }));
+      }
+      setBulkPluginBusy(true);
+      try {
+        const res = await runPluginsBulkForSite(siteId, action, items);
+        const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
+        if (res.ok) {
+          showNotification({
+            title: action === 'delete' ? 'Removed' : action === 'update' ? 'Update' : 'Plugins',
+            message: res.message,
+            variant: partial ? 'warning' : 'success',
+          });
+          setRowSelection({});
+          setBulkPluginAction('');
+          void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+          if (user?.$id) {
+            void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+            void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+          }
+        } else {
+          showNotification({ title: 'Bulk action', message: res.message, variant: 'danger' });
+        }
+      } finally {
+        setBulkPluginBusy(false);
+        setBulkPluginsRemove(null);
+      }
+    },
+    [queryClient, showNotification, siteId, user?.$id],
+  );
+
+  const onBulkPluginsApply = useCallback(() => {
+    if (!siteId || !bulkPluginAction || bulkPluginBusy) return;
+    if (!selectedPluginsBulk.length) return;
+    if (bulkPluginAction === 'update') {
+      const eligible = selectedPluginsBulk.filter(
+        (p) => hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
+      );
+      if (!eligible.length) {
+        showNotification({
+          title: 'Update',
+          message: 'No selected plugins have an available update.',
+          variant: 'warning',
+        });
+        return;
+      }
+      void executeBulkPlugins(eligible, 'update');
+      return;
+    }
+    if (bulkPluginAction === 'delete') {
+      setBulkPluginsRemove(selectedPluginsBulk);
+      return;
+    }
+    void executeBulkPlugins(selectedPluginsBulk, bulkPluginAction);
+  }, [
+    bulkPluginAction,
+    bulkPluginBusy,
+    executeBulkPlugins,
+    platformBridgeVersion,
+    selectedPluginsBulk,
+    showNotification,
+    siteId,
+  ]);
 
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
@@ -437,6 +545,26 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           if (removePlugin) void runPluginUninstall(removePlugin);
         }}
       />
+      <SiteExtensionRemoveConfirmModal
+        show={Boolean(bulkPluginsRemove?.length)}
+        title="Remove plugins?"
+        description={
+          bulkPluginsRemove?.length
+            ? `This will uninstall ${bulkPluginsRemove.length} plugin(s) from the site: ${bulkPluginsRemove
+                .map((p) => p.name || p.plugin)
+                .join(', ')}. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Remove plugins"
+        isBusy={bulkPluginBusy}
+        onHide={() => {
+          if (bulkPluginBusy) return;
+          setBulkPluginsRemove(null);
+        }}
+        onConfirm={() => {
+          if (bulkPluginsRemove?.length) void executeBulkPlugins(bulkPluginsRemove, 'delete');
+        }}
+      />
       {modalPlugin && (
         <PluginUpdateSourceModal
           show={showSourceModal}
@@ -453,7 +581,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           }}
         />
       )}
-      <div className="table-responsive border rounded">
+      <div className="table-responsive border rounded table-select">
         <DataTable<WordPressPlugin>
           table={table}
           className="border rounded"
@@ -461,6 +589,34 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           dashboardUniformRows
         />
       </div>
+      {table.getRowModel().rows.length > 0 && (
+        <div className="d-flex flex-wrap align-items-center gap-2 pt-3">
+          <Form.Select
+            className="extension-bulk-actions-select"
+            aria-label="Bulk actions for plugins"
+            value={bulkPluginAction}
+            onChange={(e) => setBulkPluginAction((e.target.value || '') as PluginsBulkAction | '')}
+          >
+            <option value="">Bulk actions</option>
+            <option value="activate">Activate</option>
+            <option value="deactivate">Deactivate</option>
+            <option value="update">Update</option>
+            <option value="delete">Delete</option>
+          </Form.Select>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={!selectedPluginBulkCount || !bulkPluginAction || bulkPluginBusy}
+            onClick={() => void onBulkPluginsApply()}
+          >
+            Apply
+          </Button>
+          {selectedPluginBulkCount > 0 ? (
+            <span className="text-muted small">{selectedPluginBulkCount} selected</span>
+          ) : null}
+        </div>
+      )}
       {table.getRowModel().rows.length > 0 && (
         <div className="pt-3">
           <TablePagination
@@ -503,6 +659,10 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
   const [modalTheme, setModalTheme] = useState<WordPressTheme | null>(null);
   const [removeTheme, setRemoveTheme] = useState<WordPressTheme | null>(null);
   const [deletingStylesheet, setDeletingStylesheet] = useState<string | null>(null);
+  const [themeRowSelection, setThemeRowSelection] = useState<RowSelectionState>({});
+  const [bulkThemeAction, setBulkThemeAction] = useState<ThemesBulkAction | ''>('');
+  const [bulkThemeBusy, setBulkThemeBusy] = useState(false);
+  const [bulkThemesRemove, setBulkThemesRemove] = useState<WordPressTheme[] | null>(null);
 
   const invalidateSite = useCallback(() => {
     if (!siteId) return;
@@ -611,6 +771,35 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
   const data = useMemo(() => themes, [themes]);
   const columns = useMemo(
     () => [
+      themeHelper.display({
+        id: 'select',
+        header: ({ table: tbl }) => (
+          <input
+            type="checkbox"
+            className="form-check-input m-0"
+            aria-label="Select all themes on this page"
+            checked={tbl.getIsAllPageRowsSelected()}
+            ref={(el) => {
+              if (el) {
+                el.indeterminate = tbl.getIsSomePageRowsSelected() && !tbl.getIsAllPageRowsSelected();
+              }
+            }}
+            onChange={tbl.getToggleAllPageRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <div data-row-click-ignore onClick={(e) => e.stopPropagation()}>
+            <Form.Check
+              type="checkbox"
+              className="mb-0"
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onChange={row.getToggleSelectedHandler()}
+              aria-label={`Select theme ${row.original.name || row.original.stylesheet}`}
+            />
+          </div>
+        ),
+      }),
       themeHelper.accessor('name', {
         header: 'Name',
         cell: ({ getValue, row }) => {
@@ -799,20 +988,87 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
   const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
-  const table = useReactTable({
+  const themeTable = useReactTable({
     data,
     columns,
-    state: { sorting, pagination },
+    state: { sorting, pagination, rowSelection: themeRowSelection },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
+    onRowSelectionChange: setThemeRowSelection,
+    enableRowSelection: (row) => row.original.status !== 'active',
+    getRowId: (row) => row.stylesheet,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const totalItems = table.getFilteredRowModel().rows.length;
+  const selectedThemeRows = themeTable.getFilteredSelectedRowModel().rows;
+  const selectedThemesBulk = selectedThemeRows.map((r) => r.original);
+  const selectedThemeBulkCount = selectedThemesBulk.length;
+
+  const executeBulkThemes = useCallback(
+    async (themesList: WordPressTheme[], action: ThemesBulkAction) => {
+      if (!siteId) return;
+      const items = themesList.map((t) => toBulkThemeItem(t));
+      setBulkThemeBusy(true);
+      try {
+        const res = await runThemesBulkForSite(siteId, action, items);
+        const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
+        if (res.ok) {
+          showNotification({
+            title: action === 'delete' ? 'Removed' : 'Update',
+            message: res.message,
+            variant: partial ? 'warning' : 'success',
+          });
+          setThemeRowSelection({});
+          setBulkThemeAction('');
+          void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+          if (user?.$id) {
+            void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+            void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+          }
+        } else {
+          showNotification({ title: 'Bulk action', message: res.message, variant: 'danger' });
+        }
+      } finally {
+        setBulkThemeBusy(false);
+        setBulkThemesRemove(null);
+      }
+    },
+    [queryClient, showNotification, siteId, user?.$id],
+  );
+
+  const onBulkThemesApply = useCallback(() => {
+    if (!siteId || !bulkThemeAction || bulkThemeBusy) return;
+    if (!selectedThemesBulk.length) return;
+    if (bulkThemeAction === 'update') {
+      const eligible = selectedThemesBulk.filter((t) => hasUpdate(t));
+      if (!eligible.length) {
+        showNotification({
+          title: 'Update',
+          message: 'No selected themes have an available update.',
+          variant: 'warning',
+        });
+        return;
+      }
+      void executeBulkThemes(eligible, 'update');
+      return;
+    }
+    if (bulkThemeAction === 'delete') {
+      setBulkThemesRemove(selectedThemesBulk);
+    }
+  }, [
+    bulkThemeAction,
+    bulkThemeBusy,
+    executeBulkThemes,
+    selectedThemesBulk,
+    showNotification,
+    siteId,
+  ]);
+
+  const pageIndex = themeTable.getState().pagination.pageIndex;
+  const pageSize = themeTable.getState().pagination.pageSize;
+  const totalItems = themeTable.getFilteredRowModel().rows.length;
   const start = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
   const end = Math.min(start + pageSize - 1, totalItems);
 
@@ -852,15 +1108,61 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
           if (removeTheme) void runThemeDelete(removeTheme);
         }}
       />
-      <div className="table-responsive border rounded">
+      <SiteExtensionRemoveConfirmModal
+        show={Boolean(bulkThemesRemove?.length)}
+        title="Remove themes?"
+        description={
+          bulkThemesRemove?.length
+            ? `This will delete ${bulkThemesRemove.length} theme(s) from the site: ${bulkThemesRemove
+                .map((t) => t.name || t.stylesheet)
+                .join(', ')}. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Remove themes"
+        isBusy={bulkThemeBusy}
+        onHide={() => {
+          if (bulkThemeBusy) return;
+          setBulkThemesRemove(null);
+        }}
+        onConfirm={() => {
+          if (bulkThemesRemove?.length) void executeBulkThemes(bulkThemesRemove, 'delete');
+        }}
+      />
+      <div className="table-responsive border rounded table-select">
         <DataTable<WordPressTheme>
-          table={table}
+          table={themeTable}
           className="border rounded"
           emptyMessage={emptyMessage}
           dashboardUniformRows
         />
       </div>
-      {table.getRowModel().rows.length > 0 && (
+      {themeTable.getRowModel().rows.length > 0 && (
+        <div className="d-flex flex-wrap align-items-center gap-2 pt-3">
+          <Form.Select
+            className="extension-bulk-actions-select"
+            aria-label="Bulk actions for themes"
+            value={bulkThemeAction}
+            onChange={(e) => setBulkThemeAction((e.target.value || '') as ThemesBulkAction | '')}
+          >
+            <option value="">Bulk actions</option>
+            <option value="update">Update</option>
+            <option value="delete">Delete</option>
+          </Form.Select>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={!selectedThemeBulkCount || !bulkThemeAction || bulkThemeBusy}
+            onClick={() => void onBulkThemesApply()}
+          >
+            Apply
+          </Button>
+          {selectedThemeBulkCount > 0 ? (
+            <span className="text-muted small">{selectedThemeBulkCount} selected</span>
+          ) : null}
+        </div>
+      )}
+      {themeTable.getRowModel().rows.length > 0 && (
         <div className="pt-3">
           <TablePagination
             totalItems={totalItems}
@@ -869,14 +1171,14 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
             itemsName="themes"
             showInfo
             pageSize={pageSize}
-            onPageSizeChange={(size) => table.setPageSize(size)}
-            previousPage={table.previousPage}
-            canPreviousPage={table.getCanPreviousPage()}
-            pageCount={table.getPageCount()}
+            onPageSizeChange={(size) => themeTable.setPageSize(size)}
+            previousPage={themeTable.previousPage}
+            canPreviousPage={themeTable.getCanPreviousPage()}
+            pageCount={themeTable.getPageCount()}
             pageIndex={pageIndex}
-            setPageIndex={table.setPageIndex}
-            nextPage={table.nextPage}
-            canNextPage={table.getCanNextPage()}
+            setPageIndex={themeTable.setPageIndex}
+            nextPage={themeTable.nextPage}
+            canNextPage={themeTable.getCanNextPage()}
           />
         </div>
       )}

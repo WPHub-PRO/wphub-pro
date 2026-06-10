@@ -8,7 +8,7 @@ import {
   useSitePagespeedStrategy,
   type SitePagespeedStrategy,
 } from '@/domains/sites';
-import type { SitePagespeedCoreWebVitals, SitePagespeedResult, SitePagespeedScores } from '@/types';
+import type { SitePagespeedResult, SitePagespeedScores } from '@/types';
 import { useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab } from 'react-bootstrap';
@@ -86,44 +86,18 @@ function scoreTextClass(n: number | null): string {
   return 'text-danger';
 }
 
-/** 0 = poor, 100 = good — aligns roughly with web.dev TTFB (good ≤800ms, poor ≥1800ms). */
-function goodnessTtfb(ms: number): number {
-  if (ms <= 800) return 100;
-  if (ms >= 1800) return 0;
-  return Math.round(100 - ((ms - 800) / 1000) * 100);
-}
+type LighthouseCategoryRating = 'good' | 'needs' | 'poor';
 
-function goodnessLcp(ms: number): number {
-  if (ms <= 2500) return 100;
-  if (ms >= 4000) return 0;
-  return Math.round(100 - ((ms - 2500) / 1500) * 100);
-}
-
-function goodnessCls(cls: number): number {
-  if (cls <= 0.1) return 100;
-  if (cls >= 0.25) return 0;
-  return Math.round(100 - ((cls - 0.1) / 0.15) * 100);
-}
-
-type VitalsRating = 'good' | 'needs' | 'poor';
-
-function ratingFromGoodness(g: number): VitalsRating {
-  if (g >= 80) return 'good';
-  if (g >= 45) return 'needs';
+/** Lighthouse category thresholds (90 / 50). */
+function ratingFromLighthouseScore(score: number): LighthouseCategoryRating {
+  if (score >= 90) return 'good';
+  if (score >= 50) return 'needs';
   return 'poor';
 }
 
-function formatTtfb(ms: number): string {
-  return `${Math.round(ms)} ms`;
-}
-
-function formatLcp(ms: number): string {
-  if (ms >= 1000) return `${(ms / 1000).toFixed(ms % 1000 === 0 ? 0 : 1)} s`;
-  return `${Math.round(ms)} ms`;
-}
-
-function formatCls(cls: number): string {
-  return cls.toFixed(3);
+function normalizeLighthouseScore(value: number | null | undefined): number | null {
+  if (value == null || Number.isNaN(value)) return null;
+  return Math.min(100, Math.max(0, Math.round(value)));
 }
 
 /** Conic ring fill 0–100 (same red → amber → green language as the grade donut). */
@@ -158,34 +132,31 @@ function MiniVitalGradientRing({ goodness, ariaLabel }: { goodness: number; aria
   );
 }
 
-function ratingBadgeClass(r: VitalsRating): string {
+function ratingBadgeClass(r: LighthouseCategoryRating): string {
   if (r === 'good') return 'badge-soft-success';
   if (r === 'needs') return 'badge-soft-warning';
   return 'badge-soft-danger';
 }
 
-function ratingLabel(r: VitalsRating): string {
+function ratingLabel(r: LighthouseCategoryRating): string {
   if (r === 'good') return 'Good';
   if (r === 'needs') return 'Needs improvement';
   return 'Poor';
 }
 
-function VitalColumn({
+function LighthouseCategoryColumn({
   title,
   shortTitle,
-  valueDisplay,
-  goodness,
+  score,
 }: {
   title: string;
   shortTitle: string;
-  valueDisplay: string;
-  goodness: number | null;
+  score: number | null;
 }) {
-  const has = goodness != null;
-  const g = has ? goodness! : 0;
-  const rating = has ? ratingFromGoodness(g) : 'poor';
+  const has = score != null;
+  const rating = has ? ratingFromLighthouseScore(score) : 'poor';
   const ringLabel = has
-    ? `${shortTitle}: ${valueDisplay}; relative score ${g} out of 100 (${ratingLabel(rating)})`
+    ? `${shortTitle}: ${score} out of 100 (${ratingLabel(rating)})`
     : `${shortTitle}: no data`;
   return (
     <Col xs={4} className="d-flex flex-column align-items-center px-1">
@@ -193,7 +164,7 @@ function VitalColumn({
         {shortTitle}
       </p>
       {has ? (
-        <MiniVitalGradientRing goodness={g} ariaLabel={ringLabel} />
+        <MiniVitalGradientRing goodness={score} ariaLabel={ringLabel} />
       ) : (
         <div
           className="mx-auto rounded-circle bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted fs-xxs"
@@ -203,7 +174,7 @@ function VitalColumn({
           —
         </div>
       )}
-      <p className="fs-6 fw-bold tabular-nums mb-1 mt-2 lh-sm text-body text-center text-break w-100">{has ? valueDisplay : '—'}</p>
+      <p className="fs-6 fw-bold tabular-nums mb-1 mt-2 lh-sm text-body text-center text-break w-100">{has ? `${score}` : '—'}</p>
       <span className={`badge ${has ? ratingBadgeClass(rating) : 'badge-soft-secondary'} fs-xxs text-truncate`} style={{ maxWidth: '100%' }}>
         {has ? ratingLabel(rating) : 'No data'}
       </span>
@@ -211,37 +182,26 @@ function VitalColumn({
   );
 }
 
-function CoreWebVitalsColumns({ vitals }: { vitals?: SitePagespeedCoreWebVitals }) {
-  const ttfb = vitals?.timeToFirstByteMs ?? null;
-  const lcp = vitals?.largestContentfulPaintMs ?? null;
-  const cls = vitals?.cumulativeLayoutShift ?? null;
-
-  const gTtfb = ttfb != null && !Number.isNaN(ttfb) ? goodnessTtfb(ttfb) : null;
-  const gLcp = lcp != null && !Number.isNaN(lcp) ? goodnessLcp(lcp) : null;
-  const gCls = cls != null && !Number.isNaN(cls) ? goodnessCls(cls) : null;
+function LighthouseCategoryColumns({ scores }: { scores: SitePagespeedScores }) {
+  const accessibility = normalizeLighthouseScore(scores.accessibility);
+  const bestPractices = normalizeLighthouseScore(scores.bestPractices);
+  const seo = normalizeLighthouseScore(scores.seo);
 
   return (
     <div className="mt-4 pt-3 border-top border-light">
-      <p className="text-muted fs-xxs text-uppercase fw-semibold mb-3">Time to first byte · Largest Contentful Paint · Cumulative Layout Shift</p>
+      <p className="text-muted fs-xxs text-uppercase fw-semibold mb-3">Accessibility · Best practices · SEO</p>
       <Row className="g-0 gx-1 align-items-start justify-content-between">
-        <VitalColumn
-          title="Time to first byte (Lighthouse server-response-time audit)"
-          shortTitle="TTFB"
-          valueDisplay={ttfb != null ? formatTtfb(ttfb) : '—'}
-          goodness={gTtfb}
+        <LighthouseCategoryColumn
+          title="Lighthouse accessibility category score"
+          shortTitle="Accessibility"
+          score={accessibility}
         />
-        <VitalColumn
-          title="Largest Contentful Paint"
-          shortTitle="LCP"
-          valueDisplay={lcp != null ? formatLcp(lcp) : '—'}
-          goodness={gLcp}
+        <LighthouseCategoryColumn
+          title="Lighthouse best practices category score"
+          shortTitle="Best practices"
+          score={bestPractices}
         />
-        <VitalColumn
-          title="Cumulative Layout Shift"
-          shortTitle="CLS"
-          valueDisplay={cls != null ? formatCls(cls) : '—'}
-          goodness={gCls}
-        />
+        <LighthouseCategoryColumn title="Lighthouse SEO category score" shortTitle="SEO" score={seo} />
       </Row>
     </div>
   );
@@ -250,9 +210,6 @@ function CoreWebVitalsColumns({ vitals }: { vitals?: SitePagespeedCoreWebVitals 
 function CategoryBreakdown({ scores }: { scores: SitePagespeedScores }) {
   const rows: { label: string; value: number | null | undefined }[] = [
     { label: 'Performance', value: scores.performance },
-    { label: 'Accessibility', value: scores.accessibility },
-    { label: 'Best practices', value: scores.bestPractices },
-    { label: 'SEO', value: scores.seo },
   ];
   return (
     <ul className="list-unstyled mb-0 small w-100">
@@ -269,13 +226,7 @@ function CategoryBreakdown({ scores }: { scores: SitePagespeedScores }) {
   );
 }
 
-function PagespeedVisualBlock({
-  scores,
-  coreWebVitals,
-}: {
-  scores: SitePagespeedScores;
-  coreWebVitals?: SitePagespeedCoreWebVitals;
-}) {
+function PagespeedVisualBlock({ scores }: { scores: SitePagespeedScores }) {
   const combined = computeCombinedAverage(scores);
   if (combined == null) {
     return <p className="text-muted fs-xs mb-0">No category scores in response.</p>;
@@ -291,7 +242,7 @@ function PagespeedVisualBlock({
           <p className="text-muted fs-xxs mb-0 mt-2">Grade is based on the averange category scores with Equal Weight.</p>
         </div>
       </div>
-      <CoreWebVitalsColumns vitals={coreWebVitals} />
+      <LighthouseCategoryColumns scores={scores} />
     </div>
   );
 }
@@ -314,7 +265,7 @@ function StrategyTabBody({
       return (
         <>
           <p className="text-muted fs-xxs mb-2">Showing results stored for this browser session.</p>
-          <PagespeedVisualBlock scores={scoresCached} coreWebVitals={q.data?.coreWebVitals} />
+          <PagespeedVisualBlock scores={scoresCached} />
           {analyzedUrl.startsWith('http') ? (
             <a
               href={pagespeedWebHref(analyzedUrl, strategy)}
@@ -352,7 +303,7 @@ function StrategyTabBody({
   const analyzedUrl = q.data?.analyzedUrl || siteUrl;
   return (
     <>
-      <PagespeedVisualBlock scores={scores} coreWebVitals={q.data?.coreWebVitals} />
+      <PagespeedVisualBlock scores={scores} />
       {analyzedUrl.startsWith('http') ? (
         <a
           href={pagespeedWebHref(analyzedUrl, strategy)}

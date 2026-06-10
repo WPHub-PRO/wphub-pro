@@ -2,7 +2,6 @@ import { ROUTE_PATHS } from '@/config/routePaths';
 import {
   parseActionLogForAudit,
   useDeleteSite,
-  useRequestBridgeHeartbeatPoke,
   useSetSiteEnabled,
   useSiteAppIconPreview,
   useTransferSiteWorkspace,
@@ -20,12 +19,11 @@ import {
 } from '@/views/sites/detail/useTransferWorkspaceOptions';
 import SiteActionHistoryList from '@/views/sites/detail/SiteActionHistoryList';
 import SiteHealthScoreDonut from '@/views/sites/detail/SiteHealthScoreDonut.tsx';
+import SiteUptimeStatusDot from '@/components/sites/SiteUptimeStatusDot';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Modal, ModalBody, ModalFooter } from 'react-bootstrap';
-import { WPHUB_ACCENT_ORANGE } from '@/lib/wphubAccent';
-import { MdFlashOff, MdFlashOn } from 'react-icons/md';
-import { TbArrowsLeftRight, TbExternalLink, TbTrash, TbWorld } from 'react-icons/tb';
-import { useNavigate } from 'react-router';
+import { Button, Card, CardBody, CardHeader, CardTitle, Modal, ModalBody, ModalFooter, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { TbArrowsLeftRight, TbExternalLink, TbPlayerPause, TbTrash, TbWorld } from 'react-icons/tb';
+import { useNavigate, useSearchParams } from 'react-router';
 
 type WpMetaParsed = {
   wp_version?: string;
@@ -104,10 +102,10 @@ type SidebarFaviconPhase = 'site' | 'globe';
 
 const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardProps) => {
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { mode, activeTeamId } = useWorkspaceContext();
   const { showNotification } = useNotificationContext();
-  const pokeHeartbeat = useRequestBridgeHeartbeatPoke();
   const deleteSite = useDeleteSite();
   const transferSite = useTransferSiteWorkspace();
   const setSiteEnabled = useSetSiteEnabled();
@@ -150,14 +148,23 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
     bridgeVersionFromPluginsMeta(site.pluginsMeta) ||
     '—';
 
-  const canPokeHeartbeat =
-    Boolean(site.siteUrl?.trim()) && site.enabled !== false && !pokeHeartbeat.isPending;
-
   const siteFaviconHref = fullUrl ? siteFaviconUrl(fullUrl) : null;
   const useAppIconAvatar = Boolean(appIconSrc && !appIconLoadError);
   const showSiteFaviconImg = !useAppIconAvatar && faviconPhase === 'site' && Boolean(siteFaviconHref);
 
   const deleteSiteLabel = site.siteName?.trim() || site.siteUrl?.trim() || site.$id;
+
+  const openHealthSiteMonitor = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', 'health');
+        next.delete('healthSub');
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   return (
     <>
@@ -256,45 +263,52 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
         </p>
       </ModalBody>
       <ModalFooter>
-        <Button
-          variant="light"
-          type="button"
-          disabled={setSiteEnabled.isPending}
-          onClick={() => setDeactivateModalOpen(false)}
+        <OverlayTrigger placement="top" overlay={<Tooltip id={`site-deactivate-cancel-${site.$id}`}>Close without deactivating</Tooltip>}>
+          <Button
+            variant="light"
+            type="button"
+            disabled={setSiteEnabled.isPending}
+            onClick={() => setDeactivateModalOpen(false)}
+          >
+            Cancel
+          </Button>
+        </OverlayTrigger>
+        <OverlayTrigger
+          placement="top"
+          overlay={<Tooltip id={`site-deactivate-confirm-${site.$id}`}>Deactivate — hide from list and pause uptime monitoring</Tooltip>}
         >
-          Cancel
-        </Button>
-        <Button
-          variant="danger"
-          type="button"
-          disabled={setSiteEnabled.isPending}
-          onClick={() => {
-            setSiteEnabled.mutate(
-              { siteId: site.$id, enabled: false },
-              {
-                onSuccess: () => {
-                  setDeactivateModalOpen(false);
-                  showNotification({
-                    title: 'Site deactivated',
-                    message: 'The site is paused and hidden from the list.',
-                    variant: 'success',
-                    delay: 4000,
-                  });
+          <Button
+            variant="danger"
+            type="button"
+            disabled={setSiteEnabled.isPending}
+            onClick={() => {
+              setSiteEnabled.mutate(
+                { siteId: site.$id, enabled: false },
+                {
+                  onSuccess: () => {
+                    setDeactivateModalOpen(false);
+                    showNotification({
+                      title: 'Site deactivated',
+                      message: 'The site is paused and hidden from the list.',
+                      variant: 'success',
+                      delay: 4000,
+                    });
+                  },
+                  onError: (err) => {
+                    showNotification({
+                      title: 'Deactivate site',
+                      message: err instanceof Error ? err.message : 'Request failed.',
+                      variant: 'danger',
+                      delay: 6000,
+                    });
+                  },
                 },
-                onError: (err) => {
-                  showNotification({
-                    title: 'Deactivate site',
-                    message: err instanceof Error ? err.message : 'Request failed.',
-                    variant: 'danger',
-                    delay: 6000,
-                  });
-                },
-              },
-            );
-          }}
-        >
-          Deactivate
-        </Button>
+              );
+            }}
+          >
+            Deactivate
+          </Button>
+        </OverlayTrigger>
       </ModalFooter>
     </Modal>
     <div className="position-sticky align-self-start z-3" style={{ top: '0.75rem' }}>
@@ -305,43 +319,10 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
         </CardTitle>
         <div className="d-flex flex-column align-items-end text-end flex-shrink-0 ms-auto">
           <div
-            className="d-flex align-items-center gap-1 flex-wrap justify-content-end"
-            title="Ping the bridge (heartbeat). Use the Site monitor tab for external uptime."
+            className="d-flex align-items-center gap-2 flex-wrap justify-content-end"
+            title="Bridge connection status. External uptime is shown by the dot (UptimeRobot)."
           >
-            <button
-              type="button"
-              className="btn btn-link p-0 m-0 border-0 bg-transparent shadow-none lh-1 d-inline-flex align-items-center text-decoration-none"
-              style={{ color: 'inherit' }}
-              disabled={!canPokeHeartbeat}
-              aria-label="Ping bridge: ask WordPress to send a heartbeat and restore connection"
-              title="Ping bridge (heartbeat)"
-              onClick={() => {
-                pokeHeartbeat.mutate(site.$id, {
-                  onSuccess: (data) => {
-                    showNotification({
-                      title: 'Connection ping',
-                      message: data?.message ?? 'Bridge ping sent.',
-                      variant: 'success',
-                      delay: 4000,
-                    });
-                  },
-                  onError: (err) => {
-                    showNotification({
-                      title: 'Connection ping',
-                      message: err instanceof Error ? err.message : 'Request failed.',
-                      variant: 'danger',
-                      delay: 6000,
-                    });
-                  },
-                });
-              }}
-            >
-              {isConnected ? (
-                <MdFlashOn style={{ fontSize: '1.35rem', color: WPHUB_ACCENT_ORANGE }} aria-hidden />
-              ) : (
-                <MdFlashOff style={{ fontSize: '1.35rem', color: 'rgba(255,255,255,0.45)' }} aria-hidden />
-              )}
-            </button>
+            <SiteUptimeStatusDot site={site} onPress={openHealthSiteMonitor} />
             <span className="fs-xs text-white fw-medium">
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
@@ -446,51 +427,48 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
         {site.enabled === false ? (
           <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
             <span className="badge badge-soft-light badge-label text-dark">Disabled</span>
-            <Button
-              type="button"
-              variant="success"
-              size="sm"
-              disabled={setSiteEnabled.isPending}
-              onClick={() => {
-                setSiteEnabled.mutate(
-                  { siteId: site.$id, enabled: true },
-                  {
-                    onSuccess: () => {
-                      showNotification({
-                        title: 'Site activated',
-                        message: 'The site is visible again and uptime monitoring will resume.',
-                        variant: 'success',
-                        delay: 4000,
-                      });
-                    },
-                    onError: (err) => {
-                      showNotification({
-                        title: 'Activate site',
-                        message: err instanceof Error ? err.message : 'Request failed.',
-                        variant: 'danger',
-                        delay: 6000,
-                      });
-                    },
-                  },
-                );
-              }}
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip id={`site-sidebar-activate-${site.$id}`}>
+                  Show the site in your list again and resume uptime monitoring
+                </Tooltip>
+              }
             >
-              Activate site
-            </Button>
+              <Button
+                type="button"
+                variant="success"
+                size="sm"
+                disabled={setSiteEnabled.isPending}
+                onClick={() => {
+                  setSiteEnabled.mutate(
+                    { siteId: site.$id, enabled: true },
+                    {
+                      onSuccess: () => {
+                        showNotification({
+                          title: 'Site activated',
+                          message: 'The site is visible again and uptime monitoring will resume.',
+                          variant: 'success',
+                          delay: 4000,
+                        });
+                      },
+                      onError: (err) => {
+                        showNotification({
+                          title: 'Activate site',
+                          message: err instanceof Error ? err.message : 'Request failed.',
+                          variant: 'danger',
+                          delay: 6000,
+                        });
+                      },
+                    },
+                  );
+                }}
+              >
+                Activate site
+              </Button>
+            </OverlayTrigger>
           </div>
-        ) : (
-          <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <Button
-              type="button"
-              variant="outline-warning"
-              size="sm"
-              disabled={setSiteEnabled.isPending}
-              onClick={() => setDeactivateModalOpen(true)}
-            >
-              Deactivate site
-            </Button>
-          </div>
-        )}
+        ) : null}
 
         <div className="rounded bg-white bg-opacity-10 border border-white border-opacity-10 p-3">
           <p className="fs-xxs text-uppercase text-white-50 fw-semibold mb-2">Technical</p>
@@ -509,33 +487,64 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
             </div>
           </div>
         </div>
+
         <div className="d-flex justify-content-end gap-2 mt-2">
           {canOfferTransfer ? (
+            <OverlayTrigger
+              placement="top"
+              overlay={<Tooltip id={`site-sidebar-transfer-${site.$id}`}>Transfer to another workspace</Tooltip>}
+            >
+              <Button
+                type="button"
+                variant="outline-light"
+                size="sm"
+                className="d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-2 border-white border-opacity-25"
+                aria-label="Transfer to another workspace"
+                disabled={transferSite.isPending || deleteSite.isPending}
+                onClick={() => setTransferModalOpen(true)}
+              >
+                <TbArrowsLeftRight className="fs-lg" aria-hidden />
+              </Button>
+            </OverlayTrigger>
+          ) : null}
+          {site.enabled !== false ? (
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip id={`site-sidebar-deactivate-${site.$id}`}>
+                  Deactivate — hide from list and pause uptime monitoring
+                </Tooltip>
+              }
+            >
+              <Button
+                type="button"
+                variant="outline-warning"
+                size="sm"
+                className="d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-2"
+                aria-label="Deactivate site"
+                disabled={setSiteEnabled.isPending || deleteSite.isPending || transferSite.isPending}
+                onClick={() => setDeactivateModalOpen(true)}
+              >
+                <TbPlayerPause className="fs-lg" aria-hidden />
+              </Button>
+            </OverlayTrigger>
+          ) : null}
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip id={`site-sidebar-delete-${site.$id}`}>Remove site from the platform</Tooltip>}
+          >
             <Button
               type="button"
-              variant="outline-light"
+              variant="outline-danger"
               size="sm"
-              className="d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-2 border-white border-opacity-25"
-              title="Transfer to another workspace"
-              aria-label="Transfer to another workspace"
-              disabled={transferSite.isPending || deleteSite.isPending}
-              onClick={() => setTransferModalOpen(true)}
+              className="d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-2"
+              aria-label="Remove site from platform"
+              disabled={deleteSite.isPending || transferSite.isPending}
+              onClick={() => setDeleteModalOpen(true)}
             >
-              <TbArrowsLeftRight className="fs-lg" aria-hidden />
+              <TbTrash className="fs-lg" aria-hidden />
             </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline-danger"
-            size="sm"
-            className="d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-2"
-            title="Remove site from platform"
-            aria-label="Remove site from platform"
-            disabled={deleteSite.isPending || transferSite.isPending}
-            onClick={() => setDeleteModalOpen(true)}
-          >
-            <TbTrash className="fs-lg" aria-hidden />
-          </Button>
+          </OverlayTrigger>
         </div>
       </CardBody>
     </Card>
@@ -555,9 +564,14 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
           variant="sidebar-dark"
         />
         {onViewFullLogs ? (
-          <Button variant="link" className="link-light p-0 mt-3 fs-xs" onClick={onViewFullLogs}>
-            Bridge & API logs →
-          </Button>
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip id={`site-sidebar-logs-${site.$id}`}>Open the Logs tab — bridge and API log details</Tooltip>}
+          >
+            <Button variant="link" className="link-light p-0 mt-3 fs-xs" onClick={onViewFullLogs}>
+              Bridge & API logs →
+            </Button>
+          </OverlayTrigger>
         ) : null}
       </CardBody>
     </Card>

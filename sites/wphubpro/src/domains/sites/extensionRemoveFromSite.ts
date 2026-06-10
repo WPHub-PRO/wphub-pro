@@ -3,6 +3,7 @@
  */
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
+import { summarizeBulkPayload, toBulkPluginItemFromPath, toBulkThemeItemFromStylesheet } from './extensionBulkFromSite';
 
 const PROXY_TIMEOUT_MS = 180_000;
 
@@ -10,24 +11,30 @@ export async function runPluginUninstallForSite(
   siteId: string,
   pluginFile: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const file = (pluginFile || '').trim();
-  if (!file) {
+  const item = toBulkPluginItemFromPath(pluginFile);
+  if (!item.plugin) {
     return { ok: false, message: 'Missing plugin file path.' };
   }
 
-  const payload = {
-    siteId,
-    handler: 'plugins/uninstall',
-    body: { plugin: file },
-  };
-
   try {
-    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>('/wp-proxy', payload, {
-      timeoutMs: PROXY_TIMEOUT_MS,
-      throwOnHttpError: false,
-    });
-    if (statusCode >= 200 && statusCode < 300) {
-      return { ok: true, message: 'Plugin removed from the site.' };
+    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
+      '/wp-proxy',
+      {
+        siteId,
+        handler: 'plugins/uninstall',
+        body: { plugins: [item] },
+      },
+      {
+        timeoutMs: PROXY_TIMEOUT_MS,
+        throwOnHttpError: false,
+      },
+    );
+    const summary = summarizeBulkPayload(data, statusCode, 'Removed');
+    if (statusCode >= 200 && statusCode < 300 && summary.ok) {
+      return { ok: true, message: summary.message || 'Plugin removed from the site.' };
+    }
+    if (statusCode >= 200 && statusCode < 300 && !summary.ok) {
+      return { ok: false, message: summary.message };
     }
     return {
       ok: false,
@@ -43,24 +50,30 @@ export async function runThemeDeleteForSite(
   siteId: string,
   stylesheet: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const slug = (stylesheet || '').trim();
-  if (!slug) {
+  const item = toBulkThemeItemFromStylesheet(stylesheet);
+  if (!item.stylesheet) {
     return { ok: false, message: 'Missing theme stylesheet slug.' };
   }
 
-  const payload = {
-    siteId,
-    handler: 'themes/de-install',
-    body: { slug },
-  };
-
   try {
-    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>('/wp-proxy', payload, {
-      timeoutMs: PROXY_TIMEOUT_MS,
-      throwOnHttpError: false,
-    });
-    if (statusCode >= 200 && statusCode < 300) {
-      return { ok: true, message: 'Theme removed from the site.' };
+    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
+      '/wp-proxy',
+      {
+        siteId,
+        handler: 'themes/de-install',
+        body: { themes: [item] },
+      },
+      {
+        timeoutMs: PROXY_TIMEOUT_MS,
+        throwOnHttpError: false,
+      },
+    );
+    const summary = summarizeBulkPayload(data, statusCode, 'Removed');
+    if (statusCode >= 200 && statusCode < 300 && summary.ok) {
+      return { ok: true, message: summary.message || 'Theme removed from the site.' };
+    }
+    if (statusCode >= 200 && statusCode < 300 && !summary.ok) {
+      return { ok: false, message: summary.message };
     }
     return {
       ok: false,

@@ -5,6 +5,7 @@ core/*.tgz
 .npmrc.local
 .env
 package-lock.json
+!sites/wphubpro/package-lock.json
 dist
 !.env.example
 *.local

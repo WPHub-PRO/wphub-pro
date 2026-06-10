@@ -13,7 +13,7 @@ import { TbArrowDown, TbArrowUp } from 'react-icons/tb'
 /** Optional `columnDef.meta` overrides for header alignment (TanStack Table). */
 type DataTableColumnMeta = {
   /** Force header text alignment; `'start'` opts out of default actions-column `text-end`. */
-  headerAlign?: 'start' | 'end'
+  headerAlign?: 'start' | 'end' | 'center'
 }
 
 function readDataTableColumnMeta(columnDef: { meta?: unknown }): DataTableColumnMeta | undefined {
@@ -107,10 +107,12 @@ const DataTable = <TData,>({
               <tr key={headerGroup.id} className="text-uppercase fs-xxs">
                 {headerGroup.headers.map((header) => {
                   const actionsHeader = isActionsStyleTableHeader(header)
+                  const metaAlign = readDataTableColumnMeta(header.column.columnDef)?.headerAlign
+                  const centerHeader = metaAlign === 'center'
                   return (
                     <th
                       key={header.id}
-                      className={clsx(actionsHeader && 'text-end')}
+                      className={clsx(actionsHeader && 'text-end', centerHeader && 'text-center')}
                       onClick={header.column.getToggleSortingHandler()}
                       style={{
                         cursor: header.column.getCanSort() ? 'pointer' : 'default',
@@ -120,6 +122,7 @@ const DataTable = <TData,>({
                         className={clsx(
                           'd-flex align-items-center',
                           actionsHeader && 'justify-content-end',
+                          centerHeader && 'justify-content-center',
                         )}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getCanSort() &&
