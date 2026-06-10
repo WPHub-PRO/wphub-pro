@@ -21,20 +21,12 @@ function isMfaFactorsRequiredError(err: unknown): boolean {
 async function createSessionFromSecret(userId: string, secret: string): Promise<void> {
   const uid = userId.trim();
   const code = secret.trim();
-  if (!uid || !code) {
+  if (!uid || !code || code.length > 256) {
     throw new Error('Invalid session credentials from access link.');
   }
 
-  // Appwrite SDK v24 accepts object params; keep positional fallback for older builds.
-  try {
-    await account.createSession({ userId: uid, secret: code });
-  } catch (first) {
-    try {
-      await account.createSession(uid, code);
-    } catch {
-      throw first;
-    }
-  }
+  // Match email OTP login — positional args (Appwrite custom-token exchange).
+  await account.createSession(uid, code);
 }
 
 export default function AiAccessPage() {
@@ -66,11 +58,11 @@ export default function AiAccessPage() {
         const res = await redeemAiAccessLinkGuest(token);
         if (cancelled) return;
 
-        if (!res?.success || !res.userId || !res.secret) {
+        if (!res?.success || !res.userId || !String(res.secret || '').trim()) {
           throw new Error(res?.message || 'Could not redeem access link.');
         }
 
-        await createSessionFromSecret(res.userId, res.secret);
+        await createSessionFromSecret(res.userId, String(res.secret));
         if (cancelled) return;
 
         // Full reload so AuthProvider hydrates the new cookie session (avoids stale React auth state).

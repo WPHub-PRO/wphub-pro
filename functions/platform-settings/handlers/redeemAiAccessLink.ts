@@ -2,39 +2,14 @@ import { ok, fail } from '@code045/wphubpro-shared';
 import { getSettingValueByKey, upsertSettingByKey } from '../lib/settingsStore.ts';
 import { storageKeyForToken } from '../lib/aiAccessTokens.ts';
 
-const APPWRITE_TOKEN_EXPIRE_SEC = 900;
+/** Appwrite custom-token secret length (hex); must be 1–256 chars for account.createSession. */
+const LOGIN_TOKEN_LENGTH = 64;
+const LOGIN_TOKEN_EXPIRE_SEC = 900;
 
-async function createLoginSecret(users, userId: string, log: (msg: string) => void): Promise<string> {
-  if (typeof users.createSession === 'function') {
-    try {
-      const session = await users.createSession({ userId });
-      const secret = String(session?.secret || '').trim();
-      if (secret) {
-        log('[redeem_ai_access_link] session via users.createSession');
-        return secret;
-      }
-    } catch (e) {
-      log(
-        '[redeem_ai_access_link] users.createSession fallback to createToken: ' +
-          (e instanceof Error ? e.message : String(e)),
-      );
-    }
-  }
-
-  if (typeof users.createToken !== 'function') {
-    throw new Error('Session login is not available in this runtime.');
-  }
-
-  const appwriteToken = await users.createToken({
-    userId,
-    expire: APPWRITE_TOKEN_EXPIRE_SEC,
-  });
-  const secret = String(appwriteToken?.secret || '').trim();
-  if (!secret) {
-    throw new Error('Could not create login secret.');
-  }
-  log('[redeem_ai_access_link] session via users.createToken');
-  return secret;
+function readTokenSecret(tokenResponse: unknown): string {
+  if (!tokenResponse || typeof tokenResponse !== 'object') return '';
+  const row = tokenResponse as Record<string, unknown>;
+  return String(row.secret ?? row.Secret ?? '').trim();
 }
 
 export default async function handleRedeemAiAccessLink({ res, error, log, databases, users, payload }) {
@@ -76,11 +51,26 @@ export default async function handleRedeemAiAccessLink({ res, error, log, databa
     return fail(res, 'Access link is no longer valid.', 410);
   }
 
-  let secret: string;
+  if (typeof users.createToken !== 'function') {
+    return fail(res, 'Token login is not available in this runtime.', 500);
+  }
+
+  let secret = '';
   try {
-    secret = await createLoginSecret(users, userId, log);
+    const tokenResponse = await users.createToken({
+      userId,
+      length: LOGIN_TOKEN_LENGTH,
+      expire: LOGIN_TOKEN_EXPIRE_SEC,
+    });
+    secret = readTokenSecret(tokenResponse);
+    log(`[redeem_ai_access_link] createToken secret length=${secret.length}`);
   } catch (e) {
-    error('[redeem_ai_access_link] create login secret: ' + (e instanceof Error ? e.message : String(e)));
+    error('[redeem_ai_access_link] createToken: ' + (e instanceof Error ? e.message : String(e)));
+    return fail(res, 'Could not start session for this link.', 500);
+  }
+
+  if (!secret || secret.length > 256) {
+    error('[redeem_ai_access_link] invalid token secret length=' + String(secret.length));
     return fail(res, 'Could not start session for this link.', 500);
   }
 
@@ -99,6 +89,6 @@ export default async function handleRedeemAiAccessLink({ res, error, log, databa
     success: true,
     userId,
     secret,
-    sessionTokenExpiresInSec: APPWRITE_TOKEN_EXPIRE_SEC,
+    sessionTokenExpiresInSec: LOGIN_TOKEN_EXPIRE_SEC,
   });
 }
