@@ -1,101 +1,25 @@
 import { parseActionLogForAudit, useSiteUptimeMonitor } from '@/domains/sites';
 import {
   buildUptimeBarsForIncidents,
-  incidentEndedMs,
-  incidentStartedMs,
   last24HourBarWindowStats,
   uptimeWindowStatsFromIncidents,
 } from '@/lib/uptimeIncidentHours';
 import { getChecksForDashboard, parseSiteHealthMeta, severityTotalsForChecks } from '@/lib/parseSiteHealthMeta';
 import type { Site, SiteHealthSeverity } from '@/types';
 import SiteUptimeBars from '@/components/sites/SiteUptimeBars';
+import UptimeIncidentsTable from '@/components/sites/UptimeIncidentsTable';
 import SiteActionHistoryList from '@/views/sites/detail/SiteActionHistoryList';
 import { SiteHealthAiAgentModal } from '@/views/sites/detail/SiteHealthAiAgentModal';
 import SiteHealthMetaPanel from '@/views/sites/detail/SiteHealthMetaPanel';
 import { formatChecked, formatSiteHealthCheckedOn } from '@/views/sites/detail/siteDetailFormat';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
+import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab } from 'react-bootstrap';
 import { TbSparkles } from 'react-icons/tb';
 import { useSearchParams } from 'react-router';
 
 export { formatChecked } from '@/views/sites/detail/siteDetailFormat';
 
 type OutgoingLogRow = NonNullable<Site['logData']>['outgoing'][number];
-
-function incidentIso(row: Record<string, unknown>): string | undefined {
-  const pick =
-    row.startedAt ?? row.started_at ?? row.createdAt ?? row.created_at ?? row.date ?? row.time;
-  if (pick == null) return undefined;
-  const s = String(pick).trim();
-  return s || undefined;
-}
-
-function pickResolvedMs(row: Record<string, unknown>): number | null {
-  for (const key of ['resolvedAt', 'resolved_at', 'endedAt', 'ended_at'] as const) {
-    const v = row[key];
-    if (v == null) continue;
-    const t = Date.parse(String(v).trim());
-    if (Number.isFinite(t)) return t;
-  }
-  return null;
-}
-
-/** Resolved vs ongoing when API does not send a status string. */
-function incidentStatusLabel(row: Record<string, unknown>): string {
-  const raw =
-    (typeof row.status === 'string' && row.status.trim()) ||
-    (typeof row.state === 'string' && row.state.trim()) ||
-    '';
-  if (raw) return raw;
-  const resolved = pickResolvedMs(row);
-  const started = incidentStartedMs(row);
-  if (resolved != null && started > 0 && resolved >= started) return 'Resolved';
-  return 'Ongoing';
-}
-
-function incidentRootCause(row: Record<string, unknown>): string {
-  const pick = (key: string): string => {
-    const v = row[key];
-    return typeof v === 'string' ? v.trim() : '';
-  };
-  return (
-    pick('cause') ||
-    pick('root_cause') ||
-    pick('rootCause') ||
-    pick('reason') ||
-    pick('message') ||
-    pick('detail') ||
-    '—'
-  );
-}
-
-/** Pull first HTTP-style status code (100–599) from root-cause copy for a red badge. */
-function splitRootCauseAndStatusCode(raw: string): { code: string | null; rest: string } {
-  const t = raw.trim();
-  if (!t || t === '—') return { code: null, rest: t };
-  const re = /\b([1-5]\d{2})\b/;
-  const m = t.match(re);
-  if (!m || m.index === undefined) return { code: null, rest: t };
-  const code = m[1];
-  const rest = (t.slice(0, m.index) + t.slice(m.index + m[0].length))
-    .replace(/^[\s.,:;|/\\-]+|[\s.,:;|/\\-]+$/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  return { code, rest };
-}
-
-function formatDurationMs(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—';
-  if (ms === 0) return '0s';
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ${sec % 60}s`;
-  const h = Math.floor(min / 60);
-  if (h < 48) return `${h}h ${min % 60}m`;
-  const d = Math.floor(h / 24);
-  return `${d}d ${h % 24}h`;
-}
 
 /** e.g. `18h, 12m, 29s` — omits zero units except `0s` when there is no downtime. */
 function formatDowntimeHmsCommaSeparated(ms: number): string {
@@ -111,21 +35,6 @@ function formatDowntimeHmsCommaSeparated(ms: number): string {
   if (m > 0) parts.push(`${m}m`);
   if (s > 0 || parts.length === 0) parts.push(`${s}s`);
   return parts.join(', ');
-}
-
-function incidentDurationDisplay(row: Record<string, unknown>): string {
-  const nowMs = Date.now();
-  const s = incidentStartedMs(row);
-  const e = incidentEndedMs(row, nowMs);
-  if (s <= 0 || e <= s) return '—';
-  return formatDurationMs(e - s);
-}
-
-function incidentStatusBadgeVariant(label: string): string {
-  const l = label.toLowerCase();
-  if (l.includes('resolved') || l.includes('closed') || l.includes('complete')) return 'success';
-  if (l.includes('ongoing') || l.includes('active') || l.includes('started') || l.includes('open')) return 'warning';
-  return 'secondary';
 }
 
 function urMonitorStatusBadge(status: unknown): { label: string; variant: string } {
@@ -243,50 +152,7 @@ function SiteMonitorSubpanel({ site }: { site: Site }) {
       <Card className="mt-3">
         <CardBody>
           <h6 className="fs-base mb-3">Incidents (last 30 days)</h6>
-          {incidents.length === 0 ? (
-            <p className="text-muted fs-sm mb-0">No incidents recorded in this window.</p>
-          ) : (
-            <div className="table-responsive border rounded">
-              <Table hover size="sm" className="table table-custom table-centered table-nowrap mb-0 align-middle">
-                <thead className="bg-light align-middle bg-opacity-25 thead-sm">
-                  <tr className="fs-xxs text-muted">
-                    <th scope="col">Status</th>
-                    <th scope="col">Root Cause</th>
-                    <th scope="col">Started</th>
-                    <th scope="col">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incidents.map((row, i) => {
-                    const r = row as Record<string, unknown>;
-                    const iso = incidentIso(r);
-                    const status = incidentStatusLabel(r);
-                    const stVariant = incidentStatusBadgeVariant(status);
-                    const root = incidentRootCause(r);
-                    const { code, rest } = splitRootCauseAndStatusCode(root);
-                    const restText = code ? rest : root;
-                    return (
-                      <tr key={`inc-${i}-${iso ?? i}`}>
-                        <td className="text-nowrap">
-                          <span className={`badge badge-soft-${stVariant} text-uppercase fs-xxs`}>{status}</span>
-                        </td>
-                        <td className="fs-xs">
-                          <div className="d-flex flex-wrap align-items-center column-gap-2 row-gap-1">
-                            {code ? (
-                              <span className="badge badge-soft-danger fs-xxs flex-shrink-0">{code}</span>
-                            ) : null}
-                            {restText ? <span className="text-break">{restText}</span> : null}
-                          </div>
-                        </td>
-                        <td className="text-muted fs-xs text-nowrap">{formatChecked(iso)}</td>
-                        <td className="text-muted fs-xs text-nowrap">{incidentDurationDisplay(r)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </div>
-          )}
+          <UptimeIncidentsTable incidents={incidents as Record<string, unknown>[]} />
         </CardBody>
       </Card>
     </>

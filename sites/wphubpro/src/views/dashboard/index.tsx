@@ -1,16 +1,17 @@
+import UptimeIncidentsTable from '@/components/sites/UptimeIncidentsTable'
 import { DocHelpButton } from '@/components/docs/DocHelpButton'
 import PageBreadcrumb from '@/components/PageBreadcrumb.tsx'
 import { buildLibraryDashboardRows } from '@/domains/library'
 import { useDashboardUptimeIncidents, useSites, useSitesStatusPoll } from '@/domains/sites'
 import { useLibraryItems } from '@/hooks/useLibrary'
 import { useSitesUpdateStats } from '@/hooks/useSitesUpdateStats'
+import { buildMonitorIdToSiteIdMap, normalizeMonitorId } from '@/lib/uptimeIncidentHours'
 import type { Site } from '@/types'
-import { formatChecked } from '@/views/sites/detail/siteDetailFormat'
 import DashboardSitesLibraryTabs from '@/views/dashboard/components/DashboardSitesLibraryTabs'
 import StatisticWidget from '@/views/dashboards/dashboard2/components/StatisticWidget'
 import type { StatisticType } from '@/views/dashboards/dashboard2/statisticTypes'
-import { useMemo } from 'react'
-import { Card, Col, Container, Row, Spinner } from 'react-bootstrap'
+import { useCallback, useMemo } from 'react'
+import { Card, CardBody, Col, Container, Row, Spinner } from 'react-bootstrap'
 import { TbActivityHeartbeat, TbBellRinging, TbHeart, TbPackage, TbPlugConnected } from 'react-icons/tb'
 
 function buildHealthStatItems(sites: Site[], updateStats: ReturnType<typeof useSitesUpdateStats>): StatisticType[] {
@@ -64,57 +65,46 @@ function buildHealthStatItems(sites: Site[], updateStats: ReturnType<typeof useS
   ];
 }
 
-function incidentIsoDash(row: Record<string, unknown>): string | undefined {
-  const pick =
-    row.startedAt ?? row.started_at ?? row.createdAt ?? row.created_at ?? row.date ?? row.time;
-  if (pick == null) return undefined;
-  const s = String(pick).trim();
-  return s || undefined;
-}
-
-function incidentSummaryDash(row: Record<string, unknown>): string {
-  const msg =
-    (typeof row.message === 'string' && row.message.trim()) ||
-    (typeof row.reason === 'string' && row.reason.trim()) ||
-    '';
-  const mid = typeof row._monitorId === 'string' ? row._monitorId.trim() : '';
-  const base = msg || 'Incident';
-  return mid ? `${base} · monitor ${mid}` : base;
-}
-
-function DashboardUptimeIncidentsCard() {
+function DashboardUptimeIncidentsCard({ sites }: { sites: Site[] }) {
   const { data = [], isLoading, isError, error } = useDashboardUptimeIncidents();
+
+  const monitorToSiteId = useMemo(() => buildMonitorIdToSiteIdMap(sites), [sites]);
+  const siteById = useMemo(() => new Map(sites.map((s) => [s.$id, s])), [sites]);
+
+  const resolveSiteLabel = useCallback(
+    (monitorId: string) => {
+      const siteId = monitorToSiteId.get(normalizeMonitorId(monitorId));
+      if (!siteId) {
+        return { label: monitorId || '—' };
+      }
+      const site = siteById.get(siteId);
+      const label = site?.siteName?.trim() || site?.siteUrl?.trim() || siteId;
+      return { label, siteId };
+    },
+    [monitorToSiteId, siteById],
+  );
 
   return (
     <Card className="h-100">
-      <Card.Body>
-        <div className="d-flex align-items-center gap-2 mb-2">
+      <CardBody>
+        <div className="d-flex align-items-center gap-2 mb-3">
           <TbBellRinging className="text-primary" size={20} aria-hidden />
-          <h6 className="fs-base mb-0">Recent uptime incidents</h6>
+          <h6 className="fs-base mb-0">Incidents (last 7 days)</h6>
         </div>
-        <p className="text-muted fs-xxs mb-3">Last 7 days · up to 3 events</p>
         {isLoading ? (
           <Spinner animation="border" size="sm" role="status">
             <span className="visually-hidden">Loading…</span>
           </Spinner>
         ) : isError ? (
           <p className="text-danger fs-sm mb-0">{error?.message ?? 'Could not load incidents.'}</p>
-        ) : data.length === 0 ? (
-          <p className="text-muted fs-sm mb-0">No incidents in the last 7 days.</p>
         ) : (
-          <ul className="list-unstyled mb-0 small d-flex flex-column gap-2">
-            {data.map((row, i) => {
-              const r = row as Record<string, unknown>;
-              return (
-                <li key={`uptime-inc-${i}`}>
-                  <div className="text-muted fs-xxs">{formatChecked(incidentIsoDash(r))}</div>
-                  <div className="text-break">{incidentSummaryDash(r)}</div>
-                </li>
-              );
-            })}
-          </ul>
+          <UptimeIncidentsTable
+            incidents={data}
+            showSiteColumn
+            resolveSiteLabel={resolveSiteLabel}
+          />
         )}
-      </Card.Body>
+      </CardBody>
     </Card>
   );
 }
@@ -158,8 +148,8 @@ const DashboardPage = () => {
           </Row>
 
           <Row className="g-3 mb-3">
-            <Col xs={12} md={4}>
-              <DashboardUptimeIncidentsCard />
+            <Col xs={12} lg={6}>
+              <DashboardUptimeIncidentsCard sites={enabledSites} />
             </Col>
           </Row>
 
