@@ -27,6 +27,7 @@ import { BrandingUrlPreview } from '@/views/admin/settings/BrandingUrlPreview';
 import MediaLibraryImagePickerModal from '@/components/admin/MediaLibraryImagePickerModal';
 import MediaLibraryTab from '@/views/admin/settings/MediaLibraryTab';
 import AdminToolsTab from '@/views/admin/settings/AdminToolsTab';
+import AdminAiAccessLinkPanel from '@/views/admin/settings/AdminAiAccessLinkPanel';
 import AdminWorkspaceInboxTab from '@/views/admin/settings/AdminWorkspaceInboxTab';
 import AdminApiTab from '@/views/admin/settings/AdminApiTab';
 import { useStripePlans } from '@/domains/billing/hooks';
@@ -51,7 +52,28 @@ import Select, {
   type SingleValue,
 } from 'react-select';
 import type { StripePlan, StripePlanAllPrice } from '@/types';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+
+const SETTINGS_TAB_KEYS = [
+  'general',
+  'bridge',
+  'storage',
+  'api',
+  'security',
+  'financial',
+  'media-library',
+  'admin-inbox',
+  'tools',
+] as const;
+
+type SettingsTabKey = (typeof SETTINGS_TAB_KEYS)[number];
+
+function parseSettingsTab(raw: string | null): SettingsTabKey {
+  if (raw && (SETTINGS_TAB_KEYS as readonly string[]).includes(raw)) {
+    return raw as SettingsTabKey;
+  }
+  return 'general';
+}
 function recordFromValue(v: unknown): Record<string, string> {
   if (v && typeof v === 'object' && !Array.isArray(v)) {
     const o = v as Record<string, unknown>;
@@ -189,6 +211,8 @@ const AdminPlatformSettingsPage = () => {
   const { isAdmin } = useAuth();
   const { mode } = useDashboardNav();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const settingsTab = parseSettingsTab(searchParams.get('tab'));
   const { showNotification } = useNotificationContext();
   const { data: items = [], isLoading, isError, error, refetch } = usePlatformSettingsList();
   const { data: bridgeVersions = [], isLoading: bridgeVersionsLoading } = useBridgeReleasedVersionsForAdmin();
@@ -237,6 +261,13 @@ const AdminPlatformSettingsPage = () => {
       navigate(ROUTE_PATHS.DASHBOARD, { replace: true });
     }
   }, [isAdmin, mode, navigate]);
+
+  useEffect(() => {
+    if (settingsTab !== 'tools' || isLoading || isError) return;
+    requestAnimationFrame(() => {
+      document.getElementById('admin-ai-access-link')?.scrollIntoView({ block: 'start' });
+    });
+  }, [settingsTab, isLoading, isError]);
 
   useEffect(() => {
     if (!items.length) return;
@@ -493,6 +524,18 @@ const AdminPlatformSettingsPage = () => {
     }
   };
 
+  const selectSettingsTab = (key: string | null) => {
+    if (!key || !(SETTINGS_TAB_KEYS as readonly string[]).includes(key)) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', key);
+    setSearchParams(next, { replace: true });
+    if (key === 'tools') {
+      requestAnimationFrame(() => {
+        document.getElementById('admin-ai-access-link')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    }
+  };
+
   if (!isAdmin || mode !== 'admin') {
     return null;
   }
@@ -531,7 +574,7 @@ const AdminPlatformSettingsPage = () => {
         )}
 
         {!isLoading && !isError && (
-          <Tab.Container defaultActiveKey="general">
+          <Tab.Container activeKey={settingsTab} onSelect={selectSettingsTab}>
             <Nav variant="tabs" className="mb-0 flex-wrap">
               <Nav.Item>
                 <Nav.Link eventKey="general">General</Nav.Link>
@@ -1136,8 +1179,13 @@ const AdminPlatformSettingsPage = () => {
                 <AdminWorkspaceInboxTab />
               </Tab.Pane>
 
-              <Tab.Pane eventKey="tools">
-                <AdminToolsTab />
+              <Tab.Pane eventKey="tools" className="pt-3">
+                <Row>
+                  <Col lg={11} xl={10}>
+                    <AdminAiAccessLinkPanel />
+                    <AdminToolsTab />
+                  </Col>
+                </Row>
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>

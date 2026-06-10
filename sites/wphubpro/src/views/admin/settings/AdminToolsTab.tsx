@@ -6,30 +6,15 @@ import {
   type AdminMissingTeamCandidate,
   type AdminReconcileFreeTierResult,
 } from '@/lib/stripeAdminApi';
-import { createAiAccessLink, type CreateAiAccessLinkResult } from '@/domains/platform/aiAccessApi';
 import AdminTeamBillingTab from '@/views/admin/finance/AdminTeamBillingTab';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Form, Row, Spinner, Table } from 'react-bootstrap';
-
-const AI_ACCESS_TTL_OPTIONS = [
-  { label: '15 minutes', minutes: 15 },
-  { label: '1 hour', minutes: 60 },
-  { label: '4 hours', minutes: 240 },
-  { label: '24 hours', minutes: 1440 },
-] as const;
 
 function proceedableIds(candidates: AdminMissingTeamCandidate[]): string[] {
   return candidates.filter((c) => c.proceedable).map((c) => c.subscriptionId);
 }
 
 export default function AdminToolsTab() {
-  const [aiLinkLoading, setAiLinkLoading] = useState(false);
-  const [aiLinkErr, setAiLinkErr] = useState<string | null>(null);
-  const [aiLinkResult, setAiLinkResult] = useState<CreateAiAccessLinkResult | null>(null);
-  const [aiLinkTtlMinutes, setAiLinkTtlMinutes] = useState<number>(60);
-  const [aiLinkLabel, setAiLinkLabel] = useState('');
-  const [aiLinkCopied, setAiLinkCopied] = useState(false);
-
   const [previewLoading, setPreviewLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [candidates, setCandidates] = useState<AdminMissingTeamCandidate[]>([]);
@@ -40,39 +25,6 @@ export default function AdminToolsTab() {
   const [reconcileResult, setReconcileResult] = useState<AdminReconcileFreeTierResult | null>(null);
   const [reconcileErr, setReconcileErr] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-
-  const generateAiAccessLink = async () => {
-    setAiLinkLoading(true);
-    setAiLinkErr(null);
-    setAiLinkResult(null);
-    setAiLinkCopied(false);
-    try {
-      const r = await createAiAccessLink({
-        ttlMinutes: aiLinkTtlMinutes,
-        label: aiLinkLabel,
-      });
-      if (!r?.success || !r.url) {
-        throw new Error(r?.message || 'Could not generate access link.');
-      }
-      setAiLinkResult(r);
-    } catch (e) {
-      setAiLinkErr(e instanceof Error ? e.message : 'Request failed');
-    } finally {
-      setAiLinkLoading(false);
-    }
-  };
-
-  const copyAiAccessLink = async () => {
-    const url = aiLinkResult?.url;
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setAiLinkCopied(true);
-      window.setTimeout(() => setAiLinkCopied(false), 2000);
-    } catch {
-      setAiLinkErr('Could not copy to clipboard.');
-    }
-  };
 
   const runReconcileFreeTier = async (cursorAfter?: string) => {
     const message = cursorAfter
@@ -181,98 +133,10 @@ export default function AdminToolsTab() {
           <Card.Body>
             <Card.Title as="h5">Tools</Card.Title>
             <Card.Text className="text-muted small">
-              One-off maintenance actions for billing and team workspaces. Additional tools can be added here over time.
+              One-off maintenance actions for billing and team workspaces.
             </Card.Text>
 
             <hr className="my-3" />
-
-            <Card.Subtitle as="h6" className="mb-2">
-              AI / passwordless access link
-            </Card.Subtitle>
-            <p className="text-muted small mb-3">
-              Generate a one-time link that signs in as <strong>your admin account</strong> without a password.
-              Use it for AI tools or automated browsers that need to review layout and features. Each link expires
-              after the chosen duration and can only be used once.
-            </p>
-            <Alert variant="warning" className="small py-2">
-              Anyone with the link gets your admin session until it expires or is used. Share only with trusted tools
-              and revoke access by not sharing further links.
-            </Alert>
-            <Row className="g-3 mb-3">
-              <Col sm={6} md={4}>
-                <Form.Group controlId="ai-access-ttl">
-                  <Form.Label className="small text-muted">Link validity</Form.Label>
-                  <Form.Select
-                    value={aiLinkTtlMinutes}
-                    disabled={aiLinkLoading}
-                    onChange={(e) => setAiLinkTtlMinutes(Number(e.target.value))}>
-                    {AI_ACCESS_TTL_OPTIONS.map((o) => (
-                      <option key={o.minutes} value={o.minutes}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col sm={6} md={8}>
-                <Form.Group controlId="ai-access-label">
-                  <Form.Label className="small text-muted">Label (optional)</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="e.g. Cursor layout review"
-                    value={aiLinkLabel}
-                    disabled={aiLinkLoading}
-                    onChange={(e) => setAiLinkLabel(e.target.value)}
-                    maxLength={120}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
-              <Button
-                variant="primary"
-                type="button"
-                disabled={aiLinkLoading}
-                onClick={() => void generateAiAccessLink()}>
-                {aiLinkLoading ? (
-                  <>
-                    <Spinner animation="border" size="sm" className="me-2" role="status" />
-                    Generating…
-                  </>
-                ) : (
-                  'Generate access link'
-                )}
-              </Button>
-              {aiLinkResult?.url ? (
-                <Button variant="outline-secondary" type="button" onClick={() => void copyAiAccessLink()}>
-                  {aiLinkCopied ? 'Copied' : 'Copy link'}
-                </Button>
-              ) : null}
-            </div>
-            {aiLinkErr != null && aiLinkErr !== '' && (
-              <Alert variant="danger" className="mb-3 small">
-                {aiLinkErr}
-              </Alert>
-            )}
-            {aiLinkResult?.url ? (
-              <div className="mb-0">
-                <Form.Label className="small text-muted">Temporary link</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  readOnly
-                  className="font-monospace small user-select-all"
-                  value={aiLinkResult.url}
-                />
-                {aiLinkResult.expiresAt ? (
-                  <p className="text-muted small mt-2 mb-0">
-                    Expires {new Date(aiLinkResult.expiresAt).toLocaleString()} · single use
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
-            <hr className="my-4" />
 
             <Card.Subtitle as="h6" className="mb-2">
               Team billing defaults &amp; free tier
