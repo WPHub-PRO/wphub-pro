@@ -35,6 +35,7 @@ const ConnectSuccessPage = lazy(() => import('@/views/connect/ConnectSuccessPage
 const DashboardPage = lazy(() => import('@/views/dashboard'))
 const LibraryPage = lazy(() => import('@/views/library'))
 const LibraryItemDetailPage = lazy(() => import('@/views/library/detail/LibraryItemDetailPage'))
+const LibraryFamilyDetailPage = lazy(() => import('@/views/library/detail/LibraryFamilyDetailPage'))
 const SiteDetailPage = lazy(() => import('@/views/sites/detail/SiteDetailPage'))
 const SiteExtensionDetailPage = lazy(() => import('@/views/sites/detail/SiteExtensionDetailPage'))
 const SitesPage = lazy(() => import('@/views/sites'))
@@ -491,6 +492,14 @@ export const routes: RouteObject[] = [
         element: (
           <Suspensed>
             <LibraryItemDetailPage />
+          </Suspensed>
+        ),
+      },
+      {
+        path: `${ROUTE_PATHS.LIBRARY}/families/:familyId`,
+        element: (
+          <Suspensed>
+            <LibraryFamilyDetailPage />
           </Suspensed>
         ),
       },

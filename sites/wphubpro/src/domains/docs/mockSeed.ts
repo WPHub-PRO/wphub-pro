@@ -191,7 +191,7 @@ export const MOCK_DOC_ARTICLES: DocArticle[] = [
     sortOrder: 20,
     updatedAt: '2026-04-01',
     contentHtml: `
-      <p><strong>Families</strong> tie together related package identities (for example the same product across sources) so installs target the right slug.</p>
+      <p><strong>Families</strong> tie together related package identities (for example the same product across sources) so installs target the right slug. Open a family from the <strong>Families</strong> tab to manage members, version preferences, site coverage, and install the full group on sites.</p>
       <p><strong>Collections</strong> are curated lists you can apply to a site in fewer steps than installing one-by-one from search.</p>
       <p>Both features complement ${link('library-overview', 'basic library browsing')}.</p>
     `,

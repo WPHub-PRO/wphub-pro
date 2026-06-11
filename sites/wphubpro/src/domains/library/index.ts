@@ -11,3 +11,5 @@ export * from './libraryWorkspacePrefs';
 export * from './mappers';
 export * from './libraryItemSlug';
 export * from './libraryItemMembership';
+export * from './familyMembers';
+export * from './libraryFamilyInstall';

@@ -349,7 +349,7 @@ const LibraryItemDetailOrganization = ({
                   key={f.$id}
                   className="d-flex flex-wrap align-items-center justify-content-between gap-2 py-1 border-bottom border-light"
                 >
-                  <Link to={`${ROUTE_PATHS.LIBRARY}?view=families`} className="text-decoration-none">
+                  <Link to={ROUTE_PATHS.libraryFamilyDetailPath(f.$id)} className="text-decoration-none">
                     {f.name?.trim() || f.memberSlugs.join(', ') || 'Untitled family'}
                   </Link>
                   <Button

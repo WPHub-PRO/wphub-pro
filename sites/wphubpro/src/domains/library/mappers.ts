@@ -71,6 +71,18 @@ function parseMemberPreferencesJson(raw: unknown): Record<string, LibraryFamilyM
   }
 }
 
+export const serializeMemberPreferencesJson = (
+  prefs: Record<string, LibraryFamilyMemberPreference>,
+): string => {
+  const out: Record<string, LibraryFamilyMemberPreference> = {};
+  for (const [k, v] of Object.entries(prefs)) {
+    const slug = k.trim().toLowerCase();
+    if (!slug || !v?.versionKey?.trim()) continue;
+    out[slug] = { versionKey: v.versionKey.trim() };
+  }
+  return JSON.stringify(out);
+};
+
 export const mapLibraryFamilyDocument = (doc: Record<string, unknown>): LibraryFamily => {
   const raw = doc.member_slugs ?? doc.memberSlugs;
   const memberSlugs = Array.isArray(raw)
