@@ -22,12 +22,12 @@ import {
   serializeVersionsJson,
 } from '../lib/libraryVersions.ts';
 
-function decodeBase64Zip(data: unknown): Uint8Array {
+function decodeBase64Zip(data: unknown): Buffer {
   let s = String(data ?? '').trim();
   const m = /^data:([^;]+);base64,(.+)$/i.exec(s);
   if (m) s = m[2];
   s = s.replace(/\s/g, '');
-  return new Uint8Array(Buffer.from(s, 'base64'));
+  return Buffer.from(s, 'base64');
 }
 
 function dbId(): string {
@@ -134,7 +134,7 @@ export async function handleAddLocalItem(ctx: LibraryHandlerCtx) {
   const fileBase64 = payload.fileBase64 || payload.file_base64;
   if (!fileBase64) return fail(res, 'Missing fileBase64.', 400);
 
-  let buf: Uint8Array;
+  let buf: Buffer;
   try {
     buf = decodeBase64Zip(fileBase64);
   } catch {

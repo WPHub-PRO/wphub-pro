@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import AdmZip from 'adm-zip';
 
 export function normalizeWpSlug(slug: string): string {
@@ -29,7 +30,7 @@ export type WpZipMeta = {
 };
 
 export function parseWordPressZip(
-  buffer: Uint8Array,
+  buffer: Buffer | Uint8Array,
   type: 'plugin' | 'theme',
   expectedSlugNormalized?: string,
 ): WpZipMeta {
@@ -39,9 +40,11 @@ export function parseWordPressZip(
     throw e;
   }
 
+  const zipBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+
   let zip: AdmZip;
   try {
-    zip = new AdmZip(buffer);
+    zip = new AdmZip(zipBuffer);
   } catch {
     const e = new Error('Could not read ZIP archive.') as Error & { code?: string };
     e.code = 'INVALID_ZIP';
