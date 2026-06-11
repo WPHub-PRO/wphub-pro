@@ -35,6 +35,7 @@ export type WpProxyHandlerKey =
   | 'themes/activate'
   | 'themes/deactivate'
   | 'themes/de-install'
+  | 'themes/uninstall'
   | 'bridge/forceUpdate';
 
 export type WpProxyCtx = {
@@ -104,6 +105,10 @@ export type ThemeBulkRow = {
   zip_url?: string;
   zipUrl?: string;
   source?: string;
+  library_item_id?: string;
+  libraryItemId?: string;
+  routeSlug?: string;
+  route_slug?: string;
   [key: string]: unknown;
 };
 
@@ -130,6 +135,14 @@ export type PluginInstallVersionOk = { ok: true; slug: string; version: string }
 export type PluginInstallVersionResult = PluginInstallVersionOk | ResourceResolveFail;
 export type ThemeLibraryZipOk = { ok: true; zipUrl: string; source?: ZipSource };
 export type ThemeLibraryZipResult = ThemeLibraryZipOk | ResourceResolveFail;
+export type ThemeZipResolveResult = ThemeLibraryZipResult;
+
+export type ResolveThemeUpdateZipUrlArgs = {
+  databases: Databases;
+  fetchImpl?: typeof globalThis.fetch;
+  log: WpProxyLogFn;
+  body: Record<string, unknown>;
+};
 
 export type ResolvePluginUpdateZipUrlArgs = {
   databases: Databases;

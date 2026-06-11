@@ -1,6 +1,7 @@
 import { ok, fail } from '@code045/wphubpro-shared';
 import { callBridgeRest } from '../../lib/connectBridge.ts';
 import * as getResourceItem from '../../lib/getResourceItem.ts';
+import { attachZipSource } from '../../lib/pluginZipSource.ts';
 import { normalizeThemeBulkBody, mergeBulkResponseShape } from '../../lib/normalizeBulkBody.ts';
 import type { BridgeRestResult, ThemeBulkRow, WpProxyCtx } from '../../lib/types.ts';
 
@@ -24,9 +25,10 @@ async function runOneThemeUpdate(
     httpsZip(topLevelBody.zip_url) ||
     httpsZip(topLevelBody.zipUrl);
 
-  const row: ThemeBulkRow = { stylesheet, slug, version };
+  const row: ThemeBulkRow = { stylesheet, slug, version: '' };
   if (zipDirect) {
     row.zip_url = zipDirect;
+    attachZipSource(row, item.source ?? topLevelBody.source);
     return callBridgeRest(ctx, {
       siteId,
       bridgePath: 'wphubpro/v1/themes/manage/update',
@@ -35,25 +37,33 @@ async function runOneThemeUpdate(
     });
   }
 
-  const libraryItemId = String(
+  const libId = String(
     item.libraryItemId ||
       item.library_item_id ||
       topLevelBody.libraryItemId ||
       topLevelBody.library_item_id ||
       '',
   ).trim();
+  const libVersion = String(item.version || topLevelBody.version || '').trim();
   const routeSlug = String(
     item.routeSlug || item.route_slug || topLevelBody.routeSlug || topLevelBody.route_slug || '',
   ).trim();
-  const libVersion = String(item.version || topLevelBody.version || '').trim();
 
-  if (libraryItemId) {
-    const resolved = await getResourceItem.resolveThemeLibraryZip({
+  if (libId) {
+    const resolved = await getResourceItem.resolveThemeUpdateZipUrl({
       databases: ctx.databases,
+      fetchImpl: ctx.fetch,
       log: ctx.log,
-      libraryItemId,
-      routeSlug,
-      version: libVersion,
+      body: {
+        stylesheet,
+        slug,
+        libraryItemId: libId,
+        library_item_id: libId,
+        version: libVersion,
+        source: item.source || topLevelBody.source,
+        routeSlug,
+        route_slug: routeSlug,
+      },
     });
     if (!resolved.ok) {
       return {
@@ -63,6 +73,7 @@ async function runOneThemeUpdate(
       };
     }
     row.zip_url = resolved.zipUrl;
+    attachZipSource(row, resolved.source, item.source ?? topLevelBody.source);
     return callBridgeRest(ctx, {
       siteId,
       bridgePath: 'wphubpro/v1/themes/manage/update',
@@ -71,6 +82,59 @@ async function runOneThemeUpdate(
     });
   }
 
+  if (slug && version) {
+    const resolved = await getResourceItem.resolveThemeUpdateZipUrl({
+      databases: ctx.databases,
+      fetchImpl: ctx.fetch,
+      log: ctx.log,
+      body: {
+        stylesheet,
+        slug,
+        version,
+        source: item.source || topLevelBody.source,
+      },
+    });
+    if (!resolved.ok) {
+      return {
+        ok: false,
+        statusCode: resolved.statusCode || 400,
+        message: resolved.message || 'Zip resolve failed.',
+      };
+    }
+    row.zip_url = resolved.zipUrl;
+    attachZipSource(row, resolved.source, item.source ?? topLevelBody.source);
+    return callBridgeRest(ctx, {
+      siteId,
+      bridgePath: 'wphubpro/v1/themes/manage/update',
+      method: 'POST',
+      body: { themes: [row] },
+    });
+  }
+
+  if (stylesheet || slug) {
+    return callBridgeRest(ctx, {
+      siteId,
+      bridgePath: 'wphubpro/v1/themes/manage/update',
+      method: 'POST',
+      body: { themes: [{ stylesheet, slug, version: version || '' }] },
+    });
+  }
+
+  const resolved = await getResourceItem.resolveThemeUpdateZipUrl({
+    databases: ctx.databases,
+    fetchImpl: ctx.fetch,
+    log: ctx.log,
+    body: { ...topLevelBody, stylesheet, slug: slug || undefined },
+  });
+  if (!resolved.ok) {
+    return {
+      ok: false,
+      statusCode: resolved.statusCode || 400,
+      message: resolved.message || 'Zip resolve failed.',
+    };
+  }
+  row.zip_url = resolved.zipUrl;
+  attachZipSource(row, resolved.source, topLevelBody.source);
   return callBridgeRest(ctx, {
     siteId,
     bridgePath: 'wphubpro/v1/themes/manage/update',

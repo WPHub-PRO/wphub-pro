@@ -78,8 +78,16 @@ export function normalizeThemeBulkBody(body: Record<string, unknown>): ThemeBulk
         const slug = String(row.slug || '').trim() || stylesheet;
         const version = String(row.version ?? '').trim();
         const out: ThemeBulkRow = { stylesheet, slug, version };
-        for (const k of ['zip_url', 'zipUrl', 'source']) {
-          if (row[k]) out[k] = row[k];
+        for (const k of [
+          'zip_url',
+          'zipUrl',
+          'source',
+          'library_item_id',
+          'libraryItemId',
+          'routeSlug',
+          'route_slug',
+        ]) {
+          if (row[k] != null && row[k] !== '') out[k] = row[k];
         }
         themes.push(out);
       }

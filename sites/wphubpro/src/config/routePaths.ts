@@ -31,6 +31,9 @@ export const ROUTE_PATHS = {
   /** Library item family detail (`library_families` document id). */
   libraryFamilyDetailPath: (familyId: string) =>
     `/library/families/${encodeURIComponent(familyId)}`,
+  /** Library collection detail (`library_collections` document id). */
+  libraryCollectionDetailPath: (collectionId: string) =>
+    `/library/collections/${encodeURIComponent(collectionId)}`,
   /** Admin area default route (full admin UI to be implemented later). */
   ADMIN_DASHBOARD: '/admin',
   ADMIN_USERS: '/admin/users',

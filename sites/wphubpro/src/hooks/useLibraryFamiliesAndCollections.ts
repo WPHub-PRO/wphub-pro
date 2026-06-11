@@ -186,6 +186,45 @@ export const useCreateLibraryFamily = () => {
   });
 };
 
+export const useUpdateLibraryCollectionName = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showNotification } = useNotificationContext();
+
+  return useMutation<void, Error, { collectionId: string; name: string }>({
+    mutationFn: async ({ collectionId, name }) => {
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Name is required');
+      await databases.updateDocument(DATABASE_ID, collCol, collectionId, { name: trimmed });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['libraryCollections', user?.$id] });
+    },
+    onError: (e: Error) => {
+      showNotification({ title: 'Collection', message: e.message, variant: 'danger' });
+    },
+  });
+};
+
+export const useDeleteLibraryCollection = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showNotification } = useNotificationContext();
+
+  return useMutation<void, Error, { collectionId: string }>({
+    mutationFn: async ({ collectionId }) => {
+      await databases.deleteDocument(DATABASE_ID, collCol, collectionId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['libraryCollections', user?.$id] });
+      showNotification({ title: 'Collection', message: 'Collection deleted.', variant: 'success' });
+    },
+    onError: (e: Error) => {
+      showNotification({ title: 'Collection', message: e.message, variant: 'danger' });
+    },
+  });
+};
+
 export const useUpdateLibraryCollectionItems = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();

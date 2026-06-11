@@ -79,6 +79,8 @@ npm install && npm run build    # messaging: pnpm install && pnpm run build
 | `user-mailbox` | node-22 | 120 | npm install | any | `/functions/user-mailbox` | Admin mailbox (IMAP) |
 | `users` | node-22 | 120 | npm install | any | `/functions/users` | Teams, users |
 | `wp-proxy` | node-22 | 120 | npm install | any | `/functions/wp-proxy` | WordPress proxy / ZIP installs |
+
+**`wp-proxy` body shapes (plugins & themes):** install/update handlers accept the same resolution inputs — direct `zip_url` (+ optional `source`: `official` \| `local` \| `remote`), `libraryItemId` + `version` (composite `id::version` supported), or `slug` + `version` (themes: `slug`/`stylesheet`; plugins: `slug`/`plugin` path). Themes always bridge via zip (`install-from-zip` / `update`); plugins may use `install-version` for official slug+version. Bulk activate/deactivate/update use `plugins[]` or `themes[]` arrays with the same per-row fields.
 | `github-config-sync` | node-22 | 15 | npm install | — (events only) | `/functions/github-config-sync` | Triggers GitHub config sync on schema events |
 
 Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 1260883337`, branch `main`, `providerSilentMode: true`.

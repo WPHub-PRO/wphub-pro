@@ -3,7 +3,7 @@ import type { ZipSource } from './types.ts';
 /**
  * Attach canonical `source` (official | local | remote) to a bridge zip body when known.
  */
-export function attachPluginZipSource(
+export function attachZipSource(
   body: Record<string, unknown>,
   ...sources: unknown[]
 ): Record<string, unknown> {
@@ -16,3 +16,6 @@ export function attachPluginZipSource(
   }
   return body;
 }
+
+/** @deprecated Use attachZipSource — kept for plugin handler imports. */
+export const attachPluginZipSource = attachZipSource;

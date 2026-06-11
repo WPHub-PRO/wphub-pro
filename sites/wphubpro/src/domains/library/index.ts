@@ -13,3 +13,5 @@ export * from './libraryItemSlug';
 export * from './libraryItemMembership';
 export * from './familyMembers';
 export * from './libraryFamilyInstall';
+export * from './collectionMembers';
+export * from './libraryCollectionInstall';

@@ -1,7 +1,9 @@
+import { ROUTE_PATHS } from '@/config/routePaths'
 import type { LibraryCollection, LibraryCollectionMember } from '@/types'
 import { useMemo } from 'react'
 import { Card, CardBody, Col, Row, Table } from 'react-bootstrap'
 import { LuSearch } from 'react-icons/lu'
+import { Link } from 'react-router'
 import type { LibraryViewMode } from './ViewModeToggle'
 
 function memberLabel(m: LibraryCollectionMember): string {
@@ -60,7 +62,12 @@ const CollectionsSection = ({ collections, view, search, onSearchChange }: Colle
                 <Card className="h-100 shadow-sm">
                   <CardBody>
                     <h6 className="mb-2 text-truncate" title={c.name}>
-                      {c.name}
+                      <Link
+                        to={ROUTE_PATHS.libraryCollectionDetailPath(c.$id)}
+                        className="text-decoration-none text-body"
+                      >
+                        {c.name}
+                      </Link>
                     </h6>
                     <p className="text-muted fs-xs mb-2">
                       {c.items.length} item{c.items.length === 1 ? '' : 's'}
@@ -108,7 +115,14 @@ const CollectionsSection = ({ collections, view, search, onSearchChange }: Colle
             ) : (
               filtered.map((c) => (
                 <tr key={c.$id}>
-                  <td className="fw-medium">{c.name}</td>
+                  <td className="fw-medium">
+                    <Link
+                      to={ROUTE_PATHS.libraryCollectionDetailPath(c.$id)}
+                      className="text-decoration-none"
+                    >
+                      {c.name}
+                    </Link>
+                  </td>
                   <td>
                     {c.items.length === 0 ? (
                       <span className="text-muted fs-xs">—</span>
