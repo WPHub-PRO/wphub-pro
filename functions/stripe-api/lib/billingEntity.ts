@@ -1,5 +1,5 @@
 import { WPHUB_APPWRITE_IDS, listUserMemberships, userIsOwnerRoleOnTeam, Query } from '@code045/wphubpro-shared'
-import platformTeamsTableId from './platformTeamsTableId.ts';
+import { platformTeamsTableId } from '@code045/wphubpro-shared';
 import { fetchPlatformAccountDoc } from './platformAccount.ts';
 import { getStripeCustomerIdForUser, PREFS_KEY } from './appwritePrefs.ts';
 

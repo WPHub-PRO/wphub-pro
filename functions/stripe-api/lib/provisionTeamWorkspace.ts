@@ -1,5 +1,5 @@
 import { WPHUB_APPWRITE_IDS, Query, ID, Permission, Role } from '@code045/wphubpro-shared';
-import platformTeamsTableId from './platformTeamsTableId.ts';
+import { platformTeamsTableId } from '@code045/wphubpro-shared';
 import { fetchPlatformAccountDoc } from './platformAccount.ts';
 import syncTeamStripeCustomerMetadata from './syncTeamStripeCustomerMetadata.ts';
 
