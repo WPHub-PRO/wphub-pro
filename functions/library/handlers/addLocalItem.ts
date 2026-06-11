@@ -7,7 +7,6 @@ import {
   ID,
   Permission,
   Role,
-  InputFile,
   Databases,
   Users,
   Teams,
@@ -192,7 +191,7 @@ export async function handleAddLocalItem(ctx: LibraryHandlerCtx) {
   let uploadedFileId = fileId;
 
   try {
-    const inputFile = InputFile.fromBuffer(buf, zipName);
+    const inputFile = new File([buf], zipName);
     await storage.createFile(bucketId, fileId, inputFile);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
