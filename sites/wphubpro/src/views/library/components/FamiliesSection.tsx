@@ -1,7 +1,9 @@
+import { ROUTE_PATHS } from '@/config/routePaths'
 import type { LibraryFamily } from '@/types'
 import { useMemo } from 'react'
 import { Card, CardBody, Col, Row, Table } from 'react-bootstrap'
 import { LuSearch } from 'react-icons/lu'
+import { Link } from 'react-router'
 import type { LibraryViewMode } from './ViewModeToggle'
 
 type FamiliesSectionProps = {
@@ -60,7 +62,12 @@ const FamiliesSection = ({ families, view, search, onSearchChange }: FamiliesSec
                 <Card className="h-100 shadow-sm">
                   <CardBody>
                     <h6 className="mb-2 text-truncate" title={f.name || 'Family'}>
-                      {f.name || '—'}
+                      <Link
+                        to={ROUTE_PATHS.libraryFamilyDetailPath(f.$id)}
+                        className="text-decoration-none text-body"
+                      >
+                        {f.name || '—'}
+                      </Link>
                     </h6>
                     <p className="text-muted fs-xs mb-2">
                       {f.memberSlugs.length} member{f.memberSlugs.length === 1 ? '' : 's'}
@@ -108,7 +115,14 @@ const FamiliesSection = ({ families, view, search, onSearchChange }: FamiliesSec
             ) : (
               filtered.map((f) => (
                 <tr key={f.$id}>
-                  <td className="fw-medium">{f.name || '—'}</td>
+                  <td className="fw-medium">
+                    <Link
+                      to={ROUTE_PATHS.libraryFamilyDetailPath(f.$id)}
+                      className="text-decoration-none"
+                    >
+                      {f.name || '—'}
+                    </Link>
+                  </td>
                   <td>
                     {f.memberSlugs.length === 0 ? (
                       <span className="text-muted fs-xs">—</span>

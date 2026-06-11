@@ -28,6 +28,9 @@ export const ROUTE_PATHS = {
   /** Logical library item (plugin slug or theme slug). */
   libraryItemDetailPath: (kind: 'plugin' | 'theme', slug: string) =>
     `/library/items/${kind}/${encodeURIComponent(slug)}`,
+  /** Library item family detail (`library_families` document id). */
+  libraryFamilyDetailPath: (familyId: string) =>
+    `/library/families/${encodeURIComponent(familyId)}`,
   /** Admin area default route (full admin UI to be implemented later). */
   ADMIN_DASHBOARD: '/admin',
   ADMIN_USERS: '/admin/users',

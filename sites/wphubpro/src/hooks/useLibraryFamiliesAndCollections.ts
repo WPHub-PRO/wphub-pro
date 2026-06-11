@@ -12,9 +12,15 @@ import {
   mapLibraryCollectionDocument,
   mapLibraryFamilyDocument,
   serializeLibraryCollectionItems,
+  serializeMemberPreferencesJson,
 } from '@/domains/library';
 import { useNotificationContext } from '@/context/useNotificationContext';
-import type { LibraryCollection, LibraryCollectionMember, LibraryFamily } from '@/types';
+import type {
+  LibraryCollection,
+  LibraryCollectionMember,
+  LibraryFamily,
+  LibraryFamilyMemberPreference,
+} from '@/types';
 
 const famCol = COLLECTIONS.LIBRARY_FAMILIES;
 const collCol = COLLECTIONS.LIBRARY_COLLECTIONS;
@@ -60,6 +66,70 @@ export const useLibraryCollections = () => {
       return response.documents.map((doc) => mapLibraryCollectionDocument(doc as Record<string, unknown>));
     },
     enabled: !!user && (ws.mode !== 'team' || !!ws.activeTeamId),
+  });
+};
+
+export const useUpdateLibraryFamilyName = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showNotification } = useNotificationContext();
+
+  return useMutation<void, Error, { familyId: string; name: string }>({
+    mutationFn: async ({ familyId, name }) => {
+      const trimmed = name.trim();
+      await databases.updateDocument(DATABASE_ID, famCol, familyId, {
+        name: trimmed || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['libraryFamilies', user?.$id] });
+    },
+    onError: (e: Error) => {
+      showNotification({ title: 'Family', message: e.message, variant: 'danger' });
+    },
+  });
+};
+
+export const useUpdateLibraryFamilyMemberPreferences = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showNotification } = useNotificationContext();
+
+  return useMutation<
+    void,
+    Error,
+    { familyId: string; memberPreferences: Record<string, LibraryFamilyMemberPreference> }
+  >({
+    mutationFn: async ({ familyId, memberPreferences }) => {
+      await databases.updateDocument(DATABASE_ID, famCol, familyId, {
+        member_preferences_json: serializeMemberPreferencesJson(memberPreferences),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['libraryFamilies', user?.$id] });
+    },
+    onError: (e: Error) => {
+      showNotification({ title: 'Family', message: e.message, variant: 'danger' });
+    },
+  });
+};
+
+export const useDeleteLibraryFamily = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showNotification } = useNotificationContext();
+
+  return useMutation<void, Error, { familyId: string }>({
+    mutationFn: async ({ familyId }) => {
+      await databases.deleteDocument(DATABASE_ID, famCol, familyId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['libraryFamilies', user?.$id] });
+      showNotification({ title: 'Family', message: 'Family deleted.', variant: 'success' });
+    },
+    onError: (e: Error) => {
+      showNotification({ title: 'Family', message: e.message, variant: 'danger' });
+    },
   });
 };
 
