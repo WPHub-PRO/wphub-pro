@@ -7,7 +7,8 @@ export type LibraryBridgeInstallPlan =
   | { kind: 'plugin-install-version'; slug: string; version: string }
   | { kind: 'plugin-install-zip'; zipUrl: string; source: LibraryItem['source'] }
   | { kind: 'plugin-install-from-library'; libraryDocumentId: string; version: string; source: LibraryItem['source'] }
-  | { kind: 'theme-install-zip'; zipUrl: string }
+  | { kind: 'theme-install-zip'; zipUrl: string; source?: LibraryItem['source'] }
+  | { kind: 'theme-install-from-library'; libraryDocumentId: string; version: string; source: LibraryItem['source'] }
   | { kind: 'unsupported'; message: string };
 
 function normalizeHttpsZipUrl(url: string): string | null {
@@ -87,6 +88,14 @@ export function planLibraryBridgeInstall(
     return { kind: 'unsupported', message: 'Unsupported plugin source.' };
   }
 
+  if (item.source === 'local') {
+    const ids = libraryDocAndVersionKey(item);
+    if (!ids) {
+      return { kind: 'unsupported', message: 'Missing library document or version for this uploaded build.' };
+    }
+    return { kind: 'theme-install-from-library', ...ids, source: 'local' };
+  }
+
   if (item.source === 'remote') {
     const zipUrl = normalizeHttpsZipUrl(item.remoteUrl ?? '');
     if (!zipUrl) {
@@ -95,10 +104,15 @@ export function planLibraryBridgeInstall(
         message: 'Theme remote source must be an HTTPS URL to a ZIP file.',
       };
     }
-    return { kind: 'theme-install-zip', zipUrl };
+    return { kind: 'theme-install-zip', zipUrl, source: 'remote' };
   }
 
   if (item.source === 'official') {
+    const ids = libraryDocAndVersionKey(item);
+    if (ids && ids.version !== 'latest') {
+      return { kind: 'theme-install-from-library', ...ids, source: 'official' };
+    }
+
     let zipUrl = '';
     if (item.version === 'latest') {
       const dl = wpThemeInfo?.download_link ? normalizeHttpsZipUrl(wpThemeInfo.download_link) : null;
@@ -126,14 +140,10 @@ export function planLibraryBridgeInstall(
           'Could not resolve a theme ZIP for this version. Pin a WordPress.org version or add an HTTPS ZIP URL.',
       };
     }
-    return { kind: 'theme-install-zip', zipUrl };
+    return { kind: 'theme-install-zip', zipUrl, source: 'official' };
   }
 
-  return {
-    kind: 'unsupported',
-    message:
-      'Uploaded theme ZIPs cannot be fetched by the bridge yet. Add an HTTPS ZIP (remote) or install from the site.',
-  };
+  return { kind: 'unsupported', message: 'Unsupported theme source.' };
 }
 
 export async function runLibraryBridgeInstallOnSite(
@@ -179,7 +189,22 @@ export async function runLibraryBridgeInstallOnSite(
       payload = {
         siteId,
         handler: 'themes/install',
-        body: { zip_url: plan.zipUrl, plugin },
+        body: {
+          zip_url: plan.zipUrl,
+          ...(plan.source ? { source: plan.source } : {}),
+          plugin,
+        },
+      };
+      break;
+    case 'theme-install-from-library':
+      payload = {
+        siteId,
+        handler: 'themes/install',
+        body: {
+          libraryItemId: plan.libraryDocumentId,
+          version: plan.version,
+          source: plan.source,
+        },
       };
       break;
     default: {

@@ -356,120 +356,225 @@ function themeOrgZipFallback(slug, version) {
 }
 
 /**
- * Resolve theme HTTPS zip for library install (official / remote / local).
- * @returns {Promise<{ ok: true, zipUrl: string } | { ok: false, statusCode: number, message: string }>}
+ * @param {string} zipUrl
+ * @param {string} [source] official | local | remote
  */
-async function resolveThemeLibraryZip({ databases, log, libraryItemId, routeSlug, version: explicitVersion }) {
-  const { docId, version: versionFromId } = normalizeLibraryDocumentIdAndVersion(
-    String(libraryItemId || ''),
-    String(explicitVersion || '').trim(),
-  );
-  const dbId = databaseId();
-  const libColl = libraryCollectionId();
-  let doc;
-  try {
-    doc = await databases.getDocument(dbId, libColl, docId);
-  } catch (e) {
-    return { ok: false, statusCode: 404, message: `Library item not found: ${e.message || 'unknown'}` };
+function themeZipResolveOk(zipUrl, source) {
+  const out = { ok: true, zipUrl: String(zipUrl || '').trim() };
+  const s = String(source || '').trim().toLowerCase();
+  if (s === 'official' || s === 'local' || s === 'remote') {
+    out.source = s;
   }
+  return out;
+}
 
-
-  const wpSlug = String(doc.wpSlug ?? doc.wp_slug ?? routeSlug ?? '')
-    .trim()
-    .toLowerCase();
-  if (!wpSlug) {
-    return { ok: false, statusCode: 400, message: 'Missing theme slug for this library item.' };
+async function fetchWordpressOrgThemeZip(fetchImpl, wpSlug, version) {
+  const slug = String(wpSlug || '').trim().toLowerCase();
+  const ver = String(version || '').trim();
+  if (!slug || !ver) {
+    return { ok: false, message: 'Missing theme slug or version for WordPress.org lookup.' };
   }
-
-  const source = String(doc.source ?? 'official');
-  const versionKey =
-    String(versionFromId || '').trim() ||
-    (doc.version === 'latest' || String(doc.version || '').trim() === 'latest'
-      ? ''
-      : String(doc.version ?? '').trim());
-
-  if (source === 'remote') {
-    const u = String(doc.remoteUrl || doc.remote_url || '').trim();
-    if (!u.startsWith('https://')) {
-      return { ok: false, statusCode: 400, message: 'Theme remote source must be an HTTPS URL to a ZIP file.' };
-    }
-    return { ok: true, zipUrl: u };
-  }
-
-  if (source === 'official') {
-    const ver = versionKey;
-    if (!ver || ver === 'latest') {
-      return {
-        ok: false,
-        statusCode: 400,
-        message:
-          'Could not resolve a concrete theme version on the library row. Pin an exact WordPress.org version.',
-      };
-    }
-    const fb = themeOrgZipFallback(wpSlug, ver);
-    if (fb) {
-      return { ok: true, zipUrl: fb };
-    }
+  const params = new URLSearchParams();
+  params.set('action', 'theme_information');
+  params.set('request[slug]', slug);
+  const url = `https://api.wordpress.org/themes/info/1.1/?${params.toString()}`;
+  const res = await fetchImpl(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
     return {
       ok: false,
-      statusCode: 400,
-      message: 'Could not resolve a theme ZIP for this version. Pin a WordPress.org version or add an HTTPS ZIP URL.',
+      message: `WordPress.org theme info failed (${res.status}). ${String(t).slice(0, 200)}`,
     };
   }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    return { ok: false, message: 'Invalid JSON from WordPress.org.' };
+  }
+  const versions =
+    data && typeof data.versions === 'object' && data.versions !== null ? data.versions : {};
+  const zipUrl = versions[ver];
+  if (typeof zipUrl === 'string' && zipUrl.startsWith('https://')) {
+    return { ok: true, zip_url: zipUrl };
+  }
+  const fb = themeOrgZipFallback(slug, ver);
+  if (fb) {
+    return { ok: true, zip_url: fb };
+  }
+  return {
+    ok: false,
+    message: `Version "${ver}" is not available from WordPress.org for theme "${slug}".`,
+  };
+}
 
-  if (source === 'local') {
-    const map = getOrBuildVersionsMap(doc);
-    const picked = pickVersionMapEntry(map, versionKey);
-    if (!picked) {
-      return {
-        ok: false,
-        statusCode: 404,
-        message: versionKey
-          ? `Version "${versionKey}" not found on this library theme.`
-          : 'Missing version for this library theme row.',
-      };
-    }
-    const { entry } = picked;
-    const docFallbackLoc =
-      String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
-      String(doc.remoteUrl || doc.remote_url || '').trim() ||
-      '';
-    const loc =
-      (entry.location && String(entry.location).trim()) ||
-      (entry.source === 'local' || entry.source === 'remote' ? docFallbackLoc : '');
+/**
+ * Resolve `zip_url` for theme install/update when Hub sends version/source but not zip.
+ * @returns {Promise<{ ok: true, zipUrl: string, source?: string } | { ok: false, statusCode: number, message: string }>}
+ */
+async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
+  const normalized = body && typeof body === 'object' ? body : {};
+  const zipExisting = String(normalized.zip_url || normalized.zipUrl || '').trim();
+  if (zipExisting.startsWith('https://')) {
+    return themeZipResolveOk(zipExisting, String(normalized.source || '').trim().toLowerCase());
+  }
 
-    if (entry.source === 'remote') {
-      if (!loc || !loc.startsWith('https://')) {
-        return { ok: false, statusCode: 400, message: 'Remote theme library version has no valid HTTPS location.' };
+  const libraryItemIdRaw = String(normalized.library_item_id || normalized.libraryItemId || '').trim();
+  const routeSlug = String(normalized.routeSlug || normalized.route_slug || '').trim();
+  const { docId: libraryDocId, version: versionResolved } = normalizeLibraryDocumentIdAndVersion(
+    libraryItemIdRaw,
+    String(normalized.version || '').trim(),
+  );
+  const version = String(versionResolved || '').trim();
+  if (!version) {
+    return { ok: false, statusCode: 400, message: 'Missing version for theme update zip resolution.' };
+  }
+
+  const sourceRaw = String(normalized.source || '').trim().toLowerCase();
+  const officialLike = !sourceRaw || ['official', 'wordpress', 'wporg'].includes(sourceRaw);
+
+  try {
+    if (libraryDocId) {
+      const dbId = databaseId();
+      const libColl = libraryCollectionId();
+      let doc;
+      try {
+        doc = await databases.getDocument(dbId, libColl, libraryDocId);
+      } catch (e) {
+        return { ok: false, statusCode: 404, message: `Library item not found: ${e.message || 'unknown error'}` };
       }
-      return { ok: true, zipUrl: loc };
-    }
 
-    let storageBucketHint = '';
-    if (entry.storageBucket) storageBucketHint = String(entry.storageBucket).trim();
-    if (!storageBucketHint) {
-      for (const e of Object.values(map)) {
-        if (e && e.source === 'local' && e.storageBucket) {
-          storageBucketHint = String(e.storageBucket).trim();
-          break;
+      const map = getOrBuildVersionsMap(doc);
+      const picked = pickVersionMapEntry(map, version);
+      if (!picked) {
+        return {
+          ok: false,
+          statusCode: 404,
+          message: `Version "${version}" not found on this library item (keys: ${Object.keys(map).slice(0, 8).join(', ') || 'none'}).`,
+        };
+      }
+      const { entry } = picked;
+
+      const docFallbackLoc =
+        String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
+        String(doc.remoteUrl || doc.remote_url || '').trim() ||
+        '';
+      const loc =
+        (entry.location && String(entry.location).trim()) ||
+        (entry.source === 'local' || entry.source === 'remote' ? docFallbackLoc : '');
+
+      switch (entry.source) {
+        case 'official': {
+          if (loc && loc.startsWith('https://')) {
+            return themeZipResolveOk(loc, 'official');
+          }
+          const wpSlug = String(doc.wpSlug || doc.wp_slug || routeSlug || '').trim().toLowerCase();
+          if (!wpSlug) {
+            return { ok: false, statusCode: 400, message: 'Missing theme slug for this library item.' };
+          }
+          if (!fetchImpl) {
+            return {
+              ok: false,
+              statusCode: 500,
+              message: 'WordPress.org lookup requires fetch in function context.',
+            };
+          }
+          const r = await fetchWordpressOrgThemeZip(fetchImpl, wpSlug, picked.key);
+          if (!r.ok) {
+            return { ok: false, statusCode: 404, message: r.message };
+          }
+          return themeZipResolveOk(r.zip_url, 'official');
+        }
+        case 'remote': {
+          if (!loc || !loc.startsWith('https://')) {
+            return { ok: false, statusCode: 400, message: 'Remote library version has no valid HTTPS location.' };
+          }
+          return themeZipResolveOk(loc, 'remote');
+        }
+        case 'local': {
+          if (!loc) {
+            return { ok: false, statusCode: 400, message: 'Local library version has no storage location.' };
+          }
+          const pr = await resolveLocalLibraryZipUrl(loc, entry.storageBucket, doc.type, log);
+          if (!pr.ok) {
+            return { ok: false, statusCode: pr.statusCode || 400, message: pr.message };
+          }
+          return themeZipResolveOk(pr.zip_url, 'local');
+        }
+        default: {
+          const _e = entry.source;
+          void _e;
+          return { ok: false, statusCode: 400, message: 'Unknown version source in library versions map.' };
         }
       }
     }
-    if (!loc) {
-      return { ok: false, statusCode: 400, message: 'Local theme library version has no storage location.' };
-    }
-    const pr = await resolveLocalLibraryZipUrl(loc, storageBucketHint, doc.type, log);
-    if (!pr.ok) {
-      return { ok: false, statusCode: pr.statusCode || 400, message: pr.message };
-    }
-    return { ok: true, zipUrl: pr.zip_url };
-  }
 
-  return {
-    ok: false,
-    statusCode: 400,
-    message: 'Unsupported library theme source for server-side zip resolution.',
-  };
+    if (officialLike) {
+      const slug = String(
+        normalized.wpSlug || normalized.wp_slug || normalized.slug || normalized.stylesheet || '',
+      )
+        .trim()
+        .toLowerCase();
+      if (!slug) {
+        return {
+          ok: false,
+          statusCode: 400,
+          message: 'Missing theme slug (slug / wpSlug / stylesheet) for WordPress.org lookup.',
+        };
+      }
+      if (!fetchImpl) {
+        return {
+          ok: false,
+          statusCode: 500,
+          message: 'WordPress.org lookup requires fetch in function context.',
+        };
+      }
+      const r = await fetchWordpressOrgThemeZip(fetchImpl, slug, version);
+      if (!r.ok) {
+        return { ok: false, statusCode: 404, message: r.message };
+      }
+      return themeZipResolveOk(r.zip_url, 'official');
+    }
+
+    if (['local', 'remote'].includes(sourceRaw)) {
+      return {
+        ok: false,
+        statusCode: 400,
+        message: 'library_item_id is required to resolve zip_url for local or remote library sources.',
+      };
+    }
+
+    return {
+      ok: false,
+      statusCode: 400,
+      message: `Unsupported source "${sourceRaw}" for versioned theme update without zip_url.`,
+    };
+  } catch (e) {
+    if (typeof log === 'function') {
+      log(`[wp-proxy] getResourceItem theme zip resolve: ${e.message}`);
+    }
+    return { ok: false, statusCode: 500, message: e.message || 'zip_url resolution failed.' };
+  }
+}
+
+/**
+ * Resolve theme HTTPS zip for library install (official / remote / local).
+ * Thin wrapper around {@link resolveThemeUpdateZipUrl}.
+ * @returns {Promise<{ ok: true, zipUrl: string, source?: string } | { ok: false, statusCode: number, message: string }>}
+ */
+async function resolveThemeLibraryZip({ databases, log, libraryItemId, routeSlug, version: explicitVersion, fetchImpl }) {
+  return resolveThemeUpdateZipUrl({
+    databases,
+    fetchImpl,
+    log,
+    body: {
+      libraryItemId,
+      library_item_id: libraryItemId,
+      version: explicitVersion,
+      routeSlug,
+      route_slug: routeSlug,
+    },
+  });
 }
 
 /**
@@ -515,9 +620,11 @@ async function resolvePluginLibraryInstallVersion({ databases, libraryItemId, ro
 
 export {
   resolvePluginUpdateZipUrl,
+  resolveThemeUpdateZipUrl,
   resolveThemeLibraryZip,
   resolvePluginLibraryInstallVersion,
   fetchWordpressOrgPluginZip,
+  fetchWordpressOrgThemeZip,
   slugFromPluginPath,
   getOrBuildVersionsMap,
 };
