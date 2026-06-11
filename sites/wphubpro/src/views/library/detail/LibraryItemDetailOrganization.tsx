@@ -391,7 +391,7 @@ const LibraryItemDetailOrganization = ({
                   key={c.$id}
                   className="d-flex flex-wrap align-items-center justify-content-between gap-2 py-1 border-bottom border-light"
                 >
-                  <Link to={`${ROUTE_PATHS.LIBRARY}?view=collections`} className="text-decoration-none">
+                  <Link to={ROUTE_PATHS.libraryCollectionDetailPath(c.$id)} className="text-decoration-none">
                     {c.name}
                   </Link>
                   <Button
