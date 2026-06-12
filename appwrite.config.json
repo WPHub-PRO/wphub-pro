@@ -419,7 +419,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/stripe-api",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
