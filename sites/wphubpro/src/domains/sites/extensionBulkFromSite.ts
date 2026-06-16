@@ -3,6 +3,7 @@
  */
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import type { WordPressPlugin, WordPressTheme } from '@/types';
+import { formatAvailableUpdate } from './installedMeta';
 import { pluginDirectorySlug } from './pluginUpdateFromSite';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
 
@@ -28,6 +29,15 @@ export function toBulkThemeItem(row: WordPressTheme): BulkThemeItem {
   const slug = stylesheet;
   const version = (row.version || '').trim();
   return { stylesheet, slug, version };
+}
+
+export function toBulkThemeItemForUpdate(theme: WordPressTheme): BulkThemeItem {
+  const base = toBulkThemeItem(theme);
+  const target = formatAvailableUpdate(theme.update);
+  return {
+    ...base,
+    version: target !== '—' ? target : base.version,
+  };
 }
 
 export function toBulkThemeItemFromStylesheet(stylesheet: string): BulkThemeItem {
