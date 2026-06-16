@@ -157,7 +157,7 @@ export type ThemesBulkAction = 'update' | 'delete';
 
 const THEME_HANDLER: Record<ThemesBulkAction, string> = {
   update: 'themes/update',
-  delete: 'themes/de-install',
+  delete: 'themes/uninstall',
 };
 
 export async function runThemesBulkForSite(

@@ -618,11 +618,53 @@ async function resolvePluginLibraryInstallVersion({ databases, libraryItemId, ro
   return { ok: true, slug, version: v };
 }
 
+/**
+ * Resolve theme `install-version` slug/version from library official row.
+ * @returns {Promise<{ ok: true, slug: string, version: string } | { ok: false, statusCode: number, message: string }>}
+ */
+async function resolveThemeLibraryInstallVersion({ databases, libraryItemId, routeSlug, log }) {
+  const { docId } = normalizeLibraryDocumentIdAndVersion(String(libraryItemId || ''), '');
+  const dbId = databaseId();
+  const libColl = libraryCollectionId();
+  let doc;
+  try {
+    doc = await databases.getDocument(dbId, libColl, docId);
+  } catch (e) {
+    return { ok: false, statusCode: 404, message: `Library item not found: ${e.message || 'unknown'}` };
+  }
+  if (String(doc.type ?? '').toLowerCase() !== 'theme') {
+    return { ok: false, statusCode: 400, message: 'Library item is not a theme.' };
+  }
+  if (String(doc.source ?? '') !== 'official') {
+    return {
+      ok: false,
+      statusCode: 400,
+      message: 'Library theme install supports official source only from the server resolver.',
+    };
+  }
+  const slug = String(doc.wpSlug ?? doc.wp_slug ?? routeSlug ?? '')
+    .trim()
+    .toLowerCase();
+  const v =
+    doc.version === 'latest' || String(doc.version || '').trim() === 'latest'
+      ? ''
+      : String(doc.version ?? '').trim();
+  if (!slug || !v || v === 'latest') {
+    return {
+      ok: false,
+      statusCode: 400,
+      message: 'Library theme needs wpSlug and a pinned version (not latest) for install-version.',
+    };
+  }
+  return { ok: true, slug, version: v };
+}
+
 export {
   resolvePluginUpdateZipUrl,
   resolveThemeUpdateZipUrl,
   resolveThemeLibraryZip,
   resolvePluginLibraryInstallVersion,
+  resolveThemeLibraryInstallVersion,
   fetchWordpressOrgPluginZip,
   fetchWordpressOrgThemeZip,
   slugFromPluginPath,

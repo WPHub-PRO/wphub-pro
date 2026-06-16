@@ -3,7 +3,7 @@ import { callBridgeRest } from '../../lib/connectBridge.ts';
 import { normalizeThemeBulkBody } from '../../lib/normalizeBulkBody.ts';
 import type { WpProxyCtx } from '../../lib/types.ts';
 
-export default async function handleThemesDeInstall(ctx: WpProxyCtx) {
+export default async function handleThemesUninstall(ctx: WpProxyCtx) {
   const { res, payload } = ctx;
   const siteId = payload.siteId || payload.site_id;
   if (!siteId) return fail(res, 'siteId is required.', 400);
@@ -12,7 +12,7 @@ export default async function handleThemesDeInstall(ctx: WpProxyCtx) {
   if (!norm.ok) return fail(res, norm.message, 400);
   const result = await callBridgeRest(ctx, {
     siteId: String(siteId),
-    bridgePath: 'wphubpro/v1/themes/manage/delete',
+    bridgePath: 'wphubpro/v1/themes/manage/uninstall',
     method: 'POST',
     body: norm.body,
   });
