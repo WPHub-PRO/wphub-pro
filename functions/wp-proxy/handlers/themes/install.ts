@@ -41,6 +41,23 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
   }
 
   if (libraryItemId && version) {
+    const official = await getResourceItem.resolveThemeLibraryInstallVersion({
+      databases,
+      libraryItemId,
+      routeSlug,
+      log: ctx.log,
+    });
+    if (official.ok) {
+      const result = await callBridgeRest(ctx, {
+        siteId: String(siteId),
+        bridgePath: 'wphubpro/v1/themes/manage/install-version',
+        method: 'POST',
+        body: { slug: official.slug, version: official.version },
+      });
+      if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
+      return ok(res, result.responseData);
+    }
+
     const zipRes = await getResourceItem.resolveThemeUpdateZipUrl({
       databases,
       fetchImpl: ctx.fetch,
@@ -57,8 +74,8 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
     if (!zipRes.ok) {
       return fail(
         res,
-        zipRes.message || 'Could not resolve a ZIP for this library theme version.',
-        zipRes.statusCode || 400,
+        zipRes.message || official.message || 'Could not resolve a ZIP for this library theme version.',
+        zipRes.statusCode || official.statusCode || 400,
       );
     }
     const result = await callBridgeRest(ctx, {
@@ -74,7 +91,7 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
   if (libraryItemId && !version) {
     return fail(
       res,
-      'body.version is required with libraryItemId for library theme ZIP installs (local / remote / official).',
+      'body.version is required with libraryItemId for library theme ZIP installs (local / remote / non–install-version rows).',
       400,
     );
   }
@@ -87,26 +104,11 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
       400,
     );
   }
-
-  const zipRes = await getResourceItem.resolveThemeUpdateZipUrl({
-    databases,
-    fetchImpl: ctx.fetch,
-    log: ctx.log,
-    body: {
-      slug,
-      stylesheet: slug,
-      version,
-      source: String(body.source || '').trim().toLowerCase(),
-    },
-  });
-  if (!zipRes.ok) {
-    return fail(res, zipRes.message || 'Could not resolve theme ZIP.', zipRes.statusCode || 400);
-  }
   const result = await callBridgeRest(ctx, {
     siteId: String(siteId),
-    bridgePath: 'wphubpro/v1/themes/manage/install-from-zip',
+    bridgePath: 'wphubpro/v1/themes/manage/install-version',
     method: 'POST',
-    body: attachZipSource({ zip_url: zipRes.zipUrl, plugin }, zipRes.source, body.source),
+    body: { slug, version },
   });
   if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
   return ok(res, result.responseData);

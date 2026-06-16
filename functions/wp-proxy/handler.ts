@@ -25,7 +25,7 @@ import handleThemesUpdate from './handlers/themes/update.ts';
 import handleThemesInstall from './handlers/themes/install.ts';
 import handleThemesActivate from './handlers/themes/activate.ts';
 import handleThemesDeactivate from './handlers/themes/deactivate.ts';
-import handleThemesDeInstall from './handlers/themes/deInstall.ts';
+import handleThemesUninstall from './handlers/themes/uninstall.ts';
 import handleBridgeForceUpdate from './handlers/bridge/forceUpdate.ts';
 
 const HANDLERS: Record<WpProxyHandlerKey, WpProxyHandler> = {
@@ -39,8 +39,7 @@ const HANDLERS: Record<WpProxyHandlerKey, WpProxyHandler> = {
   'themes/install': handleThemesInstall,
   'themes/activate': handleThemesActivate,
   'themes/deactivate': handleThemesDeactivate,
-  'themes/de-install': handleThemesDeInstall,
-  'themes/uninstall': handleThemesDeInstall,
+  'themes/uninstall': handleThemesUninstall,
   'bridge/forceUpdate': handleBridgeForceUpdate,
 };
 
@@ -55,8 +54,6 @@ function normalizeHandler(handlerRaw: unknown): WpProxyHandlerKey | '' {
     if (s === 'plugins/de-install' || s === 'plugins/deinstall' || s === 'plugins/de_install') {
       return 'plugins/uninstall';
     }
-    if (s === 'themes/deinstall' || s === 'themes/de_install') return 'themes/de-install';
-    if (s === 'themes/uninstall') return 'themes/uninstall';
     if (s in HANDLERS) return s as WpProxyHandlerKey;
     return '';
   }
@@ -72,7 +69,6 @@ function normalizeHandler(handlerRaw: unknown): WpProxyHandlerKey | '' {
   const pref = m[1];
   const rest = m[2];
   if (pref === 'plugins' && (rest === 'de_install' || rest === 'deinstall')) return 'plugins/uninstall';
-  if (pref === 'themes' && (rest === 'de_install' || rest === 'deinstall')) return 'themes/de-install';
   if (pref === 'themes' && rest === 'uninstall') return 'themes/uninstall';
   if (pref === 'bridge' && rest === 'force_update') return 'bridge/forceUpdate';
   const key = `${pref}/${rest.replace(/_/g, '/')}` as WpProxyHandlerKey;
