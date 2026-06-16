@@ -25,7 +25,7 @@ async function runOneThemeUpdate(
     httpsZip(topLevelBody.zip_url) ||
     httpsZip(topLevelBody.zipUrl);
 
-  const row: ThemeBulkRow = { stylesheet, slug, version: '' };
+  const row: ThemeBulkRow = { stylesheet, slug, version };
   if (zipDirect) {
     row.zip_url = zipDirect;
     attachZipSource(row, item.source ?? topLevelBody.source);
@@ -73,6 +73,7 @@ async function runOneThemeUpdate(
       };
     }
     row.zip_url = resolved.zipUrl;
+    row.version = libVersion || version;
     attachZipSource(row, resolved.source, item.source ?? topLevelBody.source);
     return callBridgeRest(ctx, {
       siteId,
@@ -134,6 +135,7 @@ async function runOneThemeUpdate(
     };
   }
   row.zip_url = resolved.zipUrl;
+  row.version = String(topLevelBody.version || version || '').trim();
   attachZipSource(row, resolved.source, topLevelBody.source);
   return callBridgeRest(ctx, {
     siteId,

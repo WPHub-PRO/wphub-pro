@@ -114,10 +114,21 @@ export async function runThemeUpdateForSite(
     };
   }
 
+  const pinnedFromLibrary =
+    choice.kind === 'library' && choice.item.source === 'official'
+      ? (choice.item.version || '').trim()
+      : '';
+  const wantsPinned =
+    pinnedFromLibrary && pinnedFromLibrary.toLowerCase() !== 'latest' && org?.versions?.[pinnedFromLibrary];
+  const targetVersion = (wantsPinned ? pinnedFromLibrary : org?.version || '').trim();
+  if (!targetVersion) {
+    return { ok: false, message: 'WordPress.org returned an empty version.' };
+  }
+
   const payload = {
     siteId,
     handler: 'themes/update',
-    body: { themes: [toBulkThemeItem(theme)] },
+    body: { themes: [{ stylesheet: slug, slug, version: targetVersion }] },
   };
 
   try {

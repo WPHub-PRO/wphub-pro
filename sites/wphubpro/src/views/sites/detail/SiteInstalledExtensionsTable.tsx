@@ -24,6 +24,7 @@ import {
   runThemesBulkForSite,
   toBulkPluginItem,
   toBulkThemeItem,
+  toBulkThemeItemForUpdate,
   type PluginsBulkAction,
   type ThemesBulkAction,
 } from '@/domains/sites/extensionBulkFromSite';
@@ -1009,7 +1010,9 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
   const executeBulkThemes = useCallback(
     async (themesList: WordPressTheme[], action: ThemesBulkAction) => {
       if (!siteId) return;
-      const items = themesList.map((t) => toBulkThemeItem(t));
+      const items = themesList.map((t) =>
+        action === 'update' ? toBulkThemeItemForUpdate(t) : toBulkThemeItem(t),
+      );
       setBulkThemeBusy(true);
       try {
         const res = await runThemesBulkForSite(siteId, action, items);
