@@ -34,6 +34,7 @@ export type WpProxyHandlerKey =
   | 'themes/install'
   | 'themes/activate'
   | 'themes/deactivate'
+  | 'themes/delete'
   | 'themes/uninstall'
   | 'bridge/forceUpdate';
 

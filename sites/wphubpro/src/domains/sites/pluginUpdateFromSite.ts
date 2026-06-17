@@ -2,7 +2,7 @@
  * Hub → `wp-proxy` (Appwrite) → WordPress bridge REST.
  *
  * **Standard plugins (not WPHubPro Bridge):**
- * - `POST` `wphubpro/v1/plugins/manage/install-version` with JSON body `{ plugin, slug, version }`.
+ * - `POST` `wphubpro/v1/plugins/manage/install` with JSON body `{ plugin, slug, version }`.
  * - The bridge downloads the package from **WordPress.org** only (`Plugins::install_plugin_version` in the bridge).
  * - Library row with `source: official` uses the same path; a pinned version is used only if it still exists in `versions` on org.
  *

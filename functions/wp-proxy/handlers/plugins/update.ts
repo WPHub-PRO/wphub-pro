@@ -89,7 +89,7 @@ async function runOnePluginUpdate(
   if (slug && version) {
     return callBridgeRest(ctx, {
       siteId,
-      bridgePath: 'wphubpro/v1/plugins/manage/install-version',
+      bridgePath: 'wphubpro/v1/plugins/manage/install',
       method: 'POST',
       body: { plugin, slug, version },
     });

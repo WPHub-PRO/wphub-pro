@@ -32,7 +32,7 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
   if (zipDirect.startsWith('https://')) {
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/themes/manage/install-from-zip',
+      bridgePath: 'wphubpro/v1/themes/manage/install',
       method: 'POST',
       body: attachZipSource({ zip_url: zipDirect, plugin }, body.source),
     });
@@ -50,7 +50,7 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
     if (official.ok) {
       const result = await callBridgeRest(ctx, {
         siteId: String(siteId),
-        bridgePath: 'wphubpro/v1/themes/manage/install-version',
+        bridgePath: 'wphubpro/v1/themes/manage/install',
         method: 'POST',
         body: { slug: official.slug, version: official.version },
       });
@@ -80,7 +80,7 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
     }
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/themes/manage/install-from-zip',
+      bridgePath: 'wphubpro/v1/themes/manage/install',
       method: 'POST',
       body: attachZipSource({ zip_url: zipRes.zipUrl, plugin }, zipRes.source, body.source),
     });
@@ -106,7 +106,7 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
   }
   const result = await callBridgeRest(ctx, {
     siteId: String(siteId),
-    bridgePath: 'wphubpro/v1/themes/manage/install-version',
+    bridgePath: 'wphubpro/v1/themes/manage/install',
     method: 'POST',
     body: { slug, version },
   });

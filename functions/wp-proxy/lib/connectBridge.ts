@@ -59,8 +59,8 @@ function normalizeBridgePath(wpPath) {
 function zipPackageEndpointRejectsBase64(cleanedPath) {
   return (
     cleanedPath.includes('plugins/manage/update') ||
-    cleanedPath.includes('plugins/manage/install-from-zip') ||
-    cleanedPath.includes('themes/manage/install-from-zip') ||
+    cleanedPath.includes('plugins/manage/install') ||
+    cleanedPath.includes('themes/manage/install') ||
     cleanedPath.includes('themes/manage/update')
   );
 }
