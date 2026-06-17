@@ -4,13 +4,23 @@ import * as getResourceItem from '../../lib/getResourceItem.ts';
 import { attachZipSource } from '../../lib/pluginZipSource.ts';
 import type { WpProxyCtx } from '../../lib/types.ts';
 
+function resolveThemeSlug(body: Record<string, unknown>, fallback?: string): string {
+  return String(body.slug || body.stylesheet || body.routeSlug || body.route_slug || fallback || '')
+    .trim()
+    .toLowerCase();
+}
+
+function withThemeSlug<T extends Record<string, unknown>>(body: T, slug: string): T {
+  if (!slug) return body;
+  return { ...body, slug };
+}
+
 export default async function handleThemesInstall(ctx: WpProxyCtx) {
   const { res, payload, databases } = ctx;
   const siteId = payload.siteId || payload.site_id;
   if (!siteId) return fail(res, 'siteId is required.', 400);
   const body = payload.body && typeof payload.body === 'object' ? { ...payload.body } : {};
 
-  const plugin = String(body.plugin || '').trim();
   let libraryItemId = String(body.libraryItemId || body.library_item_id || '').trim();
   const routeSlug = String(body.routeSlug || body.route_slug || '').trim();
   let version = String(body.version || '').trim();
@@ -30,11 +40,12 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
 
   const zipDirect = String(body.zip_url || body.zipUrl || '').trim();
   if (zipDirect.startsWith('https://')) {
+    const slug = resolveThemeSlug(body);
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
       bridgePath: 'wphubpro/v1/themes/manage/install',
       method: 'POST',
-      body: attachZipSource({ zip_url: zipDirect, plugin }, body.source),
+      body: attachZipSource(withThemeSlug({ zip_url: zipDirect }, slug), body.source),
     });
     if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
     return ok(res, result.responseData);
@@ -78,11 +89,12 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
         zipRes.statusCode || official.statusCode || 400,
       );
     }
+    const slug = resolveThemeSlug(body, zipRes.slug || routeSlug);
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
       bridgePath: 'wphubpro/v1/themes/manage/install',
       method: 'POST',
-      body: attachZipSource({ zip_url: zipRes.zipUrl, plugin }, zipRes.source, body.source),
+      body: attachZipSource(withThemeSlug({ zip_url: zipRes.zipUrl }, slug), zipRes.source, body.source),
     });
     if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
     return ok(res, result.responseData);

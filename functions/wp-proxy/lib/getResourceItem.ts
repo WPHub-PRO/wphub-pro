@@ -358,12 +358,17 @@ function themeOrgZipFallback(slug, version) {
 /**
  * @param {string} zipUrl
  * @param {string} [source] official | local | remote
+ * @param {string} [slug] theme stylesheet slug
  */
-function themeZipResolveOk(zipUrl, source) {
+function themeZipResolveOk(zipUrl, source, slug) {
   const out = { ok: true, zipUrl: String(zipUrl || '').trim() };
   const s = String(source || '').trim().toLowerCase();
   if (s === 'official' || s === 'local' || s === 'remote') {
     out.source = s;
+  }
+  const themeSlug = String(slug || '').trim().toLowerCase();
+  if (themeSlug) {
+    out.slug = themeSlug;
   }
   return out;
 }
@@ -410,17 +415,22 @@ async function fetchWordpressOrgThemeZip(fetchImpl, wpSlug, version) {
 
 /**
  * Resolve `zip_url` for theme install/update when Hub sends version/source but not zip.
- * @returns {Promise<{ ok: true, zipUrl: string, source?: string } | { ok: false, statusCode: number, message: string }>}
+ * @returns {Promise<{ ok: true, zipUrl: string, slug?: string, source?: string } | { ok: false, statusCode: number, message: string }>}
  */
 async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
   const normalized = body && typeof body === 'object' ? body : {};
   const zipExisting = String(normalized.zip_url || normalized.zipUrl || '').trim();
+  const routeSlug = String(normalized.routeSlug || normalized.route_slug || '').trim();
   if (zipExisting.startsWith('https://')) {
-    return themeZipResolveOk(zipExisting, String(normalized.source || '').trim().toLowerCase());
+    const slug = String(
+      normalized.wpSlug || normalized.wp_slug || normalized.slug || normalized.stylesheet || routeSlug || '',
+    )
+      .trim()
+      .toLowerCase();
+    return themeZipResolveOk(zipExisting, String(normalized.source || '').trim().toLowerCase(), slug);
   }
 
   const libraryItemIdRaw = String(normalized.library_item_id || normalized.libraryItemId || '').trim();
-  const routeSlug = String(normalized.routeSlug || normalized.route_slug || '').trim();
   const { docId: libraryDocId, version: versionResolved } = normalizeLibraryDocumentIdAndVersion(
     libraryItemIdRaw,
     String(normalized.version || '').trim(),
@@ -455,6 +465,10 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
       }
       const { entry } = picked;
 
+      const docSlug = String(doc.wpSlug || doc.wp_slug || routeSlug || '')
+        .trim()
+        .toLowerCase();
+
       const docFallbackLoc =
         String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
         String(doc.remoteUrl || doc.remote_url || '').trim() ||
@@ -466,9 +480,9 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
       switch (entry.source) {
         case 'official': {
           if (loc && loc.startsWith('https://')) {
-            return themeZipResolveOk(loc, 'official');
+            return themeZipResolveOk(loc, 'official', docSlug);
           }
-          const wpSlug = String(doc.wpSlug || doc.wp_slug || routeSlug || '').trim().toLowerCase();
+          const wpSlug = docSlug;
           if (!wpSlug) {
             return { ok: false, statusCode: 400, message: 'Missing theme slug for this library item.' };
           }
@@ -483,13 +497,13 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
           if (!r.ok) {
             return { ok: false, statusCode: 404, message: r.message };
           }
-          return themeZipResolveOk(r.zip_url, 'official');
+          return themeZipResolveOk(r.zip_url, 'official', wpSlug);
         }
         case 'remote': {
           if (!loc || !loc.startsWith('https://')) {
             return { ok: false, statusCode: 400, message: 'Remote library version has no valid HTTPS location.' };
           }
-          return themeZipResolveOk(loc, 'remote');
+          return themeZipResolveOk(loc, 'remote', docSlug);
         }
         case 'local': {
           if (!loc) {
@@ -499,7 +513,7 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
           if (!pr.ok) {
             return { ok: false, statusCode: pr.statusCode || 400, message: pr.message };
           }
-          return themeZipResolveOk(pr.zip_url, 'local');
+          return themeZipResolveOk(pr.zip_url, 'local', docSlug);
         }
         default: {
           const _e = entry.source;
@@ -533,7 +547,7 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
       if (!r.ok) {
         return { ok: false, statusCode: 404, message: r.message };
       }
-      return themeZipResolveOk(r.zip_url, 'official');
+      return themeZipResolveOk(r.zip_url, 'official', slug);
     }
 
     if (['local', 'remote'].includes(sourceRaw)) {
@@ -560,7 +574,7 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
 /**
  * Resolve theme HTTPS zip for library install (official / remote / local).
  * Thin wrapper around {@link resolveThemeUpdateZipUrl}.
- * @returns {Promise<{ ok: true, zipUrl: string, source?: string } | { ok: false, statusCode: number, message: string }>}
+ * @returns {Promise<{ ok: true, zipUrl: string, slug?: string, source?: string } | { ok: false, statusCode: number, message: string }>}
  */
 async function resolveThemeLibraryZip({ databases, log, libraryItemId, routeSlug, version: explicitVersion, fetchImpl }) {
   return resolveThemeUpdateZipUrl({
