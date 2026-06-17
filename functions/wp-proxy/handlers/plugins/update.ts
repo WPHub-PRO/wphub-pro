@@ -91,7 +91,7 @@ async function runOnePluginUpdate(
       siteId,
       bridgePath: 'wphubpro/v1/plugins/manage/install',
       method: 'POST',
-      body: { plugin, slug, version },
+      body: { plugins: [{ plugin, slug, version }] },
     });
   }
 

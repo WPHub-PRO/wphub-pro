@@ -78,25 +78,10 @@ export function normalizePluginInstallBulkBody(body: Record<string, unknown>): P
     }
     return { ok: true, body: { plugins } };
   }
-
-  const one: PluginInstallBulkRow = {};
-  const slug = String(b.slug || '').trim();
-  const version = String(b.version ?? '').trim();
-  const plugin = String(b.plugin || '').trim();
-  if (slug) one.slug = slug;
-  if (version) one.version = version;
-  if (plugin) one.plugin = plugin;
-  for (const k of ['zip_url', 'zipUrl', 'source', 'library_item_id', 'libraryItemId', 'routeSlug', 'route_slug']) {
-    if (b[k] != null && b[k] !== '') one[k] = b[k];
-  }
-  if (!installRowHasPayload(one)) {
-    return {
-      ok: false,
-      message:
-        'Provide body.zip_url, body.slug + body.version, body.libraryItemId + body.version, or body.plugins[].',
-    };
-  }
-  return { ok: true, body: { plugins: [one] } };
+  return {
+    ok: false,
+    message: 'body.plugins must be a non-empty array.',
+  };
 }
 
 function themeInstallRowHasPayload(row: ThemeInstallBulkRow): boolean {
@@ -147,26 +132,10 @@ export function normalizeThemeInstallBulkBody(body: Record<string, unknown>): Th
     }
     return { ok: true, body: { themes } };
   }
-
-  const slug = String(b.slug || b.stylesheet || '').trim().toLowerCase();
-  const one: ThemeInstallBulkRow = {};
-  if (slug) {
-    one.slug = slug;
-    one.stylesheet = slug;
-  }
-  const version = String(b.version ?? '').trim();
-  if (version) one.version = version;
-  for (const k of ['zip_url', 'zipUrl', 'source', 'libraryItemId', 'library_item_id', 'routeSlug', 'route_slug']) {
-    if (b[k] != null && b[k] !== '') one[k] = b[k];
-  }
-  if (!themeInstallRowHasPayload(one)) {
-    return {
-      ok: false,
-      message:
-        'Provide body.zip_url, body.slug + body.version, body.libraryItemId + body.version, or body.themes[].',
-    };
-  }
-  return { ok: true, body: { themes: [one] } };
+  return {
+    ok: false,
+    message: 'body.themes must be a non-empty array.',
+  };
 }
 
 export function pluginDirSlug(pluginFile: string): string {
