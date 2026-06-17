@@ -32,7 +32,7 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
   if (zipDirect.startsWith('https://')) {
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/plugins/manage/install-from-zip',
+      bridgePath: 'wphubpro/v1/plugins/manage/install',
       method: 'POST',
       body: attachPluginZipSource({ zip_url: zipDirect }, body.source),
     });
@@ -50,7 +50,7 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
     if (official.ok) {
       const result = await callBridgeRest(ctx, {
         siteId: String(siteId),
-        bridgePath: 'wphubpro/v1/plugins/manage/install-version',
+        bridgePath: 'wphubpro/v1/plugins/manage/install',
         method: 'POST',
         body: { slug: official.slug, version: official.version, plugin },
       });
@@ -78,7 +78,7 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
     }
     const result = await callBridgeRest(ctx, {
       siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/plugins/manage/install-from-zip',
+      bridgePath: 'wphubpro/v1/plugins/manage/install',
       method: 'POST',
       body: attachPluginZipSource({ zip_url: zipRes.zipUrl }, zipRes.source, body.source),
     });
@@ -104,7 +104,7 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
   }
   const result = await callBridgeRest(ctx, {
     siteId: String(siteId),
-    bridgePath: 'wphubpro/v1/plugins/manage/install-version',
+    bridgePath: 'wphubpro/v1/plugins/manage/install',
     method: 'POST',
     body: { slug, version, plugin },
   });

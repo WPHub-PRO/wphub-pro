@@ -60,7 +60,7 @@ export async function runThemeDeleteForSite(
       '/wp-proxy',
       {
         siteId,
-        handler: 'themes/uninstall',
+        handler: 'themes/delete',
         body: { themes: [item] },
       },
       {

@@ -12,7 +12,7 @@ export default async function handlePluginsUninstall(ctx: WpProxyCtx) {
   if (!norm.ok) return fail(res, norm.message, 400);
   const result = await callBridgeRest(ctx, {
     siteId: String(siteId),
-    bridgePath: 'wphubpro/v1/plugins/manage/uninstall',
+    bridgePath: 'wphubpro/v1/plugins/manage/delete',
     method: 'POST',
     body: norm.body,
   });
