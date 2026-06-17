@@ -1,5 +1,4 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
-import { parseWpProxyFailureMessage } from '@/domains/sites/wpProxyResponse';
 import { summarizeBulkPayload } from '@/domains/sites/extensionBulkFromSite';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem } from '@/types';
@@ -35,7 +34,7 @@ export function planToPluginInstallRow(
   const plugin = (libraryName ?? '').trim();
   switch (plan.kind) {
     case 'plugin-install-version':
-      return { slug: plan.slug, version: plan.version, ...(plugin ? { plugin } : {}) };
+      return { slug: plan.slug, version: plan.version, routeSlug: plan.slug, ...(plugin ? { plugin } : {}) };
     case 'plugin-install-zip':
       return { zip_url: plan.zipUrl, source: plan.source };
     case 'plugin-install-from-library':
@@ -288,80 +287,38 @@ export async function runLibraryBridgeInstallOnSite(
     return { ok: false, message: plan.message };
   }
 
-  const plugin = (libraryItemName ?? '').trim();
+  const isPlugin =
+    plan.kind === 'plugin-install-version' ||
+    plan.kind === 'plugin-install-zip' ||
+    plan.kind === 'plugin-install-from-library';
 
-  let payload: Record<string, unknown>;
-  switch (plan.kind) {
-    case 'plugin-install-version':
-      payload = {
-        siteId,
-        handler: 'plugins/install',
-        body: { slug: plan.slug, version: plan.version, plugin },
-      };
-      break;
-    case 'plugin-install-zip':
-      payload = {
-        siteId,
-        handler: 'plugins/install',
-        body: { zip_url: plan.zipUrl, source: plan.source },
-      };
-      break;
-    case 'plugin-install-from-library':
-      payload = {
-        siteId,
-        handler: 'plugins/install',
-        body: {
-          libraryItemId: plan.libraryDocumentId,
-          version: plan.version,
-          source: plan.source,
-        },
-      };
-      break;
-    case 'theme-install-zip':
-      payload = {
-        siteId,
-        handler: 'themes/install',
-        body: {
-          zip_url: plan.zipUrl,
-          slug: plan.slug,
-          routeSlug: plan.slug,
-          ...(plan.source ? { source: plan.source } : {}),
-        },
-      };
-      break;
-    case 'theme-install-from-library':
-      payload = {
-        siteId,
-        handler: 'themes/install',
-        body: {
-          libraryItemId: plan.libraryDocumentId,
-          version: plan.version,
-          slug: plan.slug,
-          routeSlug: plan.slug,
-          source: plan.source,
-        },
-      };
-      break;
-    default: {
-      const _exhaustive: never = plan;
-      void _exhaustive;
-      return { ok: false, message: 'Unknown install plan.' };
+  if (isPlugin) {
+    const row = planToPluginInstallRow(plan, libraryItemName);
+    if (!row) {
+      return { ok: false, message: 'Could not build plugin install row.' };
     }
+    const bulk = await runPluginInstallBulkOnSite(siteId, [row]);
+    const line = bulk.results[0];
+    if (line) {
+      return {
+        ok: line.ok,
+        message: line.ok ? 'Installed.' : (line.error?.trim() || bulk.message || 'Install failed.'),
+      };
+    }
+    return { ok: bulk.ok, message: bulk.message || 'Install failed.' };
   }
 
-  try {
-    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>('/wp-proxy', payload, {
-      timeoutMs: 180_000,
-      throwOnHttpError: false,
-    });
-
-    if (statusCode >= 200 && statusCode < 300) {
-      return { ok: true, message: 'Installed.' };
-    }
-
-    return { ok: false, message: parseWpProxyFailureMessage(data, statusCode, 'Install failed.') };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, message: msg };
+  const themeRow = planToThemeInstallRow(plan);
+  if (!themeRow) {
+    return { ok: false, message: 'Could not build theme install row.' };
   }
+  const bulk = await runThemeInstallBulkOnSite(siteId, [themeRow]);
+  const line = bulk.results[0];
+  if (line) {
+    return {
+      ok: line.ok,
+      message: line.ok ? 'Installed.' : (line.error?.trim() || bulk.message || 'Install failed.'),
+    };
+  }
+  return { ok: bulk.ok, message: bulk.message || 'Install failed.' };
 }
