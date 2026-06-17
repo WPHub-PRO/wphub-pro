@@ -86,6 +86,39 @@ export type LoadSiteForBridgeResult =
     }
   | { ok: false; statusCode: number; message: string };
 
+export type PluginInstallBulkRow = {
+  slug?: string;
+  version?: string;
+  plugin?: string;
+  zip_url?: string;
+  zipUrl?: string;
+  source?: string;
+  library_item_id?: string;
+  libraryItemId?: string;
+  routeSlug?: string;
+  route_slug?: string;
+  [key: string]: unknown;
+};
+
+export type ThemeInstallBulkRow = {
+  slug?: string;
+  stylesheet?: string;
+  version?: string;
+  zip_url?: string;
+  zipUrl?: string;
+  source?: string;
+  library_item_id?: string;
+  libraryItemId?: string;
+  routeSlug?: string;
+  route_slug?: string;
+  [key: string]: unknown;
+};
+
+export type PluginInstallBulkNormOk = { ok: true; body: { plugins: PluginInstallBulkRow[] } };
+export type ThemeInstallBulkNormOk = { ok: true; body: { themes: ThemeInstallBulkRow[] } };
+export type PluginInstallBulkNormResult = PluginInstallBulkNormOk | BulkNormFail;
+export type ThemeInstallBulkNormResult = ThemeInstallBulkNormOk | BulkNormFail;
+
 export type PluginBulkRow = {
   plugin: string;
   slug: string;

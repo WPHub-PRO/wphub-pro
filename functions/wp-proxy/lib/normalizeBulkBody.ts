@@ -2,9 +2,172 @@ import type {
   BulkResponseShape,
   PluginBulkNormResult,
   PluginBulkRow,
+  PluginInstallBulkNormResult,
+  PluginInstallBulkRow,
   ThemeBulkNormResult,
   ThemeBulkRow,
+  ThemeInstallBulkNormResult,
+  ThemeInstallBulkRow,
 } from './types.ts';
+
+export function httpsZipUrl(raw: unknown): string {
+  const z = String(raw || '').trim();
+  return z.startsWith('https://') ? z : '';
+}
+
+export function parseCompositeLibraryItemId(libraryItemId: string, version: string): { libraryItemId: string; version: string } {
+  const COMPOSITE_SEP = '::';
+  const compIdx = libraryItemId.indexOf(COMPOSITE_SEP);
+  if (compIdx <= 0) return { libraryItemId, version };
+  try {
+    const idPart = libraryItemId.slice(0, compIdx).trim();
+    const encPart = libraryItemId.slice(compIdx + COMPOSITE_SEP.length);
+    return {
+      libraryItemId: idPart,
+      version: version || decodeURIComponent(encPart).trim(),
+    };
+  } catch {
+    return { libraryItemId, version };
+  }
+}
+
+function installRowHasPayload(row: PluginInstallBulkRow): boolean {
+  const zip = httpsZipUrl(row.zip_url) || httpsZipUrl(row.zipUrl);
+  const slug = String(row.slug || '').trim();
+  const version = String(row.version ?? '').trim();
+  const libId = String(row.libraryItemId || row.library_item_id || '').trim();
+  return Boolean(zip || (slug && version) || (libId && version));
+}
+
+export function normalizePluginInstallBulkBody(body: Record<string, unknown>): PluginInstallBulkNormResult {
+  const b = body && typeof body === 'object' && !Array.isArray(body) ? { ...body } : {};
+  if (Array.isArray(b.plugins) && b.plugins.length > 0) {
+    const plugins: PluginInstallBulkRow[] = [];
+    for (const entry of b.plugins) {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const row = entry as Record<string, unknown>;
+        const out: PluginInstallBulkRow = {};
+        const slug = String(row.slug || '').trim();
+        const version = String(row.version ?? '').trim();
+        const plugin = String(row.plugin || '').trim();
+        if (slug) out.slug = slug;
+        if (version) out.version = version;
+        if (plugin) out.plugin = plugin;
+        for (const k of [
+          'zip_url',
+          'zipUrl',
+          'source',
+          'library_item_id',
+          'libraryItemId',
+          'routeSlug',
+          'route_slug',
+        ]) {
+          if (row[k] != null && row[k] !== '') out[k] = row[k];
+        }
+        if (!installRowHasPayload(out)) {
+          return {
+            ok: false,
+            message: 'Each plugins[] install entry needs zip_url, slug + version, or libraryItemId + version.',
+          };
+        }
+        plugins.push(out);
+      }
+    }
+    if (!plugins.length) {
+      return { ok: false, message: 'body.plugins must be a non-empty array.' };
+    }
+    return { ok: true, body: { plugins } };
+  }
+
+  const one: PluginInstallBulkRow = {};
+  const slug = String(b.slug || '').trim();
+  const version = String(b.version ?? '').trim();
+  const plugin = String(b.plugin || '').trim();
+  if (slug) one.slug = slug;
+  if (version) one.version = version;
+  if (plugin) one.plugin = plugin;
+  for (const k of ['zip_url', 'zipUrl', 'source', 'library_item_id', 'libraryItemId', 'routeSlug', 'route_slug']) {
+    if (b[k] != null && b[k] !== '') one[k] = b[k];
+  }
+  if (!installRowHasPayload(one)) {
+    return {
+      ok: false,
+      message:
+        'Provide body.zip_url, body.slug + body.version, body.libraryItemId + body.version, or body.plugins[].',
+    };
+  }
+  return { ok: true, body: { plugins: [one] } };
+}
+
+function themeInstallRowHasPayload(row: ThemeInstallBulkRow): boolean {
+  const zip = httpsZipUrl(row.zip_url) || httpsZipUrl(row.zipUrl);
+  const slug = String(row.slug || row.stylesheet || '').trim();
+  const version = String(row.version ?? '').trim();
+  const libId = String(row.libraryItemId || row.library_item_id || '').trim();
+  return Boolean(zip || (slug && version) || (libId && version));
+}
+
+export function normalizeThemeInstallBulkBody(body: Record<string, unknown>): ThemeInstallBulkNormResult {
+  const b = body && typeof body === 'object' && !Array.isArray(body) ? { ...body } : {};
+  if (Array.isArray(b.themes) && b.themes.length > 0) {
+    const themes: ThemeInstallBulkRow[] = [];
+    for (const entry of b.themes) {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const row = entry as Record<string, unknown>;
+        const out: ThemeInstallBulkRow = {};
+        const slug = String(row.slug || row.stylesheet || '').trim().toLowerCase();
+        const version = String(row.version ?? '').trim();
+        if (slug) {
+          out.slug = slug;
+          out.stylesheet = slug;
+        }
+        if (version) out.version = version;
+        for (const k of [
+          'zip_url',
+          'zipUrl',
+          'source',
+          'library_item_id',
+          'libraryItemId',
+          'routeSlug',
+          'route_slug',
+        ]) {
+          if (row[k] != null && row[k] !== '') out[k] = row[k];
+        }
+        if (!themeInstallRowHasPayload(out)) {
+          return {
+            ok: false,
+            message: 'Each themes[] install entry needs zip_url, slug + version, or libraryItemId + version.',
+          };
+        }
+        themes.push(out);
+      }
+    }
+    if (!themes.length) {
+      return { ok: false, message: 'body.themes must be a non-empty array.' };
+    }
+    return { ok: true, body: { themes } };
+  }
+
+  const slug = String(b.slug || b.stylesheet || '').trim().toLowerCase();
+  const one: ThemeInstallBulkRow = {};
+  if (slug) {
+    one.slug = slug;
+    one.stylesheet = slug;
+  }
+  const version = String(b.version ?? '').trim();
+  if (version) one.version = version;
+  for (const k of ['zip_url', 'zipUrl', 'source', 'libraryItemId', 'library_item_id', 'routeSlug', 'route_slug']) {
+    if (b[k] != null && b[k] !== '') one[k] = b[k];
+  }
+  if (!themeInstallRowHasPayload(one)) {
+    return {
+      ok: false,
+      message:
+        'Provide body.zip_url, body.slug + body.version, body.libraryItemId + body.version, or body.themes[].',
+    };
+  }
+  return { ok: true, body: { themes: [one] } };
+}
 
 export function pluginDirSlug(pluginFile: string): string {
   const t = String(pluginFile || '')

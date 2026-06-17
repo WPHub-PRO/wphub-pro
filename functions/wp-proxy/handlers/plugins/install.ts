@@ -2,42 +2,52 @@ import { ok, fail } from '@code045/wphubpro-shared';
 import { callBridgeRest } from '../../lib/connectBridge.ts';
 import * as getResourceItem from '../../lib/getResourceItem.ts';
 import { attachPluginZipSource } from '../../lib/pluginZipSource.ts';
-import type { WpProxyCtx } from '../../lib/types.ts';
+import {
+  httpsZipUrl,
+  mergeBulkResponseShape,
+  normalizePluginInstallBulkBody,
+  parseCompositeLibraryItemId,
+  pluginDirSlug,
+} from '../../lib/normalizeBulkBody.ts';
+import type { BulkOperationResult, PluginInstallBulkRow, WpProxyCtx } from '../../lib/types.ts';
 
-export default async function handlePluginsInstall(ctx: WpProxyCtx) {
-  const { res, payload, databases } = ctx;
-  const siteId = payload.siteId || payload.site_id;
-  if (!siteId) return fail(res, 'siteId is required.', 400);
-  const body = payload.body && typeof payload.body === 'object' ? { ...payload.body } : {};
+type ResolvedPluginInstall =
+  | { ok: true; row: Record<string, unknown>; id: string }
+  | { ok: false; id: string; error: string };
 
-  const plugin = String(body.plugin || '').trim();
-  let libraryItemId = String(body.libraryItemId || body.library_item_id || '').trim();
-  const routeSlug = String(body.routeSlug || body.route_slug || '').trim();
-  let version = String(body.version || '').trim();
+async function runOnePluginInstall(
+  ctx: WpProxyCtx,
+  item: PluginInstallBulkRow,
+  topLevelBody: Record<string, unknown>,
+): Promise<ResolvedPluginInstall> {
+  const { databases, log } = ctx;
+  const plugin = String(item.plugin || '').trim();
+  let libraryItemId = String(
+    item.libraryItemId || item.library_item_id || topLevelBody.libraryItemId || topLevelBody.library_item_id || '',
+  ).trim();
+  const routeSlug = String(
+    item.routeSlug || item.route_slug || topLevelBody.routeSlug || topLevelBody.route_slug || '',
+  ).trim();
+  let version = String(item.version || topLevelBody.version || '').trim();
+  const slugHint = String(item.slug || '').trim();
+  const id = slugHint || plugin || libraryItemId || 'plugin';
 
-  const COMPOSITE_SEP = '::';
-  const compIdx = libraryItemId.indexOf(COMPOSITE_SEP);
-  if (compIdx > 0) {
-    try {
-      const idPart = libraryItemId.slice(0, compIdx);
-      const encPart = libraryItemId.slice(compIdx + COMPOSITE_SEP.length);
-      libraryItemId = idPart.trim();
-      if (!version) version = decodeURIComponent(encPart).trim();
-    } catch {
-      /* keep libraryItemId */
-    }
-  }
+  const parsed = parseCompositeLibraryItemId(libraryItemId, version);
+  libraryItemId = parsed.libraryItemId;
+  version = parsed.version;
 
-  const zipDirect = String(body.zip_url || body.zipUrl || '').trim();
-  if (zipDirect.startsWith('https://')) {
-    const result = await callBridgeRest(ctx, {
-      siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/plugins/manage/install',
-      method: 'POST',
-      body: attachPluginZipSource({ zip_url: zipDirect }, body.source),
-    });
-    if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
-    return ok(res, result.responseData);
+  const zipDirect =
+    httpsZipUrl(item.zip_url) ||
+    httpsZipUrl(item.zipUrl) ||
+    httpsZipUrl(topLevelBody.zip_url) ||
+    httpsZipUrl(topLevelBody.zipUrl);
+
+  if (zipDirect) {
+    const row: Record<string, unknown> = { zip_url: zipDirect };
+    if (plugin) row.plugin = plugin;
+    if (slugHint) row.slug = slugHint;
+    attachPluginZipSource(row, item.source ?? topLevelBody.source);
+    return { ok: true, row, id: slugHint || pluginDirSlug(plugin) || id };
   }
 
   if (libraryItemId && version) {
@@ -45,69 +55,126 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
       databases,
       libraryItemId,
       routeSlug,
-      log: ctx.log,
+      log,
     });
     if (official.ok) {
-      const result = await callBridgeRest(ctx, {
-        siteId: String(siteId),
-        bridgePath: 'wphubpro/v1/plugins/manage/install',
-        method: 'POST',
-        body: { slug: official.slug, version: official.version, plugin },
-      });
-      if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
-      return ok(res, result.responseData);
+      const row: Record<string, unknown> = { slug: official.slug, version: official.version };
+      if (plugin) row.plugin = plugin;
+      return { ok: true, row, id: official.slug };
     }
 
     const zipRes = await getResourceItem.resolvePluginUpdateZipUrl({
       databases,
       fetchImpl: ctx.fetch,
-      log: ctx.log,
+      log,
       body: {
         libraryItemId,
         library_item_id: libraryItemId,
         version,
-        source: String(body.source || '').trim().toLowerCase(),
+        source: String(item.source || topLevelBody.source || '').trim().toLowerCase(),
+        routeSlug,
+        route_slug: routeSlug,
+        plugin,
+        slug: slugHint || undefined,
       },
     });
     if (!zipRes.ok) {
-      return fail(
-        res,
-        zipRes.message || official.message || 'Could not resolve a ZIP for this library version.',
-        zipRes.statusCode || official.statusCode || 400,
-      );
+      return {
+        ok: false,
+        id,
+        error:
+          zipRes.message || official.message || 'Could not resolve a ZIP for this library version.',
+      };
     }
-    const result = await callBridgeRest(ctx, {
-      siteId: String(siteId),
-      bridgePath: 'wphubpro/v1/plugins/manage/install',
-      method: 'POST',
-      body: attachPluginZipSource({ zip_url: zipRes.zipUrl }, zipRes.source, body.source),
-    });
-    if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
-    return ok(res, result.responseData);
+    const row: Record<string, unknown> = { zip_url: zipRes.zipUrl };
+    if (plugin) row.plugin = plugin;
+    if (slugHint) row.slug = slugHint;
+    attachPluginZipSource(row, zipRes.source, item.source ?? topLevelBody.source);
+    return { ok: true, row, id: slugHint || official.slug || libraryItemId };
   }
 
   if (libraryItemId && !version) {
-    return fail(
-      res,
-      'body.version is required with libraryItemId for library ZIP installs (local / remote / non–install-version rows).',
-      400,
-    );
+    return {
+      ok: false,
+      id,
+      error:
+        'body.version is required with libraryItemId for library ZIP installs (local / remote / non–install-version rows).',
+    };
   }
 
-  const slug = String(body.slug || '').trim();
+  const slug = slugHint;
   if (!slug || !version) {
-    return fail(
-      res,
-      'Provide body.zip_url, or body.slug + body.version, or body.libraryItemId + body.version for library installs.',
-      400,
-    );
+    return {
+      ok: false,
+      id,
+      error:
+        'Provide zip_url, slug + version, or libraryItemId + version for each plugin install row.',
+    };
   }
+  const row: Record<string, unknown> = { slug, version };
+  if (plugin) row.plugin = plugin;
+  return { ok: true, row, id: slug };
+}
+
+function normalizeInstallResponse(responseData: unknown, preErrors: BulkOperationResult[]) {
+  const shape = mergeBulkResponseShape(responseData);
+  if (shape) {
+    return {
+      results: [...preErrors, ...shape.results],
+      succeeded: shape.succeeded,
+      failed: shape.failed + preErrors.length,
+    };
+  }
+  if (preErrors.length) {
+    return { results: preErrors, succeeded: 0, failed: preErrors.length };
+  }
+  return { results: [{ id: 'plugin', ok: true }], succeeded: 1, failed: 0 };
+}
+
+export default async function handlePluginsInstall(ctx: WpProxyCtx) {
+  const { res, payload } = ctx;
+  const siteId = payload.siteId || payload.site_id;
+  if (!siteId) return fail(res, 'siteId is required.', 400);
+  const rawBody = payload.body && typeof payload.body === 'object' ? { ...payload.body } : {};
+  const norm = normalizePluginInstallBulkBody(rawBody);
+  if (!norm.ok) return fail(res, norm.message, 400);
+
+  const siteIdStr = String(siteId);
+  const resolvedRows: Record<string, unknown>[] = [];
+  const preErrors: BulkOperationResult[] = [];
+
+  for (const item of norm.body.plugins) {
+    const r = await runOnePluginInstall(ctx, item, rawBody);
+    if (!r.ok) {
+      preErrors.push({ id: r.id, ok: false, error: r.error });
+      continue;
+    }
+    resolvedRows.push(r.row);
+  }
+
+  if (resolvedRows.length === 0) {
+    return ok(res, { results: preErrors, succeeded: 0, failed: preErrors.length });
+  }
+
   const result = await callBridgeRest(ctx, {
-    siteId: String(siteId),
+    siteId: siteIdStr,
     bridgePath: 'wphubpro/v1/plugins/manage/install',
     method: 'POST',
-    body: { slug, version, plugin },
+    body: { plugins: resolvedRows },
   });
-  if (!result.ok) return fail(res, result.message, result.statusCode, result.details);
-  return ok(res, result.responseData);
+
+  if (!result.ok) {
+    const failedRows = resolvedRows.map((row, i) => ({
+      id: String(row.slug || row.plugin || `plugin-${i}`),
+      ok: false as const,
+      error: result.message || 'Install failed.',
+    }));
+    return ok(res, {
+      results: [...preErrors, ...failedRows],
+      succeeded: 0,
+      failed: preErrors.length + failedRows.length,
+    });
+  }
+
+  return ok(res, normalizeInstallResponse(result.responseData, preErrors));
 }

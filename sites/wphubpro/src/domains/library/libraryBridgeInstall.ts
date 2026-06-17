@@ -1,7 +1,133 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import { parseWpProxyFailureMessage } from '@/domains/sites/wpProxyResponse';
+import { summarizeBulkPayload } from '@/domains/sites/extensionBulkFromSite';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem } from '@/types';
+
+export type PluginInstallBulkRow = {
+  slug?: string;
+  version?: string;
+  plugin?: string;
+  zip_url?: string;
+  source?: LibraryItem['source'];
+  libraryItemId?: string;
+  routeSlug?: string;
+};
+
+export type ThemeInstallBulkRow = {
+  slug?: string;
+  version?: string;
+  zip_url?: string;
+  source?: LibraryItem['source'];
+  libraryItemId?: string;
+  routeSlug?: string;
+};
+
+function bulkInstallTimeoutMs(itemCount: number): number {
+  return Math.min(600_000, 60_000 + itemCount * 30_000);
+}
+
+export function planToPluginInstallRow(
+  plan: LibraryBridgeInstallPlan,
+  libraryName?: string,
+): PluginInstallBulkRow | null {
+  if (plan.kind === 'unsupported') return null;
+  const plugin = (libraryName ?? '').trim();
+  switch (plan.kind) {
+    case 'plugin-install-version':
+      return { slug: plan.slug, version: plan.version, ...(plugin ? { plugin } : {}) };
+    case 'plugin-install-zip':
+      return { zip_url: plan.zipUrl, source: plan.source };
+    case 'plugin-install-from-library':
+      return {
+        libraryItemId: plan.libraryDocumentId,
+        version: plan.version,
+        source: plan.source,
+        ...(plugin ? { plugin } : {}),
+      };
+    default:
+      return null;
+  }
+}
+
+export function planToThemeInstallRow(plan: LibraryBridgeInstallPlan): ThemeInstallBulkRow | null {
+  if (plan.kind === 'unsupported') return null;
+  switch (plan.kind) {
+    case 'theme-install-zip':
+      return {
+        zip_url: plan.zipUrl,
+        slug: plan.slug,
+        routeSlug: plan.slug,
+        ...(plan.source ? { source: plan.source } : {}),
+      };
+    case 'theme-install-from-library':
+      return {
+        libraryItemId: plan.libraryDocumentId,
+        version: plan.version,
+        slug: plan.slug,
+        routeSlug: plan.slug,
+        source: plan.source,
+      };
+    default:
+      return null;
+  }
+}
+
+export async function runPluginInstallBulkOnSite(
+  siteId: string,
+  rows: PluginInstallBulkRow[],
+): Promise<{ ok: boolean; message: string; results: { id: string; ok: boolean; error?: string }[] }> {
+  if (!rows.length) {
+    return { ok: false, message: 'No plugins to install.', results: [] };
+  }
+  try {
+    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
+      '/wp-proxy',
+      {
+        siteId,
+        handler: 'plugins/install',
+        body: { plugins: rows },
+      },
+      {
+        timeoutMs: bulkInstallTimeoutMs(rows.length),
+        throwOnHttpError: false,
+      },
+    );
+    const summary = summarizeBulkPayload(data, statusCode, 'Installed');
+    return { ok: summary.ok, message: summary.message, results: summary.results };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, message: msg, results: [] };
+  }
+}
+
+export async function runThemeInstallBulkOnSite(
+  siteId: string,
+  rows: ThemeInstallBulkRow[],
+): Promise<{ ok: boolean; message: string; results: { id: string; ok: boolean; error?: string }[] }> {
+  if (!rows.length) {
+    return { ok: false, message: 'No themes to install.', results: [] };
+  }
+  try {
+    const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
+      '/wp-proxy',
+      {
+        siteId,
+        handler: 'themes/install',
+        body: { themes: rows },
+      },
+      {
+        timeoutMs: bulkInstallTimeoutMs(rows.length),
+        throwOnHttpError: false,
+      },
+    );
+    const summary = summarizeBulkPayload(data, statusCode, 'Installed');
+    return { ok: summary.ok, message: summary.message, results: summary.results };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, message: msg, results: [] };
+  }
+}
 
 export type LibraryBridgeInstallPlan =
   | { kind: 'plugin-install-version'; slug: string; version: string }

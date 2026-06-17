@@ -5,8 +5,13 @@ import {
 } from '@/domains/library/collectionMembers';
 import {
   planLibraryBridgeInstall,
-  runLibraryBridgeInstallOnSite,
+  planToPluginInstallRow,
+  planToThemeInstallRow,
+  runPluginInstallBulkOnSite,
+  runThemeInstallBulkOnSite,
   type LibraryBridgeInstallPlan,
+  type PluginInstallBulkRow,
+  type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryCollection, LibraryItem, LibraryItemType } from '@/types';
@@ -67,9 +72,56 @@ function planForCollectionMember(
   return { item, plan };
 }
 
+type PluginBatchEntry = {
+  slug: string;
+  row: PluginInstallBulkRow;
+};
+
+type ThemeBatchEntry = {
+  slug: string;
+  row: ThemeInstallBulkRow;
+};
+
+function resultMessageForBulkLine(ok: boolean, error?: string, fallback = 'Install failed.'): string {
+  if (ok) return 'Installed.';
+  return (error ?? '').trim() || fallback;
+}
+
+function mapBulkResultsToLines(
+  siteId: string,
+  entries: { slug: string; type: LibraryItemType }[],
+  bulkResults: { id: string; ok: boolean; error?: string }[],
+): CollectionInstallLineResult[] {
+  const byId = new Map<string, { ok: boolean; error?: string }>();
+  for (const r of bulkResults) {
+    const key = r.id.trim().toLowerCase();
+    if (key) byId.set(key, { ok: r.ok, error: r.error });
+  }
+
+  return entries.map(({ slug, type }) => {
+    const hit = byId.get(slug.trim().toLowerCase());
+    if (!hit) {
+      return {
+        siteId,
+        slug,
+        type,
+        ok: false,
+        message: 'No install result returned for this item.',
+      };
+    }
+    return {
+      siteId,
+      slug,
+      type,
+      ok: hit.ok,
+      message: resultMessageForBulkLine(hit.ok, hit.error),
+    };
+  });
+}
+
 /**
- * Install all collection items on each site in order (items array order per site).
- * Continues on per-item failures; returns one line per attempt.
+ * Install all collection items on each site: one plugins bulk call, then one themes bulk call per site.
+ * Continues on per-item failures; returns one line per collection member per site.
  */
 export async function runCollectionInstallOnSites(
   collection: LibraryCollection,
@@ -94,10 +146,15 @@ export async function runCollectionInstallOnSites(
   const results: CollectionInstallLineResult[] = [];
 
   for (const siteId of siteIds) {
+    const pluginRows: PluginBatchEntry[] = [];
+    const themeRows: ThemeBatchEntry[] = [];
+    const lineByKey = new Map<string, CollectionInstallLineResult>();
+
     for (const resolved of members) {
+      const key = `${resolved.type}:${resolved.slug}`;
       const planned = planForCollectionMember(resolved, wpInfo);
       if (!planned) {
-        results.push({
+        lineByKey.set(key, {
           siteId,
           slug: resolved.slug,
           type: resolved.type,
@@ -109,7 +166,7 @@ export async function runCollectionInstallOnSites(
 
       const { item, plan } = planned;
       if (plan.kind === 'unsupported') {
-        results.push({
+        lineByKey.set(key, {
           siteId,
           slug: resolved.slug,
           type: resolved.type,
@@ -120,14 +177,97 @@ export async function runCollectionInstallOnSites(
       }
 
       const libraryName = String(item.name ?? '').trim();
-      const run = await runLibraryBridgeInstallOnSite(siteId, plan, libraryName);
-      results.push({
+      if (resolved.type === 'plugin') {
+        const row = planToPluginInstallRow(plan, libraryName);
+        if (!row) {
+          lineByKey.set(key, {
+            siteId,
+            slug: resolved.slug,
+            type: resolved.type,
+            ok: false,
+            message: 'Could not build plugin install row.',
+          });
+          continue;
+        }
+        pluginRows.push({
+          slug: resolved.slug,
+          row: { ...row, slug: row.slug || resolved.slug, routeSlug: resolved.slug },
+        });
+      } else {
+        const row = planToThemeInstallRow(plan);
+        if (!row) {
+          lineByKey.set(key, {
+            siteId,
+            slug: resolved.slug,
+            type: resolved.type,
+            ok: false,
+            message: 'Could not build theme install row.',
+          });
+          continue;
+        }
+        themeRows.push({
+          slug: resolved.slug,
+          row: { ...row, slug: row.slug || resolved.slug, routeSlug: row.routeSlug || resolved.slug },
+        });
+      }
+    }
+
+    if (pluginRows.length > 0) {
+      const bulk = await runPluginInstallBulkOnSite(
         siteId,
-        slug: resolved.slug,
-        type: resolved.type,
-        ok: run.ok,
-        message: run.message,
-      });
+        pluginRows.map((e) => e.row),
+      );
+      if (!bulk.results.length && !bulk.ok) {
+        for (const entry of pluginRows) {
+          lineByKey.set(`plugin:${entry.slug}`, {
+            siteId,
+            slug: entry.slug,
+            type: 'plugin',
+            ok: false,
+            message: bulk.message,
+          });
+        }
+      } else {
+        for (const line of mapBulkResultsToLines(
+          siteId,
+          pluginRows.map((e) => ({ slug: e.slug, type: 'plugin' as const })),
+          bulk.results,
+        )) {
+          lineByKey.set(`plugin:${line.slug}`, line);
+        }
+      }
+    }
+
+    if (themeRows.length > 0) {
+      const bulk = await runThemeInstallBulkOnSite(
+        siteId,
+        themeRows.map((e) => e.row),
+      );
+      if (!bulk.results.length && !bulk.ok) {
+        for (const entry of themeRows) {
+          lineByKey.set(`theme:${entry.slug}`, {
+            siteId,
+            slug: entry.slug,
+            type: 'theme',
+            ok: false,
+            message: bulk.message,
+          });
+        }
+      } else {
+        for (const line of mapBulkResultsToLines(
+          siteId,
+          themeRows.map((e) => ({ slug: e.slug, type: 'theme' as const })),
+          bulk.results,
+        )) {
+          lineByKey.set(`theme:${line.slug}`, line);
+        }
+      }
+    }
+
+    for (const resolved of members) {
+      const key = `${resolved.type}:${resolved.slug}`;
+      const line = lineByKey.get(key);
+      if (line) results.push(line);
     }
   }
 
