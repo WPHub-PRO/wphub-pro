@@ -88,6 +88,8 @@ export type LoadSiteForBridgeResult =
 
 export type PluginInstallBulkRow = {
   slug?: string;
+  wpSlug?: string;
+  wp_slug?: string;
   version?: string;
   plugin?: string;
   zip_url?: string;
@@ -102,6 +104,8 @@ export type PluginInstallBulkRow = {
 
 export type ThemeInstallBulkRow = {
   slug?: string;
+  wpSlug?: string;
+  wp_slug?: string;
   stylesheet?: string;
   version?: string;
   zip_url?: string;

@@ -13,6 +13,7 @@ import {
   type PluginInstallBulkRow,
   type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
+import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryCollection, LibraryItem, LibraryItemType } from '@/types';
 
@@ -176,13 +177,13 @@ export async function runCollectionInstallOnSites(
         continue;
       }
 
-      const libraryName = String(item.name ?? '').trim();
+      const wpSlug = getLibraryItemSlug(item);
       if (resolved.type === 'plugin') {
-        const row = planToPluginInstallRow(plan, libraryName);
+        const row = planToPluginInstallRow(plan);
         if (!row) {
           lineByKey.set(key, {
             siteId,
-            slug: resolved.slug,
+            slug: wpSlug,
             type: resolved.type,
             ok: false,
             message: 'Could not build plugin install row.',
@@ -190,15 +191,19 @@ export async function runCollectionInstallOnSites(
           continue;
         }
         pluginRows.push({
-          slug: resolved.slug,
-          row: { ...row, slug: row.slug || resolved.slug, routeSlug: resolved.slug },
+          slug: wpSlug,
+          row: {
+            ...row,
+            slug: row.slug || wpSlug,
+            routeSlug: row.routeSlug || wpSlug,
+          },
         });
       } else {
         const row = planToThemeInstallRow(plan);
         if (!row) {
           lineByKey.set(key, {
             siteId,
-            slug: resolved.slug,
+            slug: wpSlug,
             type: resolved.type,
             ok: false,
             message: 'Could not build theme install row.',
@@ -206,8 +211,12 @@ export async function runCollectionInstallOnSites(
           continue;
         }
         themeRows.push({
-          slug: resolved.slug,
-          row: { ...row, slug: row.slug || resolved.slug, routeSlug: row.routeSlug || resolved.slug },
+          slug: wpSlug,
+          row: {
+            ...row,
+            slug: row.slug || wpSlug,
+            routeSlug: row.routeSlug || wpSlug,
+          },
         });
       }
     }

@@ -47,7 +47,7 @@ export function normalizePluginInstallBulkBody(body: Record<string, unknown>): P
       if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
         const row = entry as Record<string, unknown>;
         const out: PluginInstallBulkRow = {};
-        const slug = String(row.slug || '').trim();
+        const slug = String(row.slug || row.wpSlug || row.wp_slug || row.routeSlug || row.route_slug || '').trim();
         const version = String(row.version ?? '').trim();
         const plugin = String(row.plugin || '').trim();
         if (slug) out.slug = slug;
@@ -61,6 +61,8 @@ export function normalizePluginInstallBulkBody(body: Record<string, unknown>): P
           'libraryItemId',
           'routeSlug',
           'route_slug',
+          'wpSlug',
+          'wp_slug',
         ]) {
           if (row[k] != null && row[k] !== '') out[k] = row[k];
         }
@@ -100,7 +102,11 @@ export function normalizeThemeInstallBulkBody(body: Record<string, unknown>): Th
       if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
         const row = entry as Record<string, unknown>;
         const out: ThemeInstallBulkRow = {};
-        const slug = String(row.slug || row.stylesheet || '').trim().toLowerCase();
+        const slug = String(
+          row.slug || row.wpSlug || row.wp_slug || row.stylesheet || row.routeSlug || row.route_slug || '',
+        )
+          .trim()
+          .toLowerCase();
         const version = String(row.version ?? '').trim();
         if (slug) {
           out.slug = slug;
@@ -115,6 +121,8 @@ export function normalizeThemeInstallBulkBody(body: Record<string, unknown>): Th
           'libraryItemId',
           'routeSlug',
           'route_slug',
+          'wpSlug',
+          'wp_slug',
         ]) {
           if (row[k] != null && row[k] !== '') out[k] = row[k];
         }
@@ -218,6 +226,8 @@ export function normalizeThemeBulkBody(body: Record<string, unknown>): ThemeBulk
           'libraryItemId',
           'routeSlug',
           'route_slug',
+          'wpSlug',
+          'wp_slug',
         ]) {
           if (row[k] != null && row[k] !== '') out[k] = row[k];
         }

@@ -71,7 +71,11 @@ export function summarizeBulkPayload(
     return { ok: true, message: `${successVerb}.`, results: [] };
   }
   const d = data as Record<string, unknown>;
-  const raw = d.results;
+  let raw = d.results;
+  if (!Array.isArray(raw) && d.data && typeof d.data === 'object' && !Array.isArray(d.data)) {
+    const nested = (d.data as Record<string, unknown>).results;
+    if (Array.isArray(nested)) raw = nested;
+  }
   if (!Array.isArray(raw)) {
     return { ok: true, message: `${successVerb}.`, results: [] };
   }

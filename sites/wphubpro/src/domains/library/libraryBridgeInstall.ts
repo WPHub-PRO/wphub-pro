@@ -26,23 +26,25 @@ function bulkInstallTimeoutMs(itemCount: number): number {
   return Math.min(600_000, 60_000 + itemCount * 30_000);
 }
 
-export function planToPluginInstallRow(
-  plan: LibraryBridgeInstallPlan,
-  libraryName?: string,
-): PluginInstallBulkRow | null {
+export function planToPluginInstallRow(plan: LibraryBridgeInstallPlan): PluginInstallBulkRow | null {
   if (plan.kind === 'unsupported') return null;
-  const plugin = (libraryName ?? '').trim();
   switch (plan.kind) {
     case 'plugin-install-version':
-      return { slug: plan.slug, version: plan.version, routeSlug: plan.slug, ...(plugin ? { plugin } : {}) };
+      return { slug: plan.slug, version: plan.version, routeSlug: plan.slug };
     case 'plugin-install-zip':
-      return { zip_url: plan.zipUrl, source: plan.source };
+      return {
+        zip_url: plan.zipUrl,
+        source: plan.source,
+        slug: plan.slug,
+        routeSlug: plan.slug,
+      };
     case 'plugin-install-from-library':
       return {
         libraryItemId: plan.libraryDocumentId,
         version: plan.version,
         source: plan.source,
-        ...(plugin ? { plugin } : {}),
+        slug: plan.slug,
+        routeSlug: plan.slug,
       };
     default:
       return null;
@@ -130,8 +132,14 @@ export async function runThemeInstallBulkOnSite(
 
 export type LibraryBridgeInstallPlan =
   | { kind: 'plugin-install-version'; slug: string; version: string }
-  | { kind: 'plugin-install-zip'; zipUrl: string; source: LibraryItem['source'] }
-  | { kind: 'plugin-install-from-library'; libraryDocumentId: string; version: string; source: LibraryItem['source'] }
+  | { kind: 'plugin-install-zip'; zipUrl: string; slug: string; source: LibraryItem['source'] }
+  | {
+      kind: 'plugin-install-from-library';
+      libraryDocumentId: string;
+      version: string;
+      slug: string;
+      source: LibraryItem['source'];
+    }
   | { kind: 'theme-install-zip'; zipUrl: string; slug: string; source?: LibraryItem['source'] }
   | {
       kind: 'theme-install-from-library';
@@ -204,7 +212,7 @@ export function planLibraryBridgeInstall(
       if (!ids) {
         return { kind: 'unsupported', message: 'Missing library document or version for this uploaded build.' };
       }
-      return { kind: 'plugin-install-from-library', ...ids, source: 'local' };
+      return { kind: 'plugin-install-from-library', ...ids, source: 'local', slug: wpSlug };
     }
     if (item.source === 'remote') {
       const zipUrl = normalizeHttpsZipUrl(item.remoteUrl ?? '');
@@ -214,7 +222,7 @@ export function planLibraryBridgeInstall(
           message: 'Remote plugin source must be an HTTPS URL to a ZIP file.',
         };
       }
-      return { kind: 'plugin-install-zip', zipUrl, source: 'remote' };
+      return { kind: 'plugin-install-zip', zipUrl, source: 'remote', slug: wpSlug };
     }
     return { kind: 'unsupported', message: 'Unsupported plugin source.' };
   }
@@ -280,8 +288,6 @@ export function planLibraryBridgeInstall(
 export async function runLibraryBridgeInstallOnSite(
   siteId: string,
   plan: LibraryBridgeInstallPlan,
-  /** Library item `name` — optional label for install-version only. */
-  libraryItemName?: string,
 ): Promise<{ ok: boolean; message: string }> {
   if (plan.kind === 'unsupported') {
     return { ok: false, message: plan.message };
@@ -293,7 +299,7 @@ export async function runLibraryBridgeInstallOnSite(
     plan.kind === 'plugin-install-from-library';
 
   if (isPlugin) {
-    const row = planToPluginInstallRow(plan, libraryItemName);
+    const row = planToPluginInstallRow(plan);
     if (!row) {
       return { ok: false, message: 'Could not build plugin install row.' };
     }
