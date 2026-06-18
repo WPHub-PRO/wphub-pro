@@ -379,8 +379,7 @@ const LibraryItemDetailPage = () => {
       for (const siteId of siteList) {
         const site = connectedSitesForInstall.find((s) => s.$id === siteId);
         const label = site?.siteName?.trim() || siteId;
-        const libraryName = String(target.name ?? '').trim();
-        const result = await runLibraryBridgeInstallOnSite(siteId, plan, libraryName);
+        const result = await runLibraryBridgeInstallOnSite(siteId, plan);
         if (result.ok) {
           okCount += 1;
           lines.push(`${label}: installed`);

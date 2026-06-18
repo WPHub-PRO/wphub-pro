@@ -15,6 +15,34 @@ type ResolvedPluginInstall =
   | { ok: true; row: Record<string, unknown>; id: string }
   | { ok: false; id: string; error: string };
 
+function resolvePluginSlugHint(
+  item: PluginInstallBulkRow,
+  topLevelBody: Record<string, unknown>,
+  fallback = '',
+): string {
+  return String(
+    item.slug ||
+      item.wpSlug ||
+      item.wp_slug ||
+      item.routeSlug ||
+      item.route_slug ||
+      topLevelBody.slug ||
+      topLevelBody.wpSlug ||
+      topLevelBody.wp_slug ||
+      topLevelBody.routeSlug ||
+      topLevelBody.route_slug ||
+      fallback ||
+      '',
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function withPluginSlug(row: Record<string, unknown>, slug: string): Record<string, unknown> {
+  if (!slug) return row;
+  return { ...row, slug };
+}
+
 async function runOnePluginInstall(
   ctx: WpProxyCtx,
   item: PluginInstallBulkRow,
@@ -29,8 +57,8 @@ async function runOnePluginInstall(
     item.routeSlug || item.route_slug || topLevelBody.routeSlug || topLevelBody.route_slug || '',
   ).trim();
   let version = String(item.version || topLevelBody.version || '').trim();
-  const slugHint = String(item.slug || '').trim();
-  const id = slugHint || plugin || libraryItemId || 'plugin';
+  const slugHint = resolvePluginSlugHint(item, topLevelBody, routeSlug);
+  const id = slugHint || pluginDirSlug(plugin) || libraryItemId || 'plugin';
 
   const parsed = parseCompositeLibraryItemId(libraryItemId, version);
   libraryItemId = parsed.libraryItemId;
@@ -43,9 +71,8 @@ async function runOnePluginInstall(
     httpsZipUrl(topLevelBody.zipUrl);
 
   if (zipDirect) {
-    const row: Record<string, unknown> = { zip_url: zipDirect };
+    const row = withPluginSlug({ zip_url: zipDirect }, slugHint);
     if (plugin) row.plugin = plugin;
-    if (slugHint) row.slug = slugHint;
     attachPluginZipSource(row, item.source ?? topLevelBody.source);
     return { ok: true, row, id: slugHint || pluginDirSlug(plugin) || id };
   }
@@ -54,11 +81,11 @@ async function runOnePluginInstall(
     const official = await getResourceItem.resolvePluginLibraryInstallVersion({
       databases,
       libraryItemId,
-      routeSlug,
+      routeSlug: routeSlug || slugHint,
       log,
     });
     if (official.ok) {
-      const row: Record<string, unknown> = { slug: official.slug, version: official.version };
+      const row = withPluginSlug({ slug: official.slug, version: official.version }, official.slug);
       if (plugin) row.plugin = plugin;
       return { ok: true, row, id: official.slug };
     }
@@ -72,8 +99,8 @@ async function runOnePluginInstall(
         library_item_id: libraryItemId,
         version,
         source: String(item.source || topLevelBody.source || '').trim().toLowerCase(),
-        routeSlug,
-        route_slug: routeSlug,
+        routeSlug: routeSlug || slugHint,
+        route_slug: routeSlug || slugHint,
         plugin,
         slug: slugHint || undefined,
       },
@@ -86,11 +113,11 @@ async function runOnePluginInstall(
           zipRes.message || official.message || 'Could not resolve a ZIP for this library version.',
       };
     }
-    const row: Record<string, unknown> = { zip_url: zipRes.zipUrl };
+    const resolvedSlug = slugHint || official.slug || routeSlug;
+    const row = withPluginSlug({ zip_url: zipRes.zipUrl }, resolvedSlug);
     if (plugin) row.plugin = plugin;
-    if (slugHint) row.slug = slugHint;
     attachPluginZipSource(row, zipRes.source, item.source ?? topLevelBody.source);
-    return { ok: true, row, id: slugHint || official.slug || libraryItemId };
+    return { ok: true, row, id: resolvedSlug || libraryItemId };
   }
 
   if (libraryItemId && !version) {
@@ -111,13 +138,25 @@ async function runOnePluginInstall(
         'Provide zip_url, slug + version, or libraryItemId + version for each plugin install row.',
     };
   }
-  const row: Record<string, unknown> = { slug, version };
+  const row = withPluginSlug({ slug, version }, slug);
   if (plugin) row.plugin = plugin;
   return { ok: true, row, id: slug };
 }
 
-function normalizeInstallResponse(responseData: unknown, preErrors: BulkOperationResult[]) {
-  const shape = mergeBulkResponseShape(responseData);
+function unwrapBulkShape(responseData: unknown): ReturnType<typeof mergeBulkResponseShape> {
+  const direct = mergeBulkResponseShape(responseData);
+  if (direct) return direct;
+  if (!responseData || typeof responseData !== 'object' || Array.isArray(responseData)) return null;
+  const nested = (responseData as Record<string, unknown>).data;
+  return mergeBulkResponseShape(nested);
+}
+
+function normalizeInstallResponse(
+  responseData: unknown,
+  preErrors: BulkOperationResult[],
+  resolvedCount: number,
+) {
+  const shape = unwrapBulkShape(responseData);
   if (shape) {
     return {
       results: [...preErrors, ...shape.results],
@@ -127,6 +166,17 @@ function normalizeInstallResponse(responseData: unknown, preErrors: BulkOperatio
   }
   if (preErrors.length) {
     return { results: preErrors, succeeded: 0, failed: preErrors.length };
+  }
+  if (resolvedCount > 1) {
+    return {
+      results: Array.from({ length: resolvedCount }, (_, i) => ({
+        id: `plugin-${i}`,
+        ok: false,
+        error: 'Install response missing bulk results.',
+      })),
+      succeeded: 0,
+      failed: resolvedCount,
+    };
   }
   return { results: [{ id: 'plugin', ok: true }], succeeded: 1, failed: 0 };
 }
@@ -176,5 +226,5 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
     });
   }
 
-  return ok(res, normalizeInstallResponse(result.responseData, preErrors));
+  return ok(res, normalizeInstallResponse(result.responseData, preErrors, resolvedRows.length));
 }

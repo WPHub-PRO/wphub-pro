@@ -124,11 +124,9 @@ const SiteLibraryInstallOneConfirmModal = ({
       }
     }
 
-    const libraryName = String(target.name ?? '').trim();
-
     setInstallBridgeRunning(true);
     try {
-      const result = await runLibraryBridgeInstallOnSite(siteId, plan, libraryName);
+      const result = await runLibraryBridgeInstallOnSite(siteId, plan);
       if (result.ok) {
         showNotification({ title: 'Install', message: result.message, variant: 'success' });
         if (user?.$id) {

@@ -122,8 +122,7 @@ export async function runFamilyInstallOnSites(
         continue;
       }
 
-      const libraryName = String(item.name ?? '').trim();
-      const run = await runLibraryBridgeInstallOnSite(siteId, plan, libraryName);
+      const run = await runLibraryBridgeInstallOnSite(siteId, plan);
       results.push({
         siteId,
         memberSlug: member.slug,

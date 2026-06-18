@@ -11,7 +11,16 @@ import {
 import type { BulkOperationResult, ThemeInstallBulkRow, WpProxyCtx } from '../../lib/types.ts';
 
 function resolveThemeSlug(body: Record<string, unknown>, fallback?: string): string {
-  return String(body.slug || body.stylesheet || body.routeSlug || body.route_slug || fallback || '')
+  return String(
+    body.slug ||
+      body.wpSlug ||
+      body.wp_slug ||
+      body.stylesheet ||
+      body.routeSlug ||
+      body.route_slug ||
+      fallback ||
+      '',
+  )
     .trim()
     .toLowerCase();
 }
@@ -118,8 +127,20 @@ async function runOneThemeInstall(
   return { ok: true, row: { slug, version }, id: slug };
 }
 
-function normalizeInstallResponse(responseData: unknown, preErrors: BulkOperationResult[]) {
-  const shape = mergeBulkResponseShape(responseData);
+function unwrapBulkShape(responseData: unknown): ReturnType<typeof mergeBulkResponseShape> {
+  const direct = mergeBulkResponseShape(responseData);
+  if (direct) return direct;
+  if (!responseData || typeof responseData !== 'object' || Array.isArray(responseData)) return null;
+  const nested = (responseData as Record<string, unknown>).data;
+  return mergeBulkResponseShape(nested);
+}
+
+function normalizeInstallResponse(
+  responseData: unknown,
+  preErrors: BulkOperationResult[],
+  resolvedCount: number,
+) {
+  const shape = unwrapBulkShape(responseData);
   if (shape) {
     return {
       results: [...preErrors, ...shape.results],
@@ -129,6 +150,17 @@ function normalizeInstallResponse(responseData: unknown, preErrors: BulkOperatio
   }
   if (preErrors.length) {
     return { results: preErrors, succeeded: 0, failed: preErrors.length };
+  }
+  if (resolvedCount > 1) {
+    return {
+      results: Array.from({ length: resolvedCount }, (_, i) => ({
+        id: `theme-${i}`,
+        ok: false,
+        error: 'Install response missing bulk results.',
+      })),
+      succeeded: 0,
+      failed: resolvedCount,
+    };
   }
   return { results: [{ id: 'theme', ok: true }], succeeded: 1, failed: 0 };
 }
@@ -178,5 +210,5 @@ export default async function handleThemesInstall(ctx: WpProxyCtx) {
     });
   }
 
-  return ok(res, normalizeInstallResponse(result.responseData, preErrors));
+  return ok(res, normalizeInstallResponse(result.responseData, preErrors, resolvedRows.length));
 }
