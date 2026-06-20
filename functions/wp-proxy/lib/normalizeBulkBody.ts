@@ -219,15 +219,66 @@ export function normalizeThemeBulkBody(body: Record<string, unknown>): ThemeBulk
   return { ok: true, body: { themes } };
 }
 
-export function mergeBulkResponseShape(data: unknown): BulkResponseShape | null {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+function looksLikeBulkResultRow(v: unknown): boolean {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    o.id != null ||
+    o.ok != null ||
+    o.plugin_file != null ||
+    o.pluginFile != null ||
+    o.plugin != null ||
+    o.slug != null ||
+    o.stylesheet != null ||
+    o.error != null ||
+    o.installed != null ||
+    o.activated != null
+  );
+}
+
+function extractBulkResultsArray(data: unknown): unknown[] | null {
+  if (Array.isArray(data)) {
+    if (data.length === 0 || data.every(looksLikeBulkResultRow)) return data;
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+
+  const nestedObjects: Record<string, unknown>[] = [];
   const d = data as Record<string, unknown>;
-  const results = d.results;
-  if (!Array.isArray(results)) return null;
+  nestedObjects.push(d);
+  for (const key of ['data', 'response', 'payload', 'body'] as const) {
+    const nested = d[key];
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      nestedObjects.push(nested as Record<string, unknown>);
+    }
+  }
+
+  for (const obj of nestedObjects) {
+    const results = obj.results;
+    if (Array.isArray(results)) return results;
+    if (results && typeof results === 'object' && !Array.isArray(results)) {
+      return Object.values(results as Record<string, unknown>);
+    }
+  }
+
+  return null;
+}
+
+export function mergeBulkResponseShape(data: unknown): BulkResponseShape | null {
+  const resultsRaw = extractBulkResultsArray(data);
+  if (!resultsRaw) return null;
+  const d =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : {};
+  const nested =
+    d.data && typeof d.data === 'object' && !Array.isArray(d.data)
+      ? (d.data as Record<string, unknown>)
+      : d;
   return {
-    results: results as BulkResponseShape['results'],
-    succeeded: typeof d.succeeded === 'number' ? d.succeeded : 0,
-    failed: typeof d.failed === 'number' ? d.failed : 0,
+    results: resultsRaw as BulkResponseShape['results'],
+    succeeded: typeof nested.succeeded === 'number' ? nested.succeeded : typeof d.succeeded === 'number' ? d.succeeded : 0,
+    failed: typeof nested.failed === 'number' ? nested.failed : typeof d.failed === 'number' ? d.failed : 0,
   };
 }
 

@@ -154,8 +154,9 @@ function unwrapBulkShape(responseData: unknown): ReturnType<typeof mergeBulkResp
 function normalizeInstallResponse(
   responseData: unknown,
   preErrors: BulkOperationResult[],
-  resolvedCount: number,
+  resolvedRows: Record<string, unknown>[],
 ) {
+  const resolvedCount = resolvedRows.length;
   const shape = unwrapBulkShape(responseData);
   if (shape) {
     return {
@@ -170,7 +171,7 @@ function normalizeInstallResponse(
   if (resolvedCount > 1) {
     return {
       results: Array.from({ length: resolvedCount }, (_, i) => ({
-        id: `plugin-${i}`,
+        id: String(resolvedRows[i]?.slug || resolvedRows[i]?.plugin || `plugin-${i}`),
         ok: false,
         error: 'Install response missing bulk results.',
       })),
@@ -178,7 +179,16 @@ function normalizeInstallResponse(
       failed: resolvedCount,
     };
   }
-  return { results: [{ id: 'plugin', ok: true }], succeeded: 1, failed: 0 };
+  return {
+    results: [
+      {
+        id: String(resolvedRows[0]?.slug || resolvedRows[0]?.plugin || 'plugin'),
+        ok: true,
+      },
+    ],
+    succeeded: 1,
+    failed: 0,
+  };
 }
 
 export default async function handlePluginsInstall(ctx: WpProxyCtx) {
@@ -226,5 +236,5 @@ export default async function handlePluginsInstall(ctx: WpProxyCtx) {
     });
   }
 
-  return ok(res, normalizeInstallResponse(result.responseData, preErrors, resolvedRows.length));
+  return ok(res, normalizeInstallResponse(result.responseData, preErrors, resolvedRows));
 }
