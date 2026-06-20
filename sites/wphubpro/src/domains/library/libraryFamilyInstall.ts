@@ -15,9 +15,15 @@ import {
   type PluginInstallBulkRow,
   type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
+import {
+  bulkLineMessage,
+  indexBulkResultsForSlugLookup,
+  lookupBulkResultForInstallEntry,
+  type BulkItemResult,
+} from '@/domains/sites/extensionBulkFromSite';
 import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
-import type { LibraryFamily, LibraryItem } from '@/types';
+import type { LibraryFamily, LibraryItem, LibraryItemType } from '@/types';
 
 export type FamilyInstallLineResult = {
   siteId: string;
@@ -34,6 +40,10 @@ export type FamilyInstallWpInfoMap = {
 export type FamilyInstallValidation =
   | { ok: true; members: ResolvedFamilyMember[] }
   | { ok: false; message: string };
+
+function memberLineKey(kind: LibraryItemType, memberSlug: string): string {
+  return `${kind}:${memberSlug}`;
+}
 
 export function validateFamilyForInstall(
   family: LibraryFamily,
@@ -81,32 +91,30 @@ function planForMember(
 
 type PluginBatchEntry = {
   memberSlug: string;
+  installSlug: string;
   row: PluginInstallBulkRow;
 };
 
 type ThemeBatchEntry = {
   memberSlug: string;
+  installSlug: string;
   row: ThemeInstallBulkRow;
 };
 
-function resultMessageForBulkLine(ok: boolean, error?: string, fallback = 'Install failed.'): string {
-  if (ok) return 'Installed.';
-  return (error ?? '').trim() || fallback;
-}
-
 function mapBulkResultsToFamilyLines(
   siteId: string,
-  entries: { memberSlug: string }[],
-  bulkResults: { id: string; ok: boolean; error?: string }[],
+  entries: { memberSlug: string; installSlug: string }[],
+  bulkResults: BulkItemResult[],
 ): FamilyInstallLineResult[] {
-  const byId = new Map<string, { ok: boolean; error?: string }>();
-  for (const r of bulkResults) {
-    const key = r.id.trim().toLowerCase();
-    if (key) byId.set(key, { ok: r.ok, error: r.error });
-  }
+  const byId = indexBulkResultsForSlugLookup(bulkResults);
 
-  return entries.map(({ memberSlug }) => {
-    const hit = byId.get(memberSlug.trim().toLowerCase());
+  return entries.map(({ memberSlug, installSlug }, index) => {
+    const hit = lookupBulkResultForInstallEntry(
+      byId,
+      [installSlug, memberSlug],
+      bulkResults,
+      index,
+    );
     if (!hit) {
       return {
         siteId,
@@ -119,7 +127,7 @@ function mapBulkResultsToFamilyLines(
       siteId,
       memberSlug,
       ok: hit.ok,
-      message: resultMessageForBulkLine(hit.ok, hit.error),
+      message: bulkLineMessage(hit),
     };
   });
 }
@@ -157,18 +165,20 @@ export async function runFamilyInstallOnSites(
     for (const member of members) {
       const resolved = planForMember(member, family, wpInfo);
       if (!resolved) {
-        lineByMember.set(member.slug, {
-          siteId,
-          memberSlug: member.slug,
-          ok: false,
-          message: 'Could not resolve library item for this member.',
-        });
+        if (member.kind === 'plugin' || member.kind === 'theme') {
+          lineByMember.set(memberLineKey(member.kind, member.slug), {
+            siteId,
+            memberSlug: member.slug,
+            ok: false,
+            message: 'Could not resolve library item for this member.',
+          });
+        }
         continue;
       }
 
       const { item, itemKind, plan } = resolved;
       if (plan.kind === 'unsupported') {
-        lineByMember.set(member.slug, {
+        lineByMember.set(memberLineKey(itemKind, member.slug), {
           siteId,
           memberSlug: member.slug,
           ok: false,
@@ -181,7 +191,7 @@ export async function runFamilyInstallOnSites(
       if (itemKind === 'plugin') {
         const row = planToPluginInstallRow(plan);
         if (!row) {
-          lineByMember.set(member.slug, {
+          lineByMember.set(memberLineKey(itemKind, member.slug), {
             siteId,
             memberSlug: member.slug,
             ok: false,
@@ -189,18 +199,20 @@ export async function runFamilyInstallOnSites(
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         pluginRows.push({
           memberSlug: member.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
       } else {
         const row = planToThemeInstallRow(plan);
         if (!row) {
-          lineByMember.set(member.slug, {
+          lineByMember.set(memberLineKey(itemKind, member.slug), {
             siteId,
             memberSlug: member.slug,
             ok: false,
@@ -208,11 +220,13 @@ export async function runFamilyInstallOnSites(
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         themeRows.push({
           memberSlug: member.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
@@ -226,7 +240,7 @@ export async function runFamilyInstallOnSites(
       );
       if (!bulk.results.length && !bulk.ok) {
         for (const entry of pluginRows) {
-          lineByMember.set(entry.memberSlug, {
+          lineByMember.set(memberLineKey('plugin', entry.memberSlug), {
             siteId,
             memberSlug: entry.memberSlug,
             ok: false,
@@ -236,10 +250,13 @@ export async function runFamilyInstallOnSites(
       } else {
         for (const line of mapBulkResultsToFamilyLines(
           siteId,
-          pluginRows.map((e) => ({ memberSlug: e.memberSlug })),
+          pluginRows.map((e) => ({
+            memberSlug: e.memberSlug,
+            installSlug: e.installSlug,
+          })),
           bulk.results,
         )) {
-          lineByMember.set(line.memberSlug, line);
+          lineByMember.set(memberLineKey('plugin', line.memberSlug), line);
         }
       }
     }
@@ -251,7 +268,7 @@ export async function runFamilyInstallOnSites(
       );
       if (!bulk.results.length && !bulk.ok) {
         for (const entry of themeRows) {
-          lineByMember.set(entry.memberSlug, {
+          lineByMember.set(memberLineKey('theme', entry.memberSlug), {
             siteId,
             memberSlug: entry.memberSlug,
             ok: false,
@@ -261,16 +278,20 @@ export async function runFamilyInstallOnSites(
       } else {
         for (const line of mapBulkResultsToFamilyLines(
           siteId,
-          themeRows.map((e) => ({ memberSlug: e.memberSlug })),
+          themeRows.map((e) => ({
+            memberSlug: e.memberSlug,
+            installSlug: e.installSlug,
+          })),
           bulk.results,
         )) {
-          lineByMember.set(line.memberSlug, line);
+          lineByMember.set(memberLineKey('theme', line.memberSlug), line);
         }
       }
     }
 
     for (const member of members) {
-      const line = lineByMember.get(member.slug);
+      if (member.kind !== 'plugin' && member.kind !== 'theme') continue;
+      const line = lineByMember.get(memberLineKey(member.kind, member.slug));
       if (line) results.push(line);
     }
   }

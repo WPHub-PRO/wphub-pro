@@ -24,14 +24,22 @@ export type WpProxyExecutionBody = {
 export async function postBridgeApiJsonWithMeta<T>(
   _path: string,
   body: unknown,
-  options: { timeoutMs?: number; throwOnHttpError?: boolean } = {},
+  options: {
+    timeoutMs?: number;
+    throwOnHttpError?: boolean;
+    /**
+     * Async execution + poll. Avoid when you need the JSON response body — on Appwrite Cloud
+     * polled executions often return an empty body even when the run succeeded.
+     */
+    longRunning?: boolean;
+  } = {},
 ): Promise<PlatformApiWithMeta<T>> {
-  const { timeoutMs = 180_000, throwOnHttpError = false } = options;
+  const { timeoutMs = 180_000, throwOnHttpError = false, longRunning = false } = options;
   const { data, statusCode } = await executeFunctionWithMeta<T>(
     APPWRITE_FUNCTION_IDS.WP_PROXY,
     body as Record<string, unknown>,
     {
-      longRunning: true,
+      longRunning,
       maxAsyncWaitMs: timeoutMs,
       throwOnHttpError,
       parseJson: true,
