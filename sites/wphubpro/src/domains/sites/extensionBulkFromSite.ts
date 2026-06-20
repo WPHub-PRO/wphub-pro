@@ -50,6 +50,23 @@ export function lookupBulkResultForSlug(
   return byId.get(key);
 }
 
+/** Match a bulk row to an install entry by slug keys, then by request order. */
+export function lookupBulkResultForInstallEntry(
+  byId: Map<string, BulkItemResult>,
+  slugs: string[],
+  bulkResults: BulkItemResult[],
+  index: number,
+): BulkItemResult | undefined {
+  for (const slug of slugs) {
+    const hit = lookupBulkResultForSlug(byId, slug);
+    if (hit) return hit;
+  }
+  if (index >= 0 && index < bulkResults.length) {
+    return bulkResults[index];
+  }
+  return undefined;
+}
+
 export function bulkLineMessage(row: BulkItemResult, fallback = 'Install failed.'): string {
   if (row.ok) return 'Installed.';
   if (row.installed === true && row.activated === false) {
@@ -99,6 +116,85 @@ export function toBulkPluginItemFromPath(pluginPath: string): BulkPluginItem {
   };
 }
 
+function pickString(v: unknown): string {
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function coerceOptionalBool(v: unknown): boolean | undefined {
+  if (v === true || v === 1 || v === '1' || v === 'true') return true;
+  if (v === false || v === 0 || v === '0' || v === 'false') return false;
+  return undefined;
+}
+
+function looksLikeBulkResultRow(v: unknown): boolean {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    o.id != null ||
+    o.ok != null ||
+    o.plugin_file != null ||
+    o.pluginFile != null ||
+    o.plugin != null ||
+    o.slug != null ||
+    o.stylesheet != null ||
+    o.error != null ||
+    o.installed != null ||
+    o.activated != null
+  );
+}
+
+/** Pull a bulk `results` array from wp-proxy / bridge JSON (several legacy shapes). */
+export function extractBulkResultsArray(data: unknown): unknown[] | null {
+  if (Array.isArray(data)) {
+    if (data.length === 0 || data.every(looksLikeBulkResultRow)) return data;
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+
+  const nestedObjects: Record<string, unknown>[] = [];
+  const d = data as Record<string, unknown>;
+  nestedObjects.push(d);
+  for (const key of ['data', 'response', 'payload', 'body'] as const) {
+    const nested = d[key];
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      nestedObjects.push(nested as Record<string, unknown>);
+    }
+  }
+
+  for (const obj of nestedObjects) {
+    const results = obj.results;
+    if (Array.isArray(results)) return results;
+    if (results && typeof results === 'object' && !Array.isArray(results)) {
+      return Object.values(results as Record<string, unknown>);
+    }
+  }
+
+  return null;
+}
+
+export function normalizeBulkItemRow(r: unknown): BulkItemResult {
+  if (!r || typeof r !== 'object') return { id: '', ok: false, error: 'Invalid result entry' };
+  const o = r as Record<string, unknown>;
+  const id =
+    pickString(o.id) ||
+    pickString(o.plugin_file) ||
+    pickString(o.pluginFile) ||
+    pickString(o.plugin) ||
+    pickString(o.slug) ||
+    pickString(o.stylesheet) ||
+    '';
+  const ok =
+    o.ok === true ||
+    o.ok === 1 ||
+    o.ok === '1' ||
+    o.ok === 'true';
+  const error = typeof o.error === 'string' ? o.error : undefined;
+  const installed = coerceOptionalBool(o.installed);
+  const activated = coerceOptionalBool(o.activated);
+  return { id, ok, error, installed, activated };
+}
+
 export function summarizeBulkPayload(
   data: unknown,
   statusCode: number,
@@ -111,28 +207,11 @@ export function summarizeBulkPayload(
       results: [],
     };
   }
-  if (!data || typeof data !== 'object') {
+  const raw = extractBulkResultsArray(data);
+  if (!raw) {
     return { ok: true, message: `${successVerb}.`, results: [] };
   }
-  const d = data as Record<string, unknown>;
-  let raw = d.results;
-  if (!Array.isArray(raw) && d.data && typeof d.data === 'object' && !Array.isArray(d.data)) {
-    const nested = (d.data as Record<string, unknown>).results;
-    if (Array.isArray(nested)) raw = nested;
-  }
-  if (!Array.isArray(raw)) {
-    return { ok: true, message: `${successVerb}.`, results: [] };
-  }
-  const results: BulkItemResult[] = raw.map((r) => {
-    if (!r || typeof r !== 'object') return { id: '', ok: false, error: 'Invalid result entry' };
-    const o = r as Record<string, unknown>;
-    const id = typeof o.id === 'string' ? o.id : '';
-    const ok = Boolean(o.ok);
-    const error = typeof o.error === 'string' ? o.error : undefined;
-    const installed = typeof o.installed === 'boolean' ? o.installed : undefined;
-    const activated = typeof o.activated === 'boolean' ? o.activated : undefined;
-    return { id, ok, error, installed, activated };
-  });
+  const results: BulkItemResult[] = raw.map(normalizeBulkItemRow);
   const failed = results.filter((x) => !x.ok);
   const succeeded = results.filter((x) => x.ok);
   if (results.length === 0) {

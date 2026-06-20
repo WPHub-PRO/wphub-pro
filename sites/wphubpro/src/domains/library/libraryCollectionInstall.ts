@@ -16,7 +16,7 @@ import {
 import {
   bulkLineMessage,
   indexBulkResultsForSlugLookup,
-  lookupBulkResultForSlug,
+  lookupBulkResultForInstallEntry,
   type BulkItemResult,
 } from '@/domains/sites/extensionBulkFromSite';
 import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
@@ -81,23 +81,30 @@ function planForCollectionMember(
 
 type PluginBatchEntry = {
   slug: string;
+  installSlug: string;
   row: PluginInstallBulkRow;
 };
 
 type ThemeBatchEntry = {
   slug: string;
+  installSlug: string;
   row: ThemeInstallBulkRow;
 };
 
 function mapBulkResultsToLines(
   siteId: string,
-  entries: { slug: string; type: LibraryItemType }[],
+  entries: { slug: string; installSlug: string; type: LibraryItemType }[],
   bulkResults: BulkItemResult[],
 ): CollectionInstallLineResult[] {
   const byId = indexBulkResultsForSlugLookup(bulkResults);
 
-  return entries.map(({ slug, type }) => {
-    const hit = lookupBulkResultForSlug(byId, slug);
+  return entries.map(({ slug, installSlug, type }, index) => {
+    const hit = lookupBulkResultForInstallEntry(
+      byId,
+      [installSlug, slug],
+      bulkResults,
+      index,
+    );
     if (!hit) {
       return {
         siteId,
@@ -187,11 +194,13 @@ export async function runCollectionInstallOnSites(
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         pluginRows.push({
-          slug: wpSlug,
+          slug: resolved.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
@@ -207,11 +216,13 @@ export async function runCollectionInstallOnSites(
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         themeRows.push({
-          slug: wpSlug,
+          slug: resolved.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
@@ -236,7 +247,11 @@ export async function runCollectionInstallOnSites(
       } else {
         for (const line of mapBulkResultsToLines(
           siteId,
-          pluginRows.map((e) => ({ slug: e.slug, type: 'plugin' as const })),
+          pluginRows.map((e) => ({
+            slug: e.slug,
+            installSlug: e.installSlug,
+            type: 'plugin' as const,
+          })),
           bulk.results,
         )) {
           lineByKey.set(`plugin:${line.slug}`, line);
@@ -262,7 +277,11 @@ export async function runCollectionInstallOnSites(
       } else {
         for (const line of mapBulkResultsToLines(
           siteId,
-          themeRows.map((e) => ({ slug: e.slug, type: 'theme' as const })),
+          themeRows.map((e) => ({
+            slug: e.slug,
+            installSlug: e.installSlug,
+            type: 'theme' as const,
+          })),
           bulk.results,
         )) {
           lineByKey.set(`theme:${line.slug}`, line);
