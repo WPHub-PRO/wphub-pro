@@ -16,9 +16,11 @@ All docs and code live in the **`wphub-pro`** monorepo ([github.com/wphub-pro/wp
 
 | Change | Update |
 |--------|--------|
+| **Plugins/themes bulk flow** (wp-proxy, bridge, `extensionBulkFromSite`, library install) | `FUNCTIONS.md`, `functions/wp-proxy/README.md`, `wphubpro-bridge/README.md`, `MODULAR-LAYERS.md`, `wphub-bridge-extensions.mdc`, `wphub-bridge-plugin.mdc` |
+| **`wphubpro-bridge/` code changes** | Bump **`Version:`** in `wphubpro-bridge/wphubpro-bridge.php` in the same commit if not already bumped — **`wphub-bridge-plugin.mdc`** |
 | **`appwrite.config.json`** (functions, tables, buckets, runtime, VCS, timeouts) | `.cursor/docs/FUNCTIONS.md`, `.cursor/docs/AGENTS.md`; `appwrite push functions --all --no-code` — **`wphub-appwrite-schema.mdc`** |
 | **New / removed function `$id`** | `FUNCTIONS.md`, `MODULAR-LAYERS.md` (app↔function map), `functions/README.md`, add/remove `functions/<id>/README.md` |
-| **Function handler layout, actions, deps** | `functions/<id>/README.md` if present |
+| **Function handler layout, actions, deps** | `functions/<id>/README.md` if present; **`wp-proxy` + bridge plugin/theme flow** → `FUNCTIONS.md`, `functions/wp-proxy/README.md`, `wphubpro-bridge/README.md`, `wphub-bridge-extensions.mdc` |
 | **New / renamed app domain** | `MODULAR-LAYERS.md`, relevant `.cursor/docs/` sections |
 | **`@code045/wphubpro-shared` publish** | All version pins + READMEs — **`wphub-shared-publish.mdc`** |
 | **Workspace layout, paths, scripts** | `WORKSPACE.md`, `AGENTS.md`, `wphub-project.mdc` if defaults change |
@@ -38,9 +40,9 @@ Cosmetic-only edits (formatting, rename without behavior change) do **not** requ
 | **README.md** | Doc index |
 | **WORKSPACE.md** | Repo layout, paths |
 | **AGENTS.md** | Dev commands, inventory counts, workflows |
-| **FUNCTIONS.md** | All 12 functions table from `appwrite.config.json` |
+| **FUNCTIONS.md** | All 13 functions table from `appwrite.config.json`; **wp-proxy plugins/themes bulk** section |
 | **SHARED.md** | Package consumption, publish workflow |
-| **MODULAR-LAYERS.md** | Domains, function map, layer rules |
+| **MODULAR-LAYERS.md** | Domains, function map, layer rules, sites extension bulk |
 
 ### Function READMEs (`functions/`)
 
@@ -63,8 +65,9 @@ cd functions && node scripts/update-function-readmes.mjs
 1. Code / config change is complete.
 2. Relevant **`.cursor/docs/*.md`** updated (or explicitly N/A).
 3. Relevant **`functions/**/README.md`** updated (or N/A).
-4. **`appwrite.config.json`** edits followed by **`appwrite push functions --all --no-code`**.
-5. All changes committed to the **monorepo**.
+4. **`wphubpro-bridge/`** runtime changes: **`Version:`** bumped in **`wphubpro-bridge/wphubpro-bridge.php`** in this commit if not already (**`wphub-bridge-plugin.mdc`**).
+5. **`appwrite.config.json`** edits followed by **`appwrite push functions --all --no-code`**.
+6. All changes committed to the **monorepo**.
 
 ---
 

@@ -41,10 +41,10 @@ When breaking work into a **plan with todos**, **label every todo** with exactly
 |-----|----------------------------------------|
 | **`[React]`** | Components/hooks/domains/routing/query in `sites/wphubpro/`, TypeScript UI logic (not primarily visual). |
 | **`[UI]`** | Layout, SCSS, Bootstrap/`react-bootstrap`, views, spacing, icons, accessibility. |
-| **`[Appwrite]`** | `appwrite.config.json`, CLI push/pull/generate, `functions/`, `@code045/wphubpro-shared`, `.cursor/scripts/`, `sites/wphubpro/generated/appwrite/`, schema/ids — **`.cursor/docs/AGENTS.md`**. |
+| **`[Appwrite]`** | `appwrite.config.json`, CLI push/pull/generate, `functions/`, `@code045/wphubpro-shared`, `.cursor/scripts/`, `sites/wphubpro/generated/appwrite/`, schema/ids — **`.cursor/docs/AGENTS.md`**. Plugins/themes bulk: **`wphub-bridge-extensions.mdc`**. |
 | **`[Stripe]`** | `stripe-loader`, billing/Stripe from the app, `functions/stripe-api/`, webhooks/secrets on the server. |
 
-**Execution:** Enable or **@**-include: `wphub-agent-ui.mdc`, `wphub-agent-stripe.mdc`, `wphub-functions.mdc`, `wphub-shared-package.mdc`, `wphub-shared-publish.mdc` (after npm publish), `wphub-docs-sync.mdc` (after code or config changes).
+**Execution:** Enable or **@**-include: `wphub-agent-ui.mdc`, `wphub-agent-stripe.mdc`, `wphub-functions.mdc`, `wphub-bridge-extensions.mdc` (plugins/themes bulk), `wphub-bridge-plugin.mdc` (bridge plugin + version bump), `wphub-shared-package.mdc`, `wphub-shared-publish.mdc` (after npm publish), `wphub-docs-sync.mdc` (after code or config changes).
 
 ## Edits & TypeScript
 

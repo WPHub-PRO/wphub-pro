@@ -78,9 +78,7 @@ npm install && npm run build    # messaging: pnpm install && pnpm run build
 | `uptime-robot` | node-22 | 120 | npm install | any | `/functions/uptime-robot` | Uptime monitoring |
 | `user-mailbox` | node-22 | 120 | npm install | any | `/functions/user-mailbox` | Admin mailbox (IMAP) |
 | `users` | node-22 | 120 | npm install | any | `/functions/users` | Teams, users |
-| `wp-proxy` | node-22 | 120 | npm install | any | `/functions/wp-proxy` | WordPress proxy / ZIP installs |
-
-**`wp-proxy` body shapes (plugins & themes):** install handlers require `plugins[]` or `themes[]` (non-empty); each row accepts `zip_url` (+ optional `source`: `official` \| `local` \| `remote`), `libraryItemId` + `version` (composite `id::version` supported), or `slug` + `version`. Bridge install/update responses use `{ results: [{ id, ok, error? }], succeeded, failed }` (partial failures continue the batch). Hub handlers: `plugins/activate`, `plugins/deactivate`, `plugins/uninstall`, `plugins/update`, `plugins/install`; `themes/activate`, `themes/deactivate`, `themes/uninstall`, `themes/update`, `themes/install`. Bulk activate/deactivate/update/uninstall use `plugins[]` or `themes[]` arrays with the same per-row fields.
+| `wp-proxy` | node-22 | 120 | npm install | any | `/functions/wp-proxy` | WordPress proxy — plugins, themes, bridge ZIP |
 | `github-config-sync` | node-22 | 15 | npm install | — (events only) | `/functions/github-config-sync` | Triggers GitHub config sync on schema events |
 
 Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 1260883337`, branch `main`, `providerSilentMode: true`.
@@ -99,3 +97,106 @@ Shared VCS: `installationId: 69e016afb5c72c7bf95c`, `providerRepositoryId: 12608
 | `functions/scripts/update-function-readmes.mjs` | Regenerate per-function README deploy sections |
 
 See `functions/README.md`.
+
+---
+
+## `wp-proxy` — plugins & themes (bulk-only)
+
+End-to-end: **Hub UI** → `postBridgeApiJsonWithMeta` → **`wp-proxy`** function → **`wphubpro-bridge`** REST → WordPress.
+
+Detailed handler docs: [`functions/wp-proxy/README.md`](../../functions/wp-proxy/README.md). Bridge REST contract: **`wphubpro-bridge/README.md`** (sibling folder in the full workspace; not in the `wphub-pro` Git tree by default).
+
+### Hub → wp-proxy envelope
+
+```json
+{ "siteId": "<sites-doc-id>", "handler": "<action-key>", "body": { "plugins": […] } }
+```
+
+- **`handler`:** canonical keys only — no legacy aliases (`plugins/de-install`, `themes/uninstall`, underscore forms).
+- **`body`:** always **`plugins[]`** or **`themes[]`** — non-empty arrays of **objects**. Single-row UI actions use array length **1**.
+
+### Handler keys
+
+| Handler | Bridge path |
+|---------|-------------|
+| `plugins/install` | `POST wphubpro/v1/plugins/manage/install` |
+| `plugins/update` | `POST …/plugins/manage/update` (WP.org slug+version rows → `…/install`) |
+| `plugins/activate` | `POST …/plugins/manage/activate` |
+| `plugins/deactivate` | `POST …/plugins/manage/deactivate` |
+| `plugins/uninstall` | `POST …/plugins/manage/delete` |
+| `themes/install` | `POST wphubpro/v1/themes/manage/install` |
+| `themes/update` | `POST …/themes/manage/update` |
+| `themes/activate` | `POST …/themes/manage/activate` |
+| `themes/deactivate` | `POST …/themes/manage/deactivate` |
+| `themes/delete` | `POST …/themes/manage/delete` |
+| `bridge/forceUpdate` | bridge self-update (separate concern) |
+
+### Install row fields (each `plugins[]` / `themes[]` entry)
+
+One of:
+
+- `zip_url` (HTTPS) + optional `source`: `official` \| `local` \| `remote`
+- `libraryItemId` + `version` (composite `docId::encodedVersion` supported)
+- `slug` + `version` (WordPress.org)
+
+Optional: `plugin` (file path), `routeSlug`, `stylesheet` (themes).
+
+wp-proxy resolves library ZIPs from Appwrite Storage / library docs before forwarding. **`zip_base64` is rejected.**
+
+### Manage row fields (activate / deactivate / update / uninstall / delete)
+
+- **Plugins:** `{ plugin, slug?, version?, zip_url?, libraryItemId?, source? }` — `plugin` file path required.
+- **Themes:** `{ stylesheet, slug?, version?, zip_url?, libraryItemId?, source? }`.
+
+### wp-proxy forwarding
+
+- **Install / activate / deactivate / uninstall / delete:** one bulk bridge POST with the full resolved array.
+- **Update:** resolve all rows, then **at most two** bridge calls — `manage/update` batch + `manage/install` batch (WP.org plugin updates via install-version path).
+
+### Bridge → Hub response (all manage endpoints)
+
+```json
+{
+  "results": [
+    { "id": "akismet/akismet.php", "ok": true, "installed": true, "activated": true },
+    { "id": "other/other.php", "ok": false, "installed": true, "activated": false, "error": "Activation failed: …" }
+  ],
+  "succeeded": 1,
+  "failed": 1
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `ok` | Overall success for this item (install + activate count as one step on install) |
+| `installed` | Package installed or updated successfully |
+| `activated` | Item is active after the operation |
+| `error` | Failure message when `ok` is false |
+
+Partial batch failures do not abort other items.
+
+### Bridge-side behavior (summary)
+
+| Action | Rule |
+|--------|------|
+| Plugin install | Always activate after successful install |
+| Plugin update | Reactivate if the plugin was active before update |
+| Theme bulk install | Install all items; **activate only the last successful** theme in the array |
+| Theme update | Active theme stays active |
+| Theme delete | Cannot delete the currently active theme |
+
+### Platform domain layer (no UI changes required)
+
+| Path | Role |
+|------|------|
+| `sites/wphubpro/src/lib/platform-api.ts` | `postBridgeApiJsonWithMeta` → `wp-proxy` |
+| `sites/wphubpro/src/domains/sites/extensionBulkFromSite.ts` | Unified bulk runners + single-item wrappers |
+| `sites/wphubpro/src/domains/sites/pluginUpdateFromSite.ts` | Update resolution (WP.org / library / bridge zip) |
+| `sites/wphubpro/src/domains/library/libraryCollectionInstall.ts` | Per site: one `plugins/install` + one `themes/install` batch |
+| `sites/wphubpro/src/domains/library/libraryFamilyInstall.ts` | Same batch pattern as collections |
+
+Legacy single-field bodies (`body.plugin`, top-level `body.slug`) and wp-proxy handler aliases are **removed** — use arrays only.
+
+**Agent rule:** `.cursor/rules/wphub-bridge-extensions.mdc` when editing this flow.
+
+Bridge plugin releases: bump **`Version:`** in `wphubpro-bridge/wphubpro-bridge.php` per commit with runtime changes — **`wphub-bridge-plugin.mdc`**.

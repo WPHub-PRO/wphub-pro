@@ -15,7 +15,7 @@
 | `.cursor/rules/` | Cursor agent rules |
 | `.cursor/scripts/` | Node tooling (`bridge-release.js`, `restore-function-vcs.js`) |
 | `sites/wphubpro/` | Vite React platform app |
-| `functions/` | 12 Appwrite handlers + `shared/` npm package source |
+| `functions/` | 13 Appwrite handlers + `shared/` npm package source |
 
 Clone once:
 
@@ -41,6 +41,7 @@ npm run lint
 
 - Import alias **`@/`** → `src/` (`vite.config.ts`).
 - Appwrite function calls: **`src/integrations/appwrite/executeFunction.ts`**.
+- WordPress plugins/themes (bulk): **`src/lib/platform-api.ts`** → **`wp-proxy`**; **`src/domains/sites/extensionBulkFromSite.ts`**.
 - Resource ids: **`src/config/wphubAppwriteIds.ts`** + **`generated/appwrite/`**.
 
 ---
@@ -53,7 +54,7 @@ Label each plan todo with **one** tag: **`[React]`** · **`[UI]`** · **`[Appwri
 |-----|----------------|
 | **`[React]`** | `wphub-project.mdc` · [MODULAR-LAYERS.md](MODULAR-LAYERS.md) |
 | **`[UI]`** | `wphub-agent-ui.mdc` |
-| **`[Appwrite]`** | `wphub-functions.mdc` · `wphub-appwrite-schema.mdc` · `wphub-appwrite-ids.mdc` |
+| **`[Appwrite]`** | `wphub-functions.mdc` · `wphub-bridge-extensions.mdc` (plugins/themes bulk) · `wphub-bridge-plugin.mdc` (bridge version bump) · `wphub-appwrite-schema.mdc` · `wphub-appwrite-ids.mdc` |
 | **`[Stripe]`** | `wphub-agent-stripe.mdc` |
 
 ---
@@ -62,7 +63,7 @@ Label each plan todo with **one** tag: **`[React]`** · **`[UI]`** · **`[Appwri
 
 - **Project:** `wphub-pro` · **Endpoint:** `https://fra.cloud.appwrite.io/v1`
 - **Database:** `platform_db` (17 tables) — see config `tables[]`
-- **Functions:** 13 ids — [FUNCTIONS.md](FUNCTIONS.md)
+- **Functions:** 13 ids — [FUNCTIONS.md](FUNCTIONS.md) (includes **wp-proxy plugins/themes bulk**)
 - **Buckets:** 6 — `bridge`, `avatars`, `media_library`, `plugins`, `themes`, `6a0e670d00380379a6d4`
 - **Sites:** `sites/wphubpro` (id `69e016bd001d4315876d`) · `sites/wphubpro-landing` (config only; directory may be absent locally)
 
@@ -124,4 +125,4 @@ Scripts: **`.cursor/scripts/`** — `sync-appwrite-config-from-cloud.js` (pull t
 - Publish `@code045/wphubpro-shared` before Appwrite deploy when shared code changed ([SHARED.md](SHARED.md)).
 - Set **`NPM_TOKEN`** on Appwrite for restricted npm reads.
 - Custom dev hosts: `server.allowedHosts` in `sites/wphubpro/vite.config.ts`.
-- `bridge-release.js` expects bridge plugin sources at `wphubpro-bridge/` (optional; not in monorepo by default).
+- `bridge-release.js` expects bridge plugin sources at `wphubpro-bridge/` (optional; not in monorepo by default). Release reads **`Version:`** from `wphubpro-bridge/wphubpro-bridge.php` — bump it in the same commit as bridge code changes (**`wphub-bridge-plugin.mdc`**).

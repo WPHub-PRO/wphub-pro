@@ -35,7 +35,6 @@ export type WpProxyHandlerKey =
   | 'themes/activate'
   | 'themes/deactivate'
   | 'themes/delete'
-  | 'themes/uninstall'
   | 'bridge/forceUpdate';
 
 export type WpProxyCtx = {
@@ -156,7 +155,13 @@ export type BulkNormFail = { ok: false; message: string };
 export type PluginBulkNormResult = PluginBulkNormOk | BulkNormFail;
 export type ThemeBulkNormResult = ThemeBulkNormOk | BulkNormFail;
 
-export type BulkOperationResult = { id: string; ok: boolean; error?: string };
+export type BulkOperationResult = {
+  id: string;
+  ok: boolean;
+  installed?: boolean;
+  activated?: boolean;
+  error?: string;
+};
 export type BulkResponseShape = {
   results: BulkOperationResult[];
   succeeded: number;

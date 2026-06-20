@@ -34,46 +34,19 @@ const HANDLERS: Record<WpProxyHandlerKey, WpProxyHandler> = {
   'plugins/activate': handlePluginsActivate,
   'plugins/deactivate': handlePluginsDeactivate,
   'plugins/uninstall': handlePluginsUninstall,
-  'plugins/de-install': handlePluginsUninstall,
   'themes/update': handleThemesUpdate,
   'themes/install': handleThemesInstall,
   'themes/activate': handleThemesActivate,
   'themes/deactivate': handleThemesDeactivate,
   'themes/delete': handleThemesDelete,
-  'themes/uninstall': handleThemesDelete,
   'bridge/forceUpdate': handleBridgeForceUpdate,
 };
 
 function normalizeHandler(handlerRaw: unknown): WpProxyHandlerKey | '' {
-  const s = String(handlerRaw || '').trim().toLowerCase();
+  const s = String(handlerRaw || '').trim();
   if (!s) return '';
-  if (s === 'bridge_force_update' || s === 'bridge/forceupdate' || s === 'bridge/force-update') {
-    return 'bridge/forceUpdate';
-  }
-
-  if (s.includes('/')) {
-    if (s === 'plugins/de-install' || s === 'plugins/deinstall' || s === 'plugins/de_install') {
-      return 'plugins/uninstall';
-    }
-    if (s in HANDLERS) return s as WpProxyHandlerKey;
-    return '';
-  }
-
-  let t = s.replace(/-/g, '/');
-  if (t.includes('/')) {
-    if (t in HANDLERS) return t as WpProxyHandlerKey;
-    return '';
-  }
-
-  const m = t.match(/^(plugins|themes|bridge)_(.+)$/);
-  if (!m) return '';
-  const pref = m[1];
-  const rest = m[2];
-  if (pref === 'plugins' && (rest === 'de_install' || rest === 'deinstall')) return 'plugins/uninstall';
-  if (pref === 'themes' && (rest === 'uninstall' || rest === 'delete')) return 'themes/delete';
-  if (pref === 'bridge' && rest === 'force_update') return 'bridge/forceUpdate';
-  const key = `${pref}/${rest.replace(/_/g, '/')}` as WpProxyHandlerKey;
-  return key in HANDLERS ? key : '';
+  if (s in HANDLERS) return s as WpProxyHandlerKey;
+  return '';
 }
 
 export default async ({

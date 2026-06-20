@@ -1,0 +1,99 @@
+---
+attachmentType: agent
+globs: functions/wp-proxy/**/*,sites/wphubpro/src/domains/sites/**/*,sites/wphubpro/src/domains/library/**/*,wphubpro-bridge/**/*
+description: Bulk plugins/themes flow — Hub, wp-proxy, bridge (strict arrays, enriched responses)
+alwaysApply: false
+---
+
+# Plugins & themes — bulk flow (mandatory)
+
+When changing SiteDetail actions, library installs, **wp-proxy**, or **wphubpro-bridge** plugin/theme handlers, follow this contract. Full reference: **`.cursor/docs/FUNCTIONS.md`** (wp-proxy section) · **`functions/wp-proxy/README.md`** · **`wphubpro-bridge/README.md`**.
+
+---
+
+## End-to-end path
+
+```
+Hub UI → extensionBulkFromSite / library*Install
+      → postBridgeApiJsonWithMeta({ siteId, handler, body })
+      → wp-proxy (resolve ZIPs, normalize)
+      → wphubpro-bridge REST (bulk POST)
+      → WordPress
+```
+
+---
+
+## Request contract (Hub → wp-proxy → bridge)
+
+1. **Always** send `body.plugins[]` or `body.themes[]` — non-empty **object arrays**. Single-row actions = array length **1**.
+2. **Never** send top-level `body.plugin`, `body.slug`, or string-only array entries.
+3. **Handler keys** (canonical only): `plugins/install|update|activate|deactivate|uninstall`, `themes/install|update|activate|deactivate|delete`, `bridge/forceUpdate`. No aliases (`plugins/de-install`, `themes/uninstall`, underscore forms).
+4. **ZIPs:** HTTPS `zip_url` only — wp-proxy resolves library items; **`zip_base64` forbidden**.
+
+---
+
+## Response contract (bridge → wp-proxy → Hub)
+
+All manage endpoints return:
+
+```json
+{ "results": [{ "id", "ok", "installed?", "activated?", "error?" }], "succeeded", "failed" }
+```
+
+Hub parses with **`summarizeBulkPayload`** in `extensionBulkFromSite.ts` (`BulkItemResult` includes `installed`, `activated`).
+
+---
+
+## wp-proxy forwarding
+
+| Handler | Bridge calls |
+|---------|----------------|
+| install, activate, deactivate, uninstall, delete | **One** bulk POST |
+| plugins/update | Resolve all rows → **≤2** calls: `manage/update` batch + `manage/install` batch (WP.org slug+version) |
+| themes/update | **One** bulk `manage/update` POST |
+
+Do **not** loop per-item bridge calls from wp-proxy.
+
+---
+
+## Bridge behavior (do not regress)
+
+| Case | Rule |
+|------|------|
+| Plugin install | Always activate after install |
+| Plugin update | Reactivate if was active |
+| Theme bulk install | Install all; activate **only last successful** in array |
+| Theme update | Active theme stays active |
+| Theme delete | Block delete of active theme |
+
+---
+
+## Platform domain entry points
+
+| File | Role |
+|------|------|
+| `extensionBulkFromSite.ts` | **Unified** bulk + single-item wrappers (`runPluginsBulkForSite`, `runThemesBulkForSite`, …) |
+| `pluginUpdateFromSite.ts` / `themeUpdateFromSite.ts` | Update source resolution; still send `[item]` arrays |
+| `libraryCollectionInstall.ts` | Per site: `plugins/install` batch + `themes/install` batch (separate calls) |
+| `libraryFamilyInstall.ts` | Same batch pattern as collections (not sequential per member) |
+
+Deprecated re-export shims: `pluginActivateFromSite.ts`, `extensionRemoveFromSite.ts`, `themeActivateFromSite.ts` → import from `extensionBulkFromSite.ts` instead.
+
+---
+
+## Docs sync
+
+After changing this flow, update in the **same change set**:
+
+- `.cursor/docs/FUNCTIONS.md` (wp-proxy section)
+- `functions/wp-proxy/README.md`
+- `wphubpro-bridge/README.md`
+- This rule if the contract changes
+
+See **`wphub-docs-sync.mdc`**.
+
+---
+
+## Bridge plugin version (same commit)
+
+Any change under **`wphubpro-bridge/`** that affects runtime behavior must include a **`Version: x.y.z`** bump in **`wphubpro-bridge/wphubpro-bridge.php`** if not already raised in the commit. See **`wphub-bridge-plugin.mdc`**.

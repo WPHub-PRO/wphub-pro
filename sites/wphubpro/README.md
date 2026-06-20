@@ -4,4 +4,5 @@ React 19 + TypeScript + Vite + React Router 7. **`npm run dev`**, **`npm run bui
 
 - **Imports:** **`@/`** → **`src/`**
 - **Appwrite client:** **`src/services/appwrite.ts`** · ids **`src/config/wphubAppwriteIds.ts`** · generated **`generated/appwrite/`**
+- **WP plugins/themes:** **`src/domains/sites/extensionBulkFromSite.ts`** → **`wp-proxy`** (bulk `plugins[]` / `themes[]` only)
 - **Workspace:** repo-root **`AGENTS.md`**, **`README.md`**

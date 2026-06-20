@@ -1,6 +1,6 @@
 # WP Hub Pro — Appwrite functions (monorepo)
 
-All 12 serverless functions and shared **`@code045/wphubpro-shared`** npm library in one repository.
+All 13 serverless functions and shared **`@code045/wphubpro-shared`** npm library in one repository.
 
 ## Layout
 
@@ -51,3 +51,5 @@ cd functions && pnpm install && cd users && pnpm run build
 Publish from `shared/` — see [`shared/README.md`](shared/README.md).
 
 Docs: [`.cursor/docs/FUNCTIONS.md`](../.cursor/docs/FUNCTIONS.md) · [`.cursor/docs/SHARED.md`](../.cursor/docs/SHARED.md)
+
+Per-function READMEs where present (e.g. **`wp-proxy/README.md`** — plugins/themes bulk flow).

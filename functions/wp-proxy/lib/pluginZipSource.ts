@@ -16,6 +16,3 @@ export function attachZipSource(
   }
   return body;
 }
-
-/** @deprecated Use attachZipSource — kept for plugin handler imports. */
-export const attachPluginZipSource = attachZipSource;
