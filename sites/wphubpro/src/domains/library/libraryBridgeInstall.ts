@@ -1,5 +1,5 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
-import { summarizeBulkPayload } from '@/domains/sites/extensionBulkFromSite';
+import { summarizeBulkPayload, type BulkItemResult } from '@/domains/sites/extensionBulkFromSite';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem } from '@/types';
 
@@ -77,7 +77,7 @@ export function planToThemeInstallRow(plan: LibraryBridgeInstallPlan): ThemeInst
 export async function runPluginInstallBulkOnSite(
   siteId: string,
   rows: PluginInstallBulkRow[],
-): Promise<{ ok: boolean; message: string; results: { id: string; ok: boolean; error?: string }[] }> {
+): Promise<{ ok: boolean; message: string; results: BulkItemResult[] }> {
   if (!rows.length) {
     return { ok: false, message: 'No plugins to install.', results: [] };
   }
@@ -105,7 +105,7 @@ export async function runPluginInstallBulkOnSite(
 export async function runThemeInstallBulkOnSite(
   siteId: string,
   rows: ThemeInstallBulkRow[],
-): Promise<{ ok: boolean; message: string; results: { id: string; ok: boolean; error?: string }[] }> {
+): Promise<{ ok: boolean; message: string; results: BulkItemResult[] }> {
   if (!rows.length) {
     return { ok: false, message: 'No themes to install.', results: [] };
   }
@@ -306,6 +306,15 @@ export async function runLibraryBridgeInstallOnSite(
     const bulk = await runPluginInstallBulkOnSite(siteId, [row]);
     const line = bulk.results[0];
     if (line) {
+      if (line.installed === true && line.activated === false) {
+        const detail = line.error?.trim();
+        return {
+          ok: false,
+          message: detail
+            ? `Installed but activation failed: ${detail}`
+            : 'Installed but the plugin could not be activated on the site.',
+        };
+      }
       return {
         ok: line.ok,
         message: line.ok ? 'Installed.' : (line.error?.trim() || bulk.message || 'Install failed.'),
