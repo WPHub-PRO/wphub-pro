@@ -13,6 +13,12 @@ import {
   type PluginInstallBulkRow,
   type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
+import {
+  bulkLineMessage,
+  indexBulkResultsForSlugLookup,
+  lookupBulkResultForSlug,
+  type BulkItemResult,
+} from '@/domains/sites/extensionBulkFromSite';
 import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryCollection, LibraryItem, LibraryItemType } from '@/types';
@@ -83,24 +89,15 @@ type ThemeBatchEntry = {
   row: ThemeInstallBulkRow;
 };
 
-function resultMessageForBulkLine(ok: boolean, error?: string, fallback = 'Install failed.'): string {
-  if (ok) return 'Installed.';
-  return (error ?? '').trim() || fallback;
-}
-
 function mapBulkResultsToLines(
   siteId: string,
   entries: { slug: string; type: LibraryItemType }[],
-  bulkResults: { id: string; ok: boolean; error?: string }[],
+  bulkResults: BulkItemResult[],
 ): CollectionInstallLineResult[] {
-  const byId = new Map<string, { ok: boolean; error?: string }>();
-  for (const r of bulkResults) {
-    const key = r.id.trim().toLowerCase();
-    if (key) byId.set(key, { ok: r.ok, error: r.error });
-  }
+  const byId = indexBulkResultsForSlugLookup(bulkResults);
 
   return entries.map(({ slug, type }) => {
-    const hit = byId.get(slug.trim().toLowerCase());
+    const hit = lookupBulkResultForSlug(byId, slug);
     if (!hit) {
       return {
         siteId,
@@ -115,7 +112,7 @@ function mapBulkResultsToLines(
       slug,
       type,
       ok: hit.ok,
-      message: resultMessageForBulkLine(hit.ok, hit.error),
+      message: bulkLineMessage(hit),
     };
   });
 }
