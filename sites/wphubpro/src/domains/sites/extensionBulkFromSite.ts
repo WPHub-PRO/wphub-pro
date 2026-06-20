@@ -23,44 +23,6 @@ export type BulkItemResult = {
 
 export type BulkRunResult = { ok: boolean; message: string; results: BulkItemResult[] };
 
-/** Index bulk rows by id and, for plugin paths, by directory slug (before `/`). */
-export function indexBulkResultsForSlugLookup(
-  results: BulkItemResult[],
-): Map<string, BulkItemResult> {
-  const map = new Map<string, BulkItemResult>();
-  for (const row of results) {
-    const id = row.id.trim().toLowerCase();
-    if (!id) continue;
-    if (!map.has(id)) map.set(id, row);
-    const slash = id.indexOf('/');
-    if (slash > 0) {
-      const dirSlug = id.slice(0, slash);
-      if (dirSlug && !map.has(dirSlug)) map.set(dirSlug, row);
-    }
-  }
-  return map;
-}
-
-export function lookupBulkResultForSlug(
-  byId: Map<string, BulkItemResult>,
-  slug: string,
-): BulkItemResult | undefined {
-  const key = slug.trim().toLowerCase();
-  if (!key) return undefined;
-  return byId.get(key);
-}
-
-export function bulkLineMessage(row: BulkItemResult, fallback = 'Install failed.'): string {
-  if (row.ok) return 'Installed.';
-  if (row.installed === true && row.activated === false) {
-    const detail = row.error?.trim();
-    return detail
-      ? `Installed but activation failed: ${detail}`
-      : 'Installed but the plugin could not be activated on the site.';
-  }
-  return (row.error ?? '').trim() || fallback;
-}
-
 export function toBulkPluginItem(row: WordPressPlugin): BulkPluginItem {
   const plugin = (row.plugin || '').trim();
   const slug = pluginDirectorySlug(plugin) || (row as { slug?: string }).slug?.trim() || '';
