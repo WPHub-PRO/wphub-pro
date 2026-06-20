@@ -13,6 +13,12 @@ import {
   type PluginInstallBulkRow,
   type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
+import {
+  bulkLineMessage,
+  indexBulkResultsForSlugLookup,
+  lookupBulkResultForInstallEntry,
+  type BulkItemResult,
+} from '@/domains/sites/extensionBulkFromSite';
 import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryCollection, LibraryItem, LibraryItemType } from '@/types';
@@ -75,32 +81,30 @@ function planForCollectionMember(
 
 type PluginBatchEntry = {
   slug: string;
+  installSlug: string;
   row: PluginInstallBulkRow;
 };
 
 type ThemeBatchEntry = {
   slug: string;
+  installSlug: string;
   row: ThemeInstallBulkRow;
 };
 
-function resultMessageForBulkLine(ok: boolean, error?: string, fallback = 'Install failed.'): string {
-  if (ok) return 'Installed.';
-  return (error ?? '').trim() || fallback;
-}
-
 function mapBulkResultsToLines(
   siteId: string,
-  entries: { slug: string; type: LibraryItemType }[],
-  bulkResults: { id: string; ok: boolean; error?: string }[],
+  entries: { slug: string; installSlug: string; type: LibraryItemType }[],
+  bulkResults: BulkItemResult[],
 ): CollectionInstallLineResult[] {
-  const byId = new Map<string, { ok: boolean; error?: string }>();
-  for (const r of bulkResults) {
-    const key = r.id.trim().toLowerCase();
-    if (key) byId.set(key, { ok: r.ok, error: r.error });
-  }
+  const byId = indexBulkResultsForSlugLookup(bulkResults);
 
-  return entries.map(({ slug, type }) => {
-    const hit = byId.get(slug.trim().toLowerCase());
+  return entries.map(({ slug, installSlug, type }, index) => {
+    const hit = lookupBulkResultForInstallEntry(
+      byId,
+      [installSlug, slug],
+      bulkResults,
+      index,
+    );
     if (!hit) {
       return {
         siteId,
@@ -115,7 +119,7 @@ function mapBulkResultsToLines(
       slug,
       type,
       ok: hit.ok,
-      message: resultMessageForBulkLine(hit.ok, hit.error),
+      message: bulkLineMessage(hit),
     };
   });
 }
@@ -183,18 +187,20 @@ export async function runCollectionInstallOnSites(
         if (!row) {
           lineByKey.set(key, {
             siteId,
-            slug: wpSlug,
+            slug: resolved.slug,
             type: resolved.type,
             ok: false,
             message: 'Could not build plugin install row.',
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         pluginRows.push({
-          slug: wpSlug,
+          slug: resolved.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
@@ -203,18 +209,20 @@ export async function runCollectionInstallOnSites(
         if (!row) {
           lineByKey.set(key, {
             siteId,
-            slug: wpSlug,
+            slug: resolved.slug,
             type: resolved.type,
             ok: false,
             message: 'Could not build theme install row.',
           });
           continue;
         }
+        const installSlug = row.slug || wpSlug;
         themeRows.push({
-          slug: wpSlug,
+          slug: resolved.slug,
+          installSlug,
           row: {
             ...row,
-            slug: row.slug || wpSlug,
+            slug: installSlug,
             routeSlug: row.routeSlug || wpSlug,
           },
         });
@@ -239,7 +247,11 @@ export async function runCollectionInstallOnSites(
       } else {
         for (const line of mapBulkResultsToLines(
           siteId,
-          pluginRows.map((e) => ({ slug: e.slug, type: 'plugin' as const })),
+          pluginRows.map((e) => ({
+            slug: e.slug,
+            installSlug: e.installSlug,
+            type: 'plugin' as const,
+          })),
           bulk.results,
         )) {
           lineByKey.set(`plugin:${line.slug}`, line);
@@ -265,7 +277,11 @@ export async function runCollectionInstallOnSites(
       } else {
         for (const line of mapBulkResultsToLines(
           siteId,
-          themeRows.map((e) => ({ slug: e.slug, type: 'theme' as const })),
+          themeRows.map((e) => ({
+            slug: e.slug,
+            installSlug: e.installSlug,
+            type: 'theme' as const,
+          })),
           bulk.results,
         )) {
           lineByKey.set(`theme:${line.slug}`, line);

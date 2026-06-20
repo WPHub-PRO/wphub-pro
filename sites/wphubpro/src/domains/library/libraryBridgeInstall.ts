@@ -1,5 +1,9 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
-import { summarizeBulkPayload, type BulkItemResult } from '@/domains/sites/extensionBulkFromSite';
+import {
+  summarizeBulkPayload,
+  synthesizeBulkResultsFromInstallRows,
+  type BulkItemResult,
+} from '@/domains/sites/extensionBulkFromSite';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem } from '@/types';
 
@@ -22,8 +26,25 @@ export type ThemeInstallBulkRow = {
   routeSlug?: string;
 };
 
+/** Appwrite synchronous executions are capped at ~30s; prefer sync so responseBody is present. */
+const WP_PROXY_SYNC_TIMEOUT_MS = 28_000;
+
 function bulkInstallTimeoutMs(itemCount: number): number {
   return Math.min(600_000, 60_000 + itemCount * 30_000);
+}
+
+function applyInstallBulkSummaryFallback(
+  summary: { ok: boolean; message: string; results: BulkItemResult[] },
+  statusCode: number,
+  rows: { slug?: string; routeSlug?: string }[],
+): { ok: boolean; message: string; results: BulkItemResult[] } {
+  if (summary.results.length > 0 || rows.length === 0) return summary;
+  if (statusCode < 200 || statusCode >= 300) return summary;
+  return {
+    ok: true,
+    message: summary.message || 'Installed.',
+    results: synthesizeBulkResultsFromInstallRows(rows),
+  };
 }
 
 export function planToPluginInstallRow(plan: LibraryBridgeInstallPlan): PluginInstallBulkRow | null {
@@ -82,6 +103,7 @@ export async function runPluginInstallBulkOnSite(
     return { ok: false, message: 'No plugins to install.', results: [] };
   }
   try {
+    const timeoutMs = Math.min(bulkInstallTimeoutMs(rows.length), WP_PROXY_SYNC_TIMEOUT_MS);
     const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
       '/wp-proxy',
       {
@@ -90,11 +112,16 @@ export async function runPluginInstallBulkOnSite(
         body: { plugins: rows },
       },
       {
-        timeoutMs: bulkInstallTimeoutMs(rows.length),
+        timeoutMs,
+        longRunning: false,
         throwOnHttpError: false,
       },
     );
-    const summary = summarizeBulkPayload(data, statusCode, 'Installed');
+    const summary = applyInstallBulkSummaryFallback(
+      summarizeBulkPayload(data, statusCode, 'Installed'),
+      statusCode,
+      rows,
+    );
     return { ok: summary.ok, message: summary.message, results: summary.results };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -110,6 +137,7 @@ export async function runThemeInstallBulkOnSite(
     return { ok: false, message: 'No themes to install.', results: [] };
   }
   try {
+    const timeoutMs = Math.min(bulkInstallTimeoutMs(rows.length), WP_PROXY_SYNC_TIMEOUT_MS);
     const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
       '/wp-proxy',
       {
@@ -118,11 +146,16 @@ export async function runThemeInstallBulkOnSite(
         body: { themes: rows },
       },
       {
-        timeoutMs: bulkInstallTimeoutMs(rows.length),
+        timeoutMs,
+        longRunning: false,
         throwOnHttpError: false,
       },
     );
-    const summary = summarizeBulkPayload(data, statusCode, 'Installed');
+    const summary = applyInstallBulkSummaryFallback(
+      summarizeBulkPayload(data, statusCode, 'Installed'),
+      statusCode,
+      rows,
+    );
     return { ok: summary.ok, message: summary.message, results: summary.results };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
