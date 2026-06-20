@@ -2,23 +2,31 @@ import { ok, fail } from '@code045/wphubpro-shared';
 import { callBridgeRest } from '../../lib/connectBridge.ts';
 import * as getResourceItem from '../../lib/getResourceItem.ts';
 import { attachZipSource } from '../../lib/pluginZipSource.ts';
-import { normalizeThemeBulkBody, mergeBulkResponseShape } from '../../lib/normalizeBulkBody.ts';
-import type { BridgeRestResult, ThemeBulkRow, WpProxyCtx } from '../../lib/types.ts';
+import {
+  mergeBulkResponseShape,
+  mergeBulkResponses,
+  normalizeThemeBulkBody,
+} from '../../lib/normalizeBulkBody.ts';
+import type { BulkOperationResult, BulkResponseShape, ThemeBulkRow, WpProxyCtx } from '../../lib/types.ts';
 
 function httpsZip(raw: unknown): string {
   const z = String(raw || '').trim();
   return z.startsWith('https://') ? z : '';
 }
 
-async function runOneThemeUpdate(
+type ResolvedThemeUpdate =
+  | { ok: true; row: ThemeBulkRow; id: string }
+  | { ok: false; id: string; error: string };
+
+async function resolveOneThemeUpdate(
   ctx: WpProxyCtx,
-  siteId: string,
   item: ThemeBulkRow,
   topLevelBody: Record<string, unknown>,
-): Promise<BridgeRestResult> {
+): Promise<ResolvedThemeUpdate> {
   const stylesheet = String(item.stylesheet || item.slug || '').trim();
   const slug = String(item.slug || stylesheet || '').trim();
   const version = String(item.version || '').trim();
+  const id = stylesheet || slug || 'theme';
   const zipDirect =
     httpsZip(item.zip_url) ||
     httpsZip(item.zipUrl) ||
@@ -29,12 +37,7 @@ async function runOneThemeUpdate(
   if (zipDirect) {
     row.zip_url = zipDirect;
     attachZipSource(row, item.source ?? topLevelBody.source);
-    return callBridgeRest(ctx, {
-      siteId,
-      bridgePath: 'wphubpro/v1/themes/manage/update',
-      method: 'POST',
-      body: { themes: [row] },
-    });
+    return { ok: true, row, id };
   }
 
   const libId = String(
@@ -68,19 +71,14 @@ async function runOneThemeUpdate(
     if (!resolved.ok) {
       return {
         ok: false,
-        statusCode: resolved.statusCode || 400,
-        message: resolved.message || 'Zip resolve failed.',
+        id,
+        error: resolved.message || 'Zip resolve failed.',
       };
     }
     row.zip_url = resolved.zipUrl;
     row.version = libVersion || version;
     attachZipSource(row, resolved.source, item.source ?? topLevelBody.source);
-    return callBridgeRest(ctx, {
-      siteId,
-      bridgePath: 'wphubpro/v1/themes/manage/update',
-      method: 'POST',
-      body: { themes: [row] },
-    });
+    return { ok: true, row, id };
   }
 
   if (slug && version) {
@@ -98,27 +96,17 @@ async function runOneThemeUpdate(
     if (!resolved.ok) {
       return {
         ok: false,
-        statusCode: resolved.statusCode || 400,
-        message: resolved.message || 'Zip resolve failed.',
+        id,
+        error: resolved.message || 'Zip resolve failed.',
       };
     }
     row.zip_url = resolved.zipUrl;
     attachZipSource(row, resolved.source, item.source ?? topLevelBody.source);
-    return callBridgeRest(ctx, {
-      siteId,
-      bridgePath: 'wphubpro/v1/themes/manage/update',
-      method: 'POST',
-      body: { themes: [row] },
-    });
+    return { ok: true, row, id };
   }
 
   if (stylesheet || slug) {
-    return callBridgeRest(ctx, {
-      siteId,
-      bridgePath: 'wphubpro/v1/themes/manage/update',
-      method: 'POST',
-      body: { themes: [{ stylesheet, slug, version: version || '' }] },
-    });
+    return { ok: true, row: { stylesheet, slug, version: version || '' }, id };
   }
 
   const resolved = await getResourceItem.resolveThemeUpdateZipUrl({
@@ -130,25 +118,14 @@ async function runOneThemeUpdate(
   if (!resolved.ok) {
     return {
       ok: false,
-      statusCode: resolved.statusCode || 400,
-      message: resolved.message || 'Zip resolve failed.',
+      id,
+      error: resolved.message || 'Zip resolve failed.',
     };
   }
   row.zip_url = resolved.zipUrl;
   row.version = String(topLevelBody.version || version || '').trim();
   attachZipSource(row, resolved.source, topLevelBody.source);
-  return callBridgeRest(ctx, {
-    siteId,
-    bridgePath: 'wphubpro/v1/themes/manage/update',
-    method: 'POST',
-    body: { themes: [row] },
-  });
-}
-
-function normalizeOneThemeUpdateResponse(responseData: unknown, themeId: string) {
-  const shape = mergeBulkResponseShape(responseData);
-  if (shape) return shape;
-  return { results: [{ id: themeId, ok: true }], succeeded: 1, failed: 0 };
+  return { ok: true, row, id };
 }
 
 export default async function handleThemesUpdate(ctx: WpProxyCtx) {
@@ -159,28 +136,43 @@ export default async function handleThemesUpdate(ctx: WpProxyCtx) {
   const norm = normalizeThemeBulkBody(rawBody);
   if (!norm.ok) return fail(res, norm.message, 400);
 
-  const themes = norm.body.themes;
   const siteIdStr = String(siteId);
-  if (themes.length === 1) {
-    const r = await runOneThemeUpdate(ctx, siteIdStr, themes[0], rawBody);
-    if (!r.ok) return fail(res, r.message, r.statusCode || 500, r.details);
-    const tid = String(themes[0].stylesheet || themes[0].slug || '').trim();
-    return ok(res, normalizeOneThemeUpdateResponse(r.responseData, tid));
-  }
+  const resolvedRows: ThemeBulkRow[] = [];
+  const preErrors: BulkOperationResult[] = [];
 
-  const merged = { results: [] as { id: string; ok: boolean; error?: string }[], succeeded: 0, failed: 0 };
-  for (const item of themes) {
-    const tid = String(item.stylesheet || item.slug || '').trim();
-    const r = await runOneThemeUpdate(ctx, siteIdStr, item, rawBody);
-    if (!r.ok) {
-      merged.results.push({ id: tid, ok: false, error: r.message || 'Update failed.' });
-      merged.failed += 1;
+  for (const item of norm.body.themes) {
+    const resolved = await resolveOneThemeUpdate(ctx, item, rawBody);
+    if (!resolved.ok) {
+      preErrors.push({ id: resolved.id, ok: false, error: resolved.error });
       continue;
     }
-    const one = normalizeOneThemeUpdateResponse(r.responseData, tid);
-    merged.results.push(...one.results);
-    merged.succeeded += one.succeeded;
-    merged.failed += one.failed;
+    resolvedRows.push(resolved.row);
   }
-  return ok(res, merged);
+
+  if (resolvedRows.length === 0) {
+    return ok(res, { results: preErrors, succeeded: 0, failed: preErrors.length });
+  }
+
+  const result = await callBridgeRest(ctx, {
+    siteId: siteIdStr,
+    bridgePath: 'wphubpro/v1/themes/manage/update',
+    method: 'POST',
+    body: { themes: resolvedRows },
+  });
+
+  if (!result.ok) {
+    const failedRows: BulkOperationResult[] = resolvedRows.map((row, i) => ({
+      id: String(row.stylesheet || row.slug || `theme-${i}`),
+      ok: false,
+      error: result.message || 'Update failed.',
+    }));
+    return ok(res, {
+      results: [...preErrors, ...failedRows],
+      succeeded: 0,
+      failed: preErrors.length + failedRows.length,
+    });
+  }
+
+  const shape: BulkResponseShape | null = mergeBulkResponseShape(result.responseData);
+  return ok(res, mergeBulkResponses(preErrors, shape));
 }

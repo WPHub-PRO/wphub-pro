@@ -1,0 +1,45 @@
+---
+attachmentType: agent
+globs: wphubpro-bridge/**/*
+description: wphubpro-bridge plugin — version bump, release header, change checklist
+alwaysApply: false
+---
+
+# wphubpro-bridge plugin (mandatory)
+
+When editing **`wphubpro-bridge/`** (PHP, templates, tests, scripts), follow this checklist before marking the task done.
+
+---
+
+## Version bump (required on every code change)
+
+**Before finishing a commit** that changes bridge plugin code, verify the plugin version was bumped **in that same commit** (if not already done):
+
+1. Open **`wphubpro-bridge/wphubpro-bridge.php`** (plugin root file).
+2. Update the WordPress header line **`Version: x.y.z`** (semver).
+3. Do **not** ship bridge PHP/behavior changes without a version increase unless the commit **only** contains docs/tests with zero runtime impact — when in doubt, bump patch (`3.2.4` → `3.2.5`).
+
+The version in this header is the **source of truth** for:
+
+- Platform bridge update checks (`Config::get_installed_version()`)
+- Release zip name: `wphubpro-bridge-x.y.z.zip` via **`wphub-pro/.cursor/scripts/bridge-release.js`**
+- Appwrite `platform_db` / `bridge` release rows
+
+**Check:** if your diff touches `includes/`, `templates/`, or root bootstrap but **`wphubpro-bridge.php` `Version:` is unchanged**, bump it before commit.
+
+---
+
+## Related workflows
+
+| Task | Where |
+|------|--------|
+| Plugins/themes REST bulk flow | **`wphub-bridge-extensions.mdc`** · `wphubpro-bridge/README.md` |
+| Zip + upload release | `node wphub-pro/.cursor/scripts/bridge-release.js` (reads version from header) |
+| Docs after bridge/API changes | **`wphub-docs-sync.mdc`** — `wphubpro-bridge/README.md`, `FUNCTIONS.md` if wp-proxy contract changes |
+
+---
+
+## Do not
+
+- Commit bridge runtime changes with an unchanged **`Version:`** header.
+- Duplicate version in multiple files — only the **`wphubpro-bridge.php`** header (unless an existing constant mirrors it by convention; header wins for release tooling).

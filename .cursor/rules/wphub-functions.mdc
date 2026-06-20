@@ -47,3 +47,9 @@ Run Appwrite CLI from the **repo root** (where `appwrite.config.json` lives).
 - After **`appwrite.config.json`** function settings change: **`appwrite push functions --all --no-code`**.
 - Set **`NPM_TOKEN`** on Appwrite for private npm.
 - Optional VCS restore: `node .cursor/scripts/restore-function-vcs.js` (only when VCS fields exist in config).
+
+## `wp-proxy` — plugins & themes
+
+Bulk-only Hub → bridge flow. Handlers under **`functions/wp-proxy/handlers/`**; strict `plugins[]` / `themes[]` bodies; enriched bridge responses (`installed`, `activated`, `error`).
+
+**Read before editing:** `.cursor/docs/FUNCTIONS.md` (wp-proxy section) · `functions/wp-proxy/README.md` · **`wphub-bridge-extensions.mdc`**. Bridge plugin: **`wphubpro-bridge/README.md`** · version bump **`wphub-bridge-plugin.mdc`** (sibling folder in full workspace).

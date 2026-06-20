@@ -1,7 +1,7 @@
 import { ok, fail } from '@code045/wphubpro-shared';
 import { callBridgeRest } from '../../lib/connectBridge.ts';
 import * as getResourceItem from '../../lib/getResourceItem.ts';
-import { attachPluginZipSource } from '../../lib/pluginZipSource.ts';
+import { attachZipSource } from '../../lib/pluginZipSource.ts';
 import {
   httpsZipUrl,
   mergeBulkResponseShape,
@@ -73,7 +73,7 @@ async function runOnePluginInstall(
   if (zipDirect) {
     const row = withPluginSlug({ zip_url: zipDirect }, slugHint);
     if (plugin) row.plugin = plugin;
-    attachPluginZipSource(row, item.source ?? topLevelBody.source);
+    attachZipSource(row, item.source ?? topLevelBody.source);
     return { ok: true, row, id: slugHint || pluginDirSlug(plugin) || id };
   }
 
@@ -116,7 +116,7 @@ async function runOnePluginInstall(
     const resolvedSlug = slugHint || official.slug || routeSlug;
     const row = withPluginSlug({ zip_url: zipRes.zipUrl }, resolvedSlug);
     if (plugin) row.plugin = plugin;
-    attachPluginZipSource(row, zipRes.source, item.source ?? topLevelBody.source);
+    attachZipSource(row, zipRes.source, item.source ?? topLevelBody.source);
     return { ok: true, row, id: resolvedSlug || libraryItemId };
   }
 

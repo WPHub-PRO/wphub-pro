@@ -37,7 +37,21 @@ export function supportFunction<T>(action: string, body: Record<string, unknown>
 | Path | Role |
 |------|------|
 | `src/lib/stripe-loader.ts` | Stripe via `stripe-api` function |
-| `src/lib/platform-api.ts` | Long-running `wp-proxy` / bridge calls |
+| `src/lib/platform-api.ts` | Long-running `wp-proxy` / bridge calls (`postBridgeApiJsonWithMeta`) |
+
+### Sites domain — plugins & themes (bulk)
+
+All extension actions use **`domains/sites/extensionBulkFromSite.ts`** → **`wp-proxy`** → bridge. **Never** call bridge paths directly from views.
+
+| Module | Role |
+|--------|------|
+| `extensionBulkFromSite.ts` | Bulk runners + single-item wrappers; `summarizeBulkPayload` |
+| `pluginUpdateFromSite.ts` / `themeUpdateFromSite.ts` | Update source resolution (WP.org, library, bridge zip) |
+| `libraryBridgeInstall.ts` | Install row planning + `runPluginInstallBulkOnSite` / `runThemeInstallBulkOnSite` |
+| `libraryCollectionInstall.ts` | Per site: one plugins batch + one themes batch |
+| `libraryFamilyInstall.ts` | Same batch pattern as collections |
+
+Payload: `{ siteId, handler, body: { plugins: [objects] } }` or `{ themes: [objects] }`. See **`.cursor/docs/FUNCTIONS.md`** · **`wphub-bridge-extensions.mdc`**.
 
 ---
 

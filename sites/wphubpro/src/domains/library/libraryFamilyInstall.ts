@@ -7,9 +7,15 @@ import {
 } from '@/domains/library/familyMembers';
 import {
   planLibraryBridgeInstall,
-  runLibraryBridgeInstallOnSite,
+  planToPluginInstallRow,
+  planToThemeInstallRow,
+  runPluginInstallBulkOnSite,
+  runThemeInstallBulkOnSite,
   type LibraryBridgeInstallPlan,
+  type PluginInstallBulkRow,
+  type ThemeInstallBulkRow,
 } from '@/domains/library/libraryBridgeInstall';
+import { getLibraryItemSlug } from '@/domains/library/libraryItemSlug';
 import type { WpPluginInfo, WpThemeInfo } from '@/services/wordpress';
 import type { LibraryFamily, LibraryItem } from '@/types';
 
@@ -73,9 +79,54 @@ function planForMember(
   return { item, itemKind, plan };
 }
 
+type PluginBatchEntry = {
+  memberSlug: string;
+  row: PluginInstallBulkRow;
+};
+
+type ThemeBatchEntry = {
+  memberSlug: string;
+  row: ThemeInstallBulkRow;
+};
+
+function resultMessageForBulkLine(ok: boolean, error?: string, fallback = 'Install failed.'): string {
+  if (ok) return 'Installed.';
+  return (error ?? '').trim() || fallback;
+}
+
+function mapBulkResultsToFamilyLines(
+  siteId: string,
+  entries: { memberSlug: string }[],
+  bulkResults: { id: string; ok: boolean; error?: string }[],
+): FamilyInstallLineResult[] {
+  const byId = new Map<string, { ok: boolean; error?: string }>();
+  for (const r of bulkResults) {
+    const key = r.id.trim().toLowerCase();
+    if (key) byId.set(key, { ok: r.ok, error: r.error });
+  }
+
+  return entries.map(({ memberSlug }) => {
+    const hit = byId.get(memberSlug.trim().toLowerCase());
+    if (!hit) {
+      return {
+        siteId,
+        memberSlug,
+        ok: false,
+        message: 'No install result returned for this member.',
+      };
+    }
+    return {
+      siteId,
+      memberSlug,
+      ok: hit.ok,
+      message: resultMessageForBulkLine(hit.ok, hit.error),
+    };
+  });
+}
+
 /**
- * Install all family members on each site in order (memberSlugs order per site).
- * Continues on per-member failures; returns one line per attempt.
+ * Install all family members on each site: one plugins bulk call, then one themes bulk call per site.
+ * Continues on per-item failures; returns one line per member per site.
  */
 export async function runFamilyInstallOnSites(
   family: LibraryFamily,
@@ -99,10 +150,14 @@ export async function runFamilyInstallOnSites(
   const results: FamilyInstallLineResult[] = [];
 
   for (const siteId of siteIds) {
+    const pluginRows: PluginBatchEntry[] = [];
+    const themeRows: ThemeBatchEntry[] = [];
+    const lineByMember = new Map<string, FamilyInstallLineResult>();
+
     for (const member of members) {
       const resolved = planForMember(member, family, wpInfo);
       if (!resolved) {
-        results.push({
+        lineByMember.set(member.slug, {
           siteId,
           memberSlug: member.slug,
           ok: false,
@@ -111,9 +166,9 @@ export async function runFamilyInstallOnSites(
         continue;
       }
 
-      const { item, plan } = resolved;
+      const { item, itemKind, plan } = resolved;
       if (plan.kind === 'unsupported') {
-        results.push({
+        lineByMember.set(member.slug, {
           siteId,
           memberSlug: member.slug,
           ok: false,
@@ -122,13 +177,101 @@ export async function runFamilyInstallOnSites(
         continue;
       }
 
-      const run = await runLibraryBridgeInstallOnSite(siteId, plan);
-      results.push({
+      const wpSlug = getLibraryItemSlug(item);
+      if (itemKind === 'plugin') {
+        const row = planToPluginInstallRow(plan);
+        if (!row) {
+          lineByMember.set(member.slug, {
+            siteId,
+            memberSlug: member.slug,
+            ok: false,
+            message: 'Could not build plugin install row.',
+          });
+          continue;
+        }
+        pluginRows.push({
+          memberSlug: member.slug,
+          row: {
+            ...row,
+            slug: row.slug || wpSlug,
+            routeSlug: row.routeSlug || wpSlug,
+          },
+        });
+      } else {
+        const row = planToThemeInstallRow(plan);
+        if (!row) {
+          lineByMember.set(member.slug, {
+            siteId,
+            memberSlug: member.slug,
+            ok: false,
+            message: 'Could not build theme install row.',
+          });
+          continue;
+        }
+        themeRows.push({
+          memberSlug: member.slug,
+          row: {
+            ...row,
+            slug: row.slug || wpSlug,
+            routeSlug: row.routeSlug || wpSlug,
+          },
+        });
+      }
+    }
+
+    if (pluginRows.length > 0) {
+      const bulk = await runPluginInstallBulkOnSite(
         siteId,
-        memberSlug: member.slug,
-        ok: run.ok,
-        message: run.message,
-      });
+        pluginRows.map((e) => e.row),
+      );
+      if (!bulk.results.length && !bulk.ok) {
+        for (const entry of pluginRows) {
+          lineByMember.set(entry.memberSlug, {
+            siteId,
+            memberSlug: entry.memberSlug,
+            ok: false,
+            message: bulk.message,
+          });
+        }
+      } else {
+        for (const line of mapBulkResultsToFamilyLines(
+          siteId,
+          pluginRows.map((e) => ({ memberSlug: e.memberSlug })),
+          bulk.results,
+        )) {
+          lineByMember.set(line.memberSlug, line);
+        }
+      }
+    }
+
+    if (themeRows.length > 0) {
+      const bulk = await runThemeInstallBulkOnSite(
+        siteId,
+        themeRows.map((e) => e.row),
+      );
+      if (!bulk.results.length && !bulk.ok) {
+        for (const entry of themeRows) {
+          lineByMember.set(entry.memberSlug, {
+            siteId,
+            memberSlug: entry.memberSlug,
+            ok: false,
+            message: bulk.message,
+          });
+        }
+      } else {
+        for (const line of mapBulkResultsToFamilyLines(
+          siteId,
+          themeRows.map((e) => ({ memberSlug: e.memberSlug })),
+          bulk.results,
+        )) {
+          lineByMember.set(line.memberSlug, line);
+        }
+      }
+    }
+
+    for (const member of members) {
+      const line = lineByMember.get(member.slug);
+      if (line) results.push(line);
     }
   }
 

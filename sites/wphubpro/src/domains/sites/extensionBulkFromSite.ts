@@ -13,7 +13,13 @@ export type BulkPluginItem = { plugin: string; slug: string; version: string };
 
 export type BulkThemeItem = { stylesheet: string; slug: string; version: string };
 
-export type BulkItemResult = { id: string; ok: boolean; error?: string };
+export type BulkItemResult = {
+  id: string;
+  ok: boolean;
+  installed?: boolean;
+  activated?: boolean;
+  error?: string;
+};
 
 export type BulkRunResult = { ok: boolean; message: string; results: BulkItemResult[] };
 
@@ -85,7 +91,9 @@ export function summarizeBulkPayload(
     const id = typeof o.id === 'string' ? o.id : '';
     const ok = Boolean(o.ok);
     const error = typeof o.error === 'string' ? o.error : undefined;
-    return { id, ok, error };
+    const installed = typeof o.installed === 'boolean' ? o.installed : undefined;
+    const activated = typeof o.activated === 'boolean' ? o.activated : undefined;
+    return { id, ok, error, installed, activated };
   });
   const failed = results.filter((x) => !x.ok);
   const succeeded = results.filter((x) => x.ok);
@@ -157,9 +165,10 @@ export async function runPluginsBulkForSite(
   }
 }
 
-export type ThemesBulkAction = 'update' | 'delete';
+export type ThemesBulkAction = 'activate' | 'update' | 'delete';
 
 const THEME_HANDLER: Record<ThemesBulkAction, string> = {
+  activate: 'themes/activate',
   update: 'themes/update',
   delete: 'themes/delete',
 };
@@ -173,7 +182,8 @@ export async function runThemesBulkForSite(
     return { ok: false, message: 'No themes selected.', results: [] };
   }
   const handler = THEME_HANDLER[action];
-  const label = action === 'update' ? 'Updated' : 'Removed';
+  const label =
+    action === 'activate' ? 'Activated' : action === 'update' ? 'Updated' : 'Removed';
   try {
     const { statusCode, data } = await postBridgeApiJsonWithMeta<unknown>(
       '/wp-proxy',
@@ -192,4 +202,61 @@ export async function runThemesBulkForSite(
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, message: msg, results: [] };
   }
+}
+
+function toSimpleSiteResult(summary: BulkRunResult, fallbackOk: string): { ok: boolean; message: string } {
+  return {
+    ok: summary.ok,
+    message: summary.message || fallbackOk,
+  };
+}
+
+export async function runPluginActivateForSite(
+  siteId: string,
+  pluginPath: string,
+): Promise<{ ok: boolean; message: string }> {
+  const item = toBulkPluginItemFromPath(pluginPath);
+  if (!item.plugin) return { ok: false, message: 'Missing plugin file path.' };
+  const summary = await runPluginsBulkForSite(siteId, 'activate', [item]);
+  return toSimpleSiteResult(summary, 'Plugin activated.');
+}
+
+export async function runPluginDeactivateForSite(
+  siteId: string,
+  pluginPath: string,
+): Promise<{ ok: boolean; message: string }> {
+  const item = toBulkPluginItemFromPath(pluginPath);
+  if (!item.plugin) return { ok: false, message: 'Missing plugin file path.' };
+  const summary = await runPluginsBulkForSite(siteId, 'deactivate', [item]);
+  return toSimpleSiteResult(summary, 'Plugin deactivated.');
+}
+
+export async function runPluginUninstallForSite(
+  siteId: string,
+  pluginFile: string,
+): Promise<{ ok: boolean; message: string }> {
+  const item = toBulkPluginItemFromPath(pluginFile);
+  if (!item.plugin) return { ok: false, message: 'Missing plugin file path.' };
+  const summary = await runPluginsBulkForSite(siteId, 'delete', [item]);
+  return toSimpleSiteResult(summary, 'Plugin removed from the site.');
+}
+
+export async function runThemeActivateForSite(
+  siteId: string,
+  stylesheet: string,
+): Promise<{ ok: boolean; message: string }> {
+  const item = toBulkThemeItemFromStylesheet(stylesheet);
+  if (!item.stylesheet) return { ok: false, message: 'Missing theme stylesheet slug.' };
+  const summary = await runThemesBulkForSite(siteId, 'activate', [item]);
+  return toSimpleSiteResult(summary, 'Theme activated.');
+}
+
+export async function runThemeDeleteForSite(
+  siteId: string,
+  stylesheet: string,
+): Promise<{ ok: boolean; message: string }> {
+  const item = toBulkThemeItemFromStylesheet(stylesheet);
+  if (!item.stylesheet) return { ok: false, message: 'Missing theme stylesheet slug.' };
+  const summary = await runThemesBulkForSite(siteId, 'delete', [item]);
+  return toSimpleSiteResult(summary, 'Theme removed from the site.');
 }

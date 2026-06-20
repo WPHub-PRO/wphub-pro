@@ -14,7 +14,7 @@ Open the **repository root** in Cursor so `appwrite.config.json`, `functions/`, 
 | [`.cursor/docs/`](README.md) | Agent documentation |
 | [`.cursor/scripts/`](../scripts/) | Node tooling (bridge release, VCS restore) |
 | [`.cursor/rules/`](../rules/) | Cursor agent rules |
-| `functions/` | 12 Appwrite handlers + `shared/` npm package source |
+| `functions/` | 13 Appwrite handlers + `shared/` npm package source |
 | `sites/wphubpro/` | Vite React platform app |
 | `sites/wphubpro-landing/` | Landing site (in config; may be absent locally) |
 
@@ -111,6 +111,6 @@ Handlers import **`@code045/wphubpro-shared`** from npm — not `functions/share
 
 Label plan todos: **`[React]`** · **`[UI]`** · **`[Appwrite]`** · **`[Stripe]`**.
 
-Rules: **`wphub-project.mdc`** (defaults) · **`wphub-agent-ui.mdc`** · **`wphub-agent-stripe.mdc`** · **`wphub-functions.mdc`** · **`wphub-shared-package.mdc`**.
+Rules: **`wphub-project.mdc`** (defaults) · **`wphub-agent-ui.mdc`** · **`wphub-agent-stripe.mdc`** · **`wphub-functions.mdc`** · **`wphub-bridge-extensions.mdc`** (plugins/themes bulk) · **`wphub-bridge-plugin.mdc`** (bridge version bump) · **`wphub-shared-package.mdc`**.
 
 See [AGENTS.md](AGENTS.md).
