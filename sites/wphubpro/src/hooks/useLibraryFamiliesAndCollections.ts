@@ -158,13 +158,12 @@ export const useCreateLibraryFamily = () => {
   const ws = useWorkspaceContext();
   const { showNotification } = useNotificationContext();
 
-  return useMutation<void, Error, { name?: string; memberSlugs: string[] }>({
+  return useMutation<string, Error, { name?: string; memberSlugs: string[] }>({
     mutationFn: async ({ name, memberSlugs }) => {
       if (!user?.$id) throw new Error('Not signed in');
       if (ws.mode === 'team' && !ws.activeTeamId) throw new Error('No active team workspace.');
       const slugs = [...new Set(memberSlugs.map((s) => s.trim().toLowerCase()).filter(Boolean))];
-      if (slugs.length === 0) throw new Error('At least one member slug is required');
-      await databases.createDocument(
+      const doc = await databases.createDocument(
         DATABASE_ID,
         famCol,
         ID.unique(),
@@ -175,6 +174,7 @@ export const useCreateLibraryFamily = () => {
         },
         workspaceDocumentPermissions(ws.mode, user.$id, ws.activeTeamId),
       );
+      return doc.$id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['libraryFamilies', user?.$id] });
@@ -251,14 +251,13 @@ export const useCreateLibraryCollection = () => {
   const ws = useWorkspaceContext();
   const { showNotification } = useNotificationContext();
 
-  return useMutation<void, Error, { name: string; items: LibraryCollectionMember[] }>({
+  return useMutation<string, Error, { name: string; items: LibraryCollectionMember[] }>({
     mutationFn: async ({ name, items }) => {
       if (!user?.$id) throw new Error('Not signed in');
       if (ws.mode === 'team' && !ws.activeTeamId) throw new Error('No active team workspace.');
       const n = name.trim();
       if (!n) throw new Error('Name is required');
-      if (items.length === 0) throw new Error('Add at least one item');
-      await databases.createDocument(
+      const doc = await databases.createDocument(
         DATABASE_ID,
         collCol,
         ID.unique(),
@@ -269,6 +268,7 @@ export const useCreateLibraryCollection = () => {
         },
         workspaceDocumentPermissions(ws.mode, user.$id, ws.activeTeamId),
       );
+      return doc.$id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['libraryCollections', user?.$id] });
