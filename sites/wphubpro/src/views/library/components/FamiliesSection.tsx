@@ -1,8 +1,9 @@
 import { ROUTE_PATHS } from '@/config/routePaths'
 import type { LibraryFamily } from '@/types'
 import { useMemo } from 'react'
-import { Card, CardBody, Col, Row, Table } from 'react-bootstrap'
+import { Card, CardBody, Col, Row, Table, Button } from 'react-bootstrap'
 import { LuSearch } from 'react-icons/lu'
+import { TbPlus } from 'react-icons/tb'
 import { Link } from 'react-router'
 import type { LibraryViewMode } from './ViewModeToggle'
 
@@ -11,9 +12,10 @@ type FamiliesSectionProps = {
   view: LibraryViewMode;
   search: string;
   onSearchChange: (v: string) => void;
+  onAdd: () => void;
 };
 
-const FamiliesSection = ({ families, view, search, onSearchChange }: FamiliesSectionProps) => {
+const FamiliesSection = ({ families, view, search, onSearchChange, onAdd }: FamiliesSectionProps) => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return families;
@@ -37,6 +39,10 @@ const FamiliesSection = ({ families, view, search, onSearchChange }: FamiliesSec
         />
         <LuSearch className="app-search-icon text-muted" />
       </div>
+      <Button variant="primary" type="button" onClick={onAdd}>
+        <TbPlus className="me-1" />
+        Add family
+      </Button>
     </div>
   );
 

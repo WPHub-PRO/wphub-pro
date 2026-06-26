@@ -1,5 +1,6 @@
 import { DocHelpButton } from '@/components/docs/DocHelpButton';
 import PageBreadcrumb from '@/components/PageBreadcrumb';
+import { ROUTE_PATHS } from '@/config/routePaths';
 import {
   buildCategoryPathById,
   buildLibraryDashboardRows,
@@ -11,6 +12,8 @@ import { useLibraryCollections, useLibraryFamilies } from '@/hooks/useLibraryFam
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import LibraryCategoryFolders from '@/views/library/components/LibraryCategoryFolders';
 import CreateCategoryModal from '@/views/library/components/CreateCategoryModal';
+import CreateLibraryCollectionModal from '@/views/library/components/CreateLibraryCollectionModal';
+import CreateLibraryFamilyModal from '@/views/library/components/CreateLibraryFamilyModal';
 import EditCategoryModal from '@/views/library/components/EditCategoryModal';
 import AddLibraryTagModal from '@/views/library/modals/AddLibraryTagModal';
 import LibraryFileManagerSidebar from '@/views/library/components/LibraryFileManagerSidebar';
@@ -38,7 +41,7 @@ import { Button, Card, CardHeader, Col, Container, Offcanvas, Row, Spinner } fro
 import { LuSearch } from 'react-icons/lu';
 import { TbMenu2 } from 'react-icons/tb';
 import SimpleBar from 'simplebar-react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams, useNavigate } from 'react-router';
 
 function viewFromSearchParams(params: URLSearchParams): LibraryViewParam {
   const tab = params.get('tab');
@@ -68,6 +71,7 @@ const SHOW_EMPTY_CATEGORY_FOLDERS_KEY = '__WPHUBPRO_LIBRARY_SHOW_EMPTY_CATEGORY_
 
 const LibraryPage = () => {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const view = viewFromSearchParams(params);
   const tag = params.get('tag');
   const categoryParam = params.get('category');
@@ -85,6 +89,8 @@ const LibraryPage = () => {
 
   const [offcanvasShow, setOffcanvasShow] = useState(false);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [createFamilyOpen, setCreateFamilyOpen] = useState(false);
+  const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
   const [editCategoryId, setEditCategoryId] = useState<string | null>(null);
   const [addTagOpen, setAddTagOpen] = useState(false);
 
@@ -383,6 +389,7 @@ const LibraryPage = () => {
                         view={viewBySection.families}
                         search={searchBySection.families}
                         onSearchChange={(v) => setSearchBySection((s) => ({ ...s, families: v }))}
+                        onAdd={() => setCreateFamilyOpen(true)}
                       />
                     )}
 
@@ -392,6 +399,7 @@ const LibraryPage = () => {
                         view={viewBySection.collections}
                         search={searchBySection.collections}
                         onSearchChange={(v) => setSearchBySection((s) => ({ ...s, collections: v }))}
+                        onAdd={() => setCreateCollectionOpen(true)}
                       />
                     )}
                   </>
@@ -406,6 +414,20 @@ const LibraryPage = () => {
       <CreateCategoryModal
         show={createCategoryOpen}
         onHide={() => setCreateCategoryOpen(false)}
+      />
+      <CreateLibraryFamilyModal
+        show={createFamilyOpen}
+        onHide={() => setCreateFamilyOpen(false)}
+        onCreated={(familyId) => {
+          navigate(`${ROUTE_PATHS.libraryFamilyDetailPath(familyId)}?edit=members`);
+        }}
+      />
+      <CreateLibraryCollectionModal
+        show={createCollectionOpen}
+        onHide={() => setCreateCollectionOpen(false)}
+        onCreated={(collectionId) => {
+          navigate(`${ROUTE_PATHS.libraryCollectionDetailPath(collectionId)}?edit=items`);
+        }}
       />
       <EditCategoryModal
         show={editCategoryId != null && editingCategory != null}

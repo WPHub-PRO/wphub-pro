@@ -83,6 +83,19 @@ const LibraryFamilyDetailPage = () => {
     [families, familyId],
   );
 
+  useEffect(() => {
+    if (!family || searchParams.get('edit') !== 'members') return;
+    setEditMembersOpen(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('edit');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [family, searchParams, setSearchParams]);
+
   const members = useMemo(
     () => (family ? resolveFamilyMembers(family, libraryItems) : []),
     [family, libraryItems],

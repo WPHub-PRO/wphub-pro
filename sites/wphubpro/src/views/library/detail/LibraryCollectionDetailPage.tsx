@@ -87,6 +87,19 @@ const LibraryCollectionDetailPage = () => {
     [collections, collectionId],
   );
 
+  useEffect(() => {
+    if (!collection || searchParams.get('edit') !== 'items') return;
+    setEditItemsOpen(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('edit');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [collection, searchParams, setSearchParams]);
+
   const members = useMemo(
     () => (collection ? resolveCollectionMembers(collection, libraryItems) : []),
     [collection, libraryItems],
