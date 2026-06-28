@@ -2,7 +2,8 @@ import { buildLibraryDashboardRows } from '@/domains/library';
 import { useUpdateLibraryCollectionItems } from '@/hooks/useLibraryFamiliesAndCollections';
 import type { LibraryCategory, LibraryCollection, LibraryCollectionMember, LibraryItem } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Form, ListGroup, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { LuSearch } from 'react-icons/lu';
 import { TbArrowDown, TbArrowUp, TbX } from 'react-icons/tb';
 

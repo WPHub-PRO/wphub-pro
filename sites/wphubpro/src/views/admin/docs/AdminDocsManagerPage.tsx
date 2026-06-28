@@ -8,18 +8,8 @@ import { useAuth } from '@/domains/auth'
 import { useDocs } from '@/domains/docs/DocsContext'
 import type { DocArticle } from '@/domains/docs/types'
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react'
-import {
-  Accordion,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Modal,
-  Row,
-  Spinner,
-} from 'react-bootstrap'
+import { Accordion, Badge, Button, Card, Col, Container, Form, Row, Spinner } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 import { Link, useNavigate } from 'react-router'
 import { TbEdit } from 'react-icons/tb'
 

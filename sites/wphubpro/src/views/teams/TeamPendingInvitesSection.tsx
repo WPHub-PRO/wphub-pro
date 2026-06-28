@@ -12,7 +12,8 @@ import {
 import { useNotificationContext } from '@/context/useNotificationContext';
 import { AppwriteFunctionError } from '@/integrations/appwrite/errors';
 import { useState } from 'react';
-import { Alert, Button, Modal, Spinner, Table } from 'react-bootstrap';
+import { Alert, Button, Spinner, Table } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { TbBan, TbMailForward } from 'react-icons/tb';
 
 function formatInviteInstant(iso: string): string {

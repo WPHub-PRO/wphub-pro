@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react'
-import {Button, Modal, ModalBody, ModalFooter, ModalHeader, ModalTitle} from 'react-bootstrap'
+import { Button, ModalBody, ModalFooter, ModalHeader, ModalTitle } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 
 type DeleteConfirmationModalProps = {
     show: boolean

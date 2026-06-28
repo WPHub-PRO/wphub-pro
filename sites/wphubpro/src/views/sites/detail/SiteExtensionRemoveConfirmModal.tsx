@@ -1,4 +1,5 @@
-import { Button, Modal } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type SiteExtensionRemoveConfirmModalProps = {
   show: boolean;

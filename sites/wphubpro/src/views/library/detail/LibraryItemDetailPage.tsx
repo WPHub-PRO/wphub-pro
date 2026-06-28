@@ -30,20 +30,8 @@ import PinWordPressOrgVersionsModal from '@/views/library/modals/PinWordPressOrg
 import UploadLibraryModal from '@/views/library/modals/UploadLibraryModal';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  Col,
-  Container,
-  Form,
-  Modal,
-  Nav,
-  Row,
-  Spinner,
-  Table,
-} from 'react-bootstrap';
+import { Alert, Button, Card, CardBody, Col, Container, Form, Nav, Row, Spinner, Table } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { TbBrandWordpress, TbCloudUpload, TbLink, TbTrash, TbUpload } from 'react-icons/tb';
 

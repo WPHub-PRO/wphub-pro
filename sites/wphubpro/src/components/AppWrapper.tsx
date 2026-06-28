@@ -1,4 +1,5 @@
 import QueryProvider from '@/components/QueryProvider'
+import { ModalStackProvider } from '@/context/ModalStackContext'
 import { PlatformBrandingProvider } from '@/context/PlatformBrandingContext'
 import { LayoutProvider } from '@/context/useLayoutContext'
 import { NotificationProvider } from '@/context/useNotificationContext'
@@ -13,7 +14,9 @@ const AppWrapper = ({ children }: ChildrenType) => {
         <AuthProvider>
           <DocsProvider>
             <LayoutProvider>
-              <NotificationProvider>{children}</NotificationProvider>
+              <ModalStackProvider>
+                <NotificationProvider>{children}</NotificationProvider>
+              </ModalStackProvider>
             </LayoutProvider>
           </DocsProvider>
         </AuthProvider>

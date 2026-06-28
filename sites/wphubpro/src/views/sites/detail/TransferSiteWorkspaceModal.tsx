@@ -1,6 +1,7 @@
 import type { Site } from '@/types';
 import { useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 export type WorkspaceTransferChoice = 'personal' | string;
 

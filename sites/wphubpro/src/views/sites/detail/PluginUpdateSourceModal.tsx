@@ -6,7 +6,8 @@ import type { SitePluginUpdateChoice } from '@/domains/sites/pluginUpdateFromSit
 import { getWpPluginInfo } from '@/services/wordpress';
 import type { LibraryItem, WordPressPlugin } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 /** Library local/remote plugin rows use wp-proxy zip resolution (see `pluginUpdateFromSite`). */
 

@@ -8,7 +8,8 @@ import {
 import { AppwriteFunctionError } from '@/integrations/appwrite/errors';
 import type { StripePlan } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Col, Form, Modal, Row, Spinner } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Form, Row, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 function functionErrorMessage(err: unknown): string {
   if (err instanceof AppwriteFunctionError) return err.message;

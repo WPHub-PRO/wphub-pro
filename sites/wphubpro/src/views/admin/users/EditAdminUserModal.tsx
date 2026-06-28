@@ -2,7 +2,8 @@ import type { AdminUser } from '@/domains/admin/useAdminUsers';
 import { useAdminUsersUpdate } from '@/domains/admin/useAdminUsers';
 import { useNotificationContext } from '@/context/useNotificationContext';
 import { useEffect, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type EditAdminUserModalProps = {
   user: AdminUser | null;

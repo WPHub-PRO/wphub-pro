@@ -16,18 +16,8 @@ import {
 import { useSetActiveWorkspace, useTeamWorkspaceWithActiveSync, useWorkspaceContext } from '@/domains/workspace';
 import { AppwriteFunctionError } from '@/integrations/appwrite/errors';
 import { useMemo, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Modal,
-  Row,
-  Spinner,
-  Table,
-} from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, Row, Spinner, Table } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { Link, useNavigate, useParams } from 'react-router';
 import { TbUserMinus, TbUserPlus } from 'react-icons/tb';
 import TeamDetailsSidebarCard from '@/views/teams/TeamDetailsSidebarCard';

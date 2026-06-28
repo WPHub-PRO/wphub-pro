@@ -5,7 +5,8 @@ import { Query } from 'appwrite'
 import type { Models } from 'appwrite'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { Button, Col, Modal, Row, Spinner } from 'react-bootstrap'
+import { Button, Col, Row, Spinner } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 
 export type MediaLibraryImagePickerModalProps = {
   show: boolean

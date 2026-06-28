@@ -6,7 +6,8 @@ import type { SiteThemeUpdateChoice } from '@/domains/sites/themeUpdateFromSite'
 import { getWpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem, WordPressTheme } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type ThemeUpdateSourceModalProps = {
   show: boolean;

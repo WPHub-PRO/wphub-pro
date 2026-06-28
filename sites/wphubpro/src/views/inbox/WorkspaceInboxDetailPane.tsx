@@ -17,17 +17,8 @@ import {
   stripHtmlToText,
   type MailComposeLocationState,
 } from '@/views/inbox/mailComposeUtils';
-import {
-  Button,
-  Card,
-  CardHeader,
-  Dropdown,
-  Form,
-  Modal,
-  OverlayTrigger,
-  Spinner,
-  Tooltip,
-} from 'react-bootstrap';
+import { Button, Card, CardHeader, Dropdown, Form, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { LuSearch } from 'react-icons/lu';

@@ -1,18 +1,8 @@
 import { ContactSupportButton } from '@/components/support/ContactSupportButton';
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Form,
-  Modal,
-  Row,
-  Spinner,
-  Table,
-} from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Col, Form, Row, Spinner, Table } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { useSearchParams, useLocation } from 'react-router';
 import { TbStar, TbTrash } from 'react-icons/tb';
 import type { BillingAccountContext } from '@/domains/billing';

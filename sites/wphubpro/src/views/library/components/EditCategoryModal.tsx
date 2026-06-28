@@ -1,7 +1,8 @@
 import { useDeleteLibraryCategory, useUpdateLibraryCategory } from '@/hooks/useLibraryCategories';
 import type { LibraryCategory, LibraryCategoryScope } from '@/types';
 import { useEffect, useState } from 'react';
-import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type EditCategoryModalProps = {
   show: boolean;

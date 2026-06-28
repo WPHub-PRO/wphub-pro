@@ -16,7 +16,8 @@ import type {
 } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal, Nav, Spinner, Tab } from 'react-bootstrap';
+import { Alert, Button, Form, Nav, Spinner, Tab } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 const KIND_LABELS: Record<HealthAiSuggestionKind, string> = {
   health_refresh: 'Refresh health snapshot',
