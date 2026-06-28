@@ -1,6 +1,6 @@
 import DataTable from '@/components/table/DataTable';
 import TablePagination from '@/components/table/TablePagination';
-import { TABLE_ACTION_ICON_DANGER_CLASS, TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS } from '@/components/table/tableActionClasses';
+import { TABLE_ACTION_ICON_DANGER_CLASS } from '@/components/table/tableActionClasses';
 import { useNotificationContext } from '@/context/useNotificationContext';
 import { ROUTE_PATHS } from '@/config/routePaths';
 import { useAuth } from '@/domains/auth';
@@ -822,32 +822,62 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
           return inner;
         },
       }),
-      themeHelper.accessor('stylesheet', {
-        header: 'Stylesheet',
-        cell: ({ getValue }) => (
-          <span className="fs-xs text-muted text-truncate d-inline-block font-monospace" style={{ maxWidth: '14rem' }} title={String(getValue() || '')}>
-            {String(getValue() || '—')}
-          </span>
-        ),
-      }),
       themeHelper.accessor('version', {
-        id: 'installed',
-        header: 'Installed',
+        id: 'version',
+        header: 'Version',
         cell: ({ getValue, row }) => {
-          const upd = hasUpdate(row.original);
-          return (
-            <span className={`fs-xs ${upd ? 'text-warning fw-medium' : ''}`}>{String(getValue() || '—')}</span>
-          );
-        },
-      }),
-      themeHelper.display({
-        id: 'available',
-        header: 'Available',
-        cell: ({ row }) => {
           const t = row.original;
-          if (!hasUpdate(t)) return <span className="text-muted fs-xs">—</span>;
-          const v = formatAvailableUpdate(t.update ?? null);
-          return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
+          const showUpdate = hasUpdate(t);
+          const availableVersion = formatAvailableUpdate(t.update ?? null);
+          const installedVersion = String(getValue() || '').trim();
+          const installedLabel = installedVersion ? `v${installedVersion}` : '—';
+          const availableLabel =
+            availableVersion && availableVersion !== '—' ? `v${availableVersion}` : availableVersion;
+          const busy = updatingStylesheet === t.stylesheet;
+          const can = Boolean(siteId && t.stylesheet?.trim());
+          const tooltipText =
+            !siteId || !t.stylesheet?.trim() ? 'Missing site or theme slug' : 'Update this theme on the site';
+          const tipId = `theme-update-tip-${String(t.stylesheet || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const updateButton = (
+            <Button
+              type="button"
+              size="sm"
+              variant="soft-success"
+              className="rounded d-inline-flex align-items-center gap-1"
+              disabled={!can || busy}
+              aria-busy={busy}
+              aria-label={tooltipText}
+              title={tooltipText}
+              onClick={() => onUpdateClick(t)}
+            >
+              {busy ? (
+                <span className="fs-sm">…</span>
+              ) : (
+                <>
+                  <TbProgressBolt className="fs-lg" aria-hidden />
+                  install
+                </>
+              )}
+            </Button>
+          );
+          return (
+            <div className="d-flex flex-column gap-1">
+              <span className={`fs-xs ${showUpdate ? 'text-warning fw-medium' : ''}`}>
+                {installedLabel}
+              </span>
+              {showUpdate && (
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <span className="fs-xs text-nowrap">
+                    New update available{' '}
+                    <span className="text-success fw-bold">{availableLabel}</span>
+                  </span>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
+                    <span className="d-inline-block">{updateButton}</span>
+                  </OverlayTrigger>
+                </div>
+              )}
+            </div>
+          );
         },
       }),
       themeHelper.accessor('status', {
@@ -894,39 +924,6 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
             );
           }
           return control;
-        },
-      }),
-      themeHelper.display({
-        id: 'update',
-        header: 'Update',
-        cell: ({ row }) => {
-          const t = row.original;
-          if (!hasUpdate(t)) return null;
-          const busy = updatingStylesheet === t.stylesheet;
-          const can = Boolean(siteId && t.stylesheet?.trim());
-          const tooltipText =
-            !siteId || !t.stylesheet?.trim() ? 'Missing site or theme slug' : 'Update this theme on the site';
-          const tipId = `theme-update-tip-${String(t.stylesheet || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-          const button = (
-            <Button
-              type="button"
-              size="sm"
-              variant="soft-success"
-              className={TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS}
-              disabled={!can || busy}
-              aria-busy={busy}
-              aria-label={tooltipText}
-              title={tooltipText}
-              onClick={() => onUpdateClick(t)}
-            >
-              {busy ? <span className="fs-sm">…</span> : <TbProgressBolt className="fs-lg" aria-hidden />}
-            </Button>
-          );
-          return (
-            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
-              <span className="d-inline-block">{button}</span>
-            </OverlayTrigger>
-          );
         },
       }),
       themeHelper.display({
