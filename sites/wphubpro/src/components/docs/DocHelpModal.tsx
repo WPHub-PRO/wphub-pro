@@ -1,7 +1,8 @@
 import { ROUTE_PATHS } from '@/config/routePaths'
 import { useDocs } from '@/domains/docs/DocsContext'
 import type { DocArticle } from '@/domains/docs/types'
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from 'react-bootstrap'
+import { Button, ModalBody, ModalFooter, ModalHeader } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 import { Link } from 'react-router'
 
 type DocHelpModalProps = {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { useUploadLocalItem } from '@/hooks/useLibrary';
 
 type UploadLibraryModalProps = {

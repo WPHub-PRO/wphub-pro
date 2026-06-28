@@ -2,7 +2,8 @@ import type { LibraryDashboardRow } from '@/domains/library';
 import { usePatchLibraryItem } from '@/hooks/useLibrary';
 import { useNotificationContext } from '@/context/useNotificationContext';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type AddLibraryTagModalProps = {
   show: boolean;

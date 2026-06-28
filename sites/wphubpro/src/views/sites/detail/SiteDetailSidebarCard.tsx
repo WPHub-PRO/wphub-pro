@@ -21,7 +21,8 @@ import SiteActionHistoryList from '@/views/sites/detail/SiteActionHistoryList';
 import SiteHealthScoreDonut from '@/views/sites/detail/SiteHealthScoreDonut.tsx';
 import SiteUptimeStatusDot from '@/components/sites/SiteUptimeStatusDot';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Modal, ModalBody, ModalFooter, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Card, CardBody, CardHeader, CardTitle, ModalBody, ModalFooter, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { TbArrowsLeftRight, TbExternalLink, TbPlayerPause, TbTrash, TbWorld } from 'react-icons/tb';
 import { useNavigate, useSearchParams } from 'react-router';
 

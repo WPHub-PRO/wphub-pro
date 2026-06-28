@@ -17,7 +17,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
-import { Button, Card, CardFooter, CardHeader, Col, Form, Modal, Row, Spinner } from 'react-bootstrap';
+import { Button, Card, CardFooter, CardHeader, Col, Form, Row, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { LuSearch, LuShuffle, LuTag } from 'react-icons/lu';
 import { TbAlertTriangle, TbEye } from 'react-icons/tb';
 import { Link, useNavigate } from 'react-router';

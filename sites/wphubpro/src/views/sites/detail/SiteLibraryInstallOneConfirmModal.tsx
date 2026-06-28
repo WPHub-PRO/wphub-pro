@@ -11,7 +11,8 @@ import { getWpPluginInfo, getWpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem, LibraryItemSource } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 function sourceLabel(source: LibraryItemSource): string {
   if (source === 'official') return 'WordPress.org';

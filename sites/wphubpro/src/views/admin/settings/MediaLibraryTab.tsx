@@ -6,21 +6,8 @@ import { ID, Query } from 'appwrite'
 import type { Models } from 'appwrite'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Alert,
-  Button,
-  CloseButton,
-  Dropdown,
-  DropdownDivider,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Form,
-  Modal,
-  ProgressBar,
-  Spinner,
-  Table,
-} from 'react-bootstrap'
+import { Alert, Button, CloseButton, Dropdown, DropdownDivider, DropdownItem, DropdownMenu, DropdownToggle, Form, ProgressBar, Spinner, Table } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 import { TbClipboard, TbDotsVertical, TbDownload, TbFileTypePdf, TbLink, TbPhoto, TbPlayerPlay, TbTrash, TbUpload } from 'react-icons/tb'
 
 function formatBytes(n: number): string {

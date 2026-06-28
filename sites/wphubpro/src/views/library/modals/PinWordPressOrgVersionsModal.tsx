@@ -4,7 +4,8 @@ import { getWpThemeInfo } from '@/services/wordpress';
 import type { WpPluginInfo } from '@/services/wordpress';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type PinWordPressOrgVersionsModalProps = {
   show: boolean;

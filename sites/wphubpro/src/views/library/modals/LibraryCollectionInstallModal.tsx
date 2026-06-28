@@ -13,7 +13,8 @@ import { getWpPluginInfo, getWpThemeInfo } from '@/services/wordpress';
 import type { LibraryCollection, LibraryItem, Site } from '@/types';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal, Spinner, Table } from 'react-bootstrap';
+import { Alert, Button, Form, Spinner, Table } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { Link } from 'react-router';
 
 type LibraryCollectionInstallModalProps = {

@@ -20,7 +20,8 @@ import {
 } from '@/services/appwrite'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Container, Form, Modal, Spinner } from 'react-bootstrap'
+import { Alert, Button, Container, Form, Spinner } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 import { TbAlertTriangle, TbCircleCheck, TbLogout } from 'react-icons/tb'
 import { useNavigate, useSearchParams } from 'react-router'
 

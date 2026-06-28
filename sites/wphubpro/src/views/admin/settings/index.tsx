@@ -32,20 +32,8 @@ import AdminWorkspaceInboxTab from '@/views/admin/settings/AdminWorkspaceInboxTa
 import AdminApiTab from '@/views/admin/settings/AdminApiTab';
 import { useStripePlans } from '@/domains/billing/hooks';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  InputGroup,
-  Modal,
-  Nav,
-  Row,
-  Spinner,
-  Tab,
-} from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, InputGroup, Nav, Row, Spinner, Tab } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import Select, {
   type CSSObjectWithLabel,
   type GroupBase,

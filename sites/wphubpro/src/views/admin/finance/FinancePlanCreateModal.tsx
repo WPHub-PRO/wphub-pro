@@ -3,7 +3,8 @@ import MediaLibraryImagePickerModal from '@/components/admin/MediaLibraryImagePi
 import { useNotificationContext } from '@/context/useNotificationContext'
 import { useAdminCreatePlan, type AdminCreatePlanInput } from '@/domains/admin/finance/hooks'
 import { useEffect, useState } from 'react'
-import { Alert, Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap'
+import { Alert, Button, Form, InputGroup, Spinner } from 'react-bootstrap'
+import Modal from '@/components/ui/AppModal'
 import { useNavigate } from 'react-router'
 
 export type FinancePlanCreateModalProps = {

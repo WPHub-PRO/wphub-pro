@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import {
   useCreateSetupIntent,
   useSetDefaultPaymentMethod,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button, ListGroup, Modal } from 'react-bootstrap';
+import { Button, ListGroup } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { TbCloudDownload, TbLink, TbUpload } from 'react-icons/tb';
 import type { AddLibrarySourcePayload, LibrarySourceKind } from './addLibraryTypes';
 

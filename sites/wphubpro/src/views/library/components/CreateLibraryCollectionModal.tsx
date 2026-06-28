@@ -1,6 +1,7 @@
 import { useCreateLibraryCollection } from '@/hooks/useLibraryFamiliesAndCollections';
 import { useEffect, useState } from 'react';
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 type CreateLibraryCollectionModalProps = {
   show: boolean;

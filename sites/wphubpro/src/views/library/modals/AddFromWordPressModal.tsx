@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Form, ListGroup, Modal, Spinner } from 'react-bootstrap';
+import { Button, Form, ListGroup, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { LuSearch } from 'react-icons/lu';
 import {
   useAddOfficialPlugin,

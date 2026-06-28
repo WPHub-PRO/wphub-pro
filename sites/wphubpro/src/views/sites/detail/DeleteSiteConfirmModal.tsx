@@ -1,4 +1,5 @@
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 
 export type DeleteSiteConfirmModalProps = {
   show: boolean;

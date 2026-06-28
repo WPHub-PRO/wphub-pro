@@ -6,7 +6,8 @@ import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { filterLibraryRows } from '@/views/library/libraryFilters';
 import SiteLibraryInstallOneConfirmModal from '@/views/sites/detail/SiteLibraryInstallOneConfirmModal';
 import { useMemo, useState } from 'react';
-import { Button, Form, ListGroup, Modal, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
+import { Button, Form, ListGroup, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { LuSearch } from 'react-icons/lu';
 import { Link } from 'react-router';
 

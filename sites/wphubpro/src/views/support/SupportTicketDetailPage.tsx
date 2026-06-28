@@ -15,20 +15,8 @@ import {
 import { useNotificationContext } from '@/context/useNotificationContext';
 import type { SupportTicketContext, Ticket, TicketActivity, TicketStatus } from '@/types';
 import { useEffect, useState } from 'react';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Container,
-  Form,
-  ListGroup,
-  Modal,
-  Row,
-  Spinner,
-} from 'react-bootstrap';
+import { Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, ListGroup, Row, Spinner } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { TbArrowLeft, TbBell, TbBellOff } from 'react-icons/tb';
 import { Link, useNavigate, useParams } from 'react-router';
 import { SupportTicketChatCard } from '@/views/support/SupportTicketChatCard';

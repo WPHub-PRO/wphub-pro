@@ -10,7 +10,8 @@ import {
 import { useNotificationContext } from '@/context/useNotificationContext';
 import type { LibraryCategory, LibraryCollection, LibraryFamily, LibraryItemType } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Col, Form, InputGroup, Modal, Row } from 'react-bootstrap';
+import { Alert, Button, Col, Form, InputGroup, Row } from 'react-bootstrap';
+import Modal from '@/components/ui/AppModal'
 import { Link } from 'react-router';
 import { TbPencil, TbPlus, TbX } from 'react-icons/tb';
 

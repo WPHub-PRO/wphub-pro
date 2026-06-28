@@ -261,31 +261,64 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         },
       }),
       pluginHelper.accessor('version', {
-        id: 'installed',
-        header: 'Installed',
+        id: 'version',
+        header: 'Version',
         sortingFn: siteInstalledPluginSortingFn,
         cell: ({ getValue, row }) => {
           const p = row.original;
-          const upd = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
-          return (
-            <span className={`fs-xs ${upd ? 'text-warning fw-medium' : ''}`}>{String(getValue() || '—')}</span>
+          const showUpdate = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+          const availableVersion = bridgeRowHasPlatformUpdate(p, platformBridgeVersion)
+            ? String(platformBridgeVersion || '').trim() || '—'
+            : formatAvailableUpdate(p.update ?? null);
+          const installedVersion = String(getValue() || '').trim();
+          const installedLabel = installedVersion ? `v${installedVersion}` : '—';
+          const availableLabel =
+            availableVersion && availableVersion !== '—' ? `v${availableVersion}` : availableVersion;
+          const busy = updatingKey === p.plugin;
+          const can = Boolean(siteId && p.plugin?.trim());
+          const tooltipText =
+            !siteId || !p.plugin?.trim() ? 'Missing site or plugin file' : 'Update this plugin on the site';
+          const tipId = `plugin-update-tip-${String(p.plugin || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const updateButton = (
+            <Button
+              type="button"
+              size="sm"
+              variant="soft-success"
+              className="rounded d-inline-flex align-items-center gap-1"
+              disabled={!can || busy}
+              aria-busy={busy}
+              aria-label={tooltipText}
+              title={tooltipText}
+              onClick={() => onUpdateClick(p)}
+            >
+              {busy ? (
+                <span className="fs-sm">…</span>
+              ) : (
+                <>
+                  <TbProgressBolt className="fs-lg" aria-hidden />
+                  install
+                </>
+              )}
+            </Button>
           );
-        },
-      }),
-      pluginHelper.display({
-        id: 'available',
-        header: 'Available',
-        cell: ({ row }) => {
-          const p = row.original;
-          if (bridgeRowHasPlatformUpdate(p, platformBridgeVersion)) {
-            const v = String(platformBridgeVersion || '').trim() || '—';
-            return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
-          }
-          if (!hasUpdate(p)) {
-            return <span className="text-muted fs-xs">—</span>;
-          }
-          const v = formatAvailableUpdate(p.update ?? null);
-          return <span className="fs-xs text-nowrap text-success fw-medium">{v}</span>;
+          return (
+            <div className="d-flex flex-column gap-1">
+              <span className={`fs-xs ${showUpdate ? 'text-warning fw-medium' : ''}`}>
+                {installedLabel}
+              </span>
+              {showUpdate && (
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <span className="fs-xs text-nowrap">
+                    New update available{' '}
+                    <span className="text-success fw-bold">{availableLabel}</span>
+                  </span>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
+                    <span className="d-inline-block">{updateButton}</span>
+                  </OverlayTrigger>
+                </div>
+              )}
+            </div>
+          );
         },
       }),
       pluginHelper.accessor('status', {
@@ -336,41 +369,6 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
             );
           }
           return control;
-        },
-      }),
-      pluginHelper.display({
-        id: 'update',
-        header: 'Update',
-        cell: ({ row }) => {
-          const p = row.original;
-          const showUpdate = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
-          if (!showUpdate) return null;
-
-          const busy = updatingKey === p.plugin;
-          const can = Boolean(siteId && p.plugin?.trim());
-          const tooltipText =
-            !siteId || !p.plugin?.trim() ? 'Missing site or plugin file' : 'Update this plugin on the site';
-          const tipId = `plugin-update-tip-${String(p.plugin || row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-          const button = (
-            <Button
-              type="button"
-              size="sm"
-              variant="soft-success"
-              className={TABLE_ACTION_ICON_SOFT_SUCCESS_CLASS}
-              disabled={!can || busy}
-              aria-busy={busy}
-              aria-label={tooltipText}
-              title={tooltipText}
-              onClick={() => onUpdateClick(p)}
-            >
-              {busy ? <span className="fs-sm">…</span> : <TbProgressBolt className="fs-lg" aria-hidden />}
-            </Button>
-          );
-          return (
-            <OverlayTrigger placement="top" overlay={<Tooltip id={tipId}>{tooltipText}</Tooltip>}>
-              <span className="d-inline-block">{button}</span>
-            </OverlayTrigger>
-          );
         },
       }),
       pluginHelper.display({
