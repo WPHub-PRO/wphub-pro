@@ -1,4 +1,4 @@
-import { Button } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
 import Modal from '@/components/ui/AppModal'
 
 type SiteExtensionRemoveConfirmModalProps = {
@@ -22,7 +22,7 @@ export default function SiteExtensionRemoveConfirmModal({
 }: SiteExtensionRemoveConfirmModalProps) {
   return (
     <Modal show={show} onHide={onHide} centered backdrop={isBusy ? 'static' : true} keyboard={!isBusy}>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton={!isBusy}>
         <Modal.Title className="fs-lg">{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -33,7 +33,14 @@ export default function SiteExtensionRemoveConfirmModal({
           Cancel
         </Button>
         <Button variant="danger" size="sm" onClick={onConfirm} disabled={isBusy}>
-          {isBusy ? 'Removing…' : confirmLabel}
+          {isBusy ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2 align-middle" role="status" aria-hidden />
+              Removing…
+            </>
+          ) : (
+            confirmLabel
+          )}
         </Button>
       </Modal.Footer>
     </Modal>
