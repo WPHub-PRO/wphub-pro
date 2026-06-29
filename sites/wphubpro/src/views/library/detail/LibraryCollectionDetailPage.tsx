@@ -7,7 +7,7 @@ import {
   collectionMemberStats,
   resolveCollectionMembers,
 } from '@/domains/library';
-import { useSitesForLibraryInstall } from '@/domains/sites';
+import { useSites } from '@/domains/sites';
 import { useLibraryItems } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import {
@@ -76,7 +76,7 @@ const LibraryCollectionDetailPage = () => {
 
   const { data: collections = [], isLoading: collectionsLoading } = useLibraryCollections();
   const { data: libraryItems = [], isLoading: itemsLoading } = useLibraryItems();
-  const { data: sites = [] } = useSitesForLibraryInstall();
+  const { data: sites = [] } = useSites();
   const { data: categories = [] } = useLibraryCategories();
 
   const updateName = useUpdateLibraryCollectionName();
@@ -322,7 +322,7 @@ const LibraryCollectionDetailPage = () => {
               {tab === 1 && (
                 <div>
                   <p className="text-muted fs-sm mb-3">
-                    Connected sites where collection items appear in the last bridge sync.
+                    Connected sites in this workspace where all collection items appear in the last bridge sync.
                   </p>
                   <LibraryCollectionDetailSites sites={sites} members={members} />
                 </div>

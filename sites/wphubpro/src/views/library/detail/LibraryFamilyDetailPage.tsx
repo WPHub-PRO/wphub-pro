@@ -3,7 +3,7 @@ import PageBreadcrumb from '@/components/PageBreadcrumb';
 import { TabNavLabel } from '@/components/TabNavLabel';
 import { ROUTE_PATHS } from '@/config/routePaths';
 import { familyHasInstallBlockers, familyMemberStats, resolveFamilyMembers } from '@/domains/library';
-import { useSitesForLibraryInstall } from '@/domains/sites';
+import { useSites } from '@/domains/sites';
 import { useLibraryItems } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import {
@@ -72,7 +72,7 @@ const LibraryFamilyDetailPage = () => {
 
   const { data: families = [], isLoading: familiesLoading } = useLibraryFamilies();
   const { data: libraryItems = [], isLoading: itemsLoading } = useLibraryItems();
-  const { data: sites = [] } = useSitesForLibraryInstall();
+  const { data: sites = [] } = useSites();
   const { data: categories = [] } = useLibraryCategories();
 
   const updateName = useUpdateLibraryFamilyName();
@@ -316,7 +316,7 @@ const LibraryFamilyDetailPage = () => {
               {tab === 1 && (
                 <div>
                   <p className="text-muted fs-sm mb-3">
-                    Connected sites where family members appear in the last bridge sync.
+                    Connected sites in this workspace where all family members appear in the last bridge sync.
                   </p>
                   <LibraryFamilyDetailSites sites={sites} members={members} />
                 </div>

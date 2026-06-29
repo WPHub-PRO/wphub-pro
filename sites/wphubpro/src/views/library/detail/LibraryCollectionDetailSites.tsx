@@ -52,14 +52,32 @@ const LibraryCollectionDetailSites = ({ sites, members }: LibraryCollectionDetai
     [members],
   );
 
-  if (connectedSites.length === 0) {
-    return <p className="text-muted mb-0">No connected sites yet.</p>;
-  }
+  const installedSites = useMemo(() => {
+    if (resolvableCount === 0) return [];
+    return connectedSites.filter((site) => {
+      const installedCount = members.filter(
+        (m) => m.kind === 'resolved' && itemStatusOnSite(m, site).installed,
+      ).length;
+      return installedCount === resolvableCount;
+    });
+  }, [connectedSites, members, resolvableCount]);
 
   if (resolvableCount === 0) {
     return (
       <p className="text-muted mb-0">
         Add library items before checking site coverage.
+      </p>
+    );
+  }
+
+  if (connectedSites.length === 0) {
+    return <p className="text-muted mb-0">No connected sites in this workspace yet.</p>;
+  }
+
+  if (installedSites.length === 0) {
+    return (
+      <p className="text-muted mb-0">
+        No sites in this workspace have the full collection installed yet.
       </p>
     );
   }
@@ -75,7 +93,7 @@ const LibraryCollectionDetailSites = ({ sites, members }: LibraryCollectionDetai
           </tr>
         </thead>
         <tbody>
-          {connectedSites.map((site) => {
+          {installedSites.map((site) => {
             const statuses = members.map((m) => ({
               member: m,
               status: itemStatusOnSite(m, site),
