@@ -246,7 +246,7 @@ function requireEnv(name) {
 /** Set for the duration of {@link runUserBillingAction} so Appwrite can use `x-appwrite-key`. */
 let _stripeAppwriteReq: unknown;
 
-export function setStripeAppwriteReq(req: unknown) { _stripeAppwriteReq = req; }
+function setStripeAppwriteReq(req: unknown) { _stripeAppwriteReq = req; }
 
 function appwriteClient() {
   const { endpoint, projectId, apiKey } = requireAppwriteServerTriple(_stripeAppwriteReq);
