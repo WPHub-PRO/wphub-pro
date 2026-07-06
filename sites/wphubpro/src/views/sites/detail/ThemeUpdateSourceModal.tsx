@@ -72,7 +72,7 @@ const ThemeUpdateSourceModal = ({
       return;
     }
     const def = forSlug.find((i) => i.isDefault);
-    if (def && def.source === 'official') {
+    if (def) {
       setSelected({ t: 'lib', id: def.$id });
     } else {
       setSelected({ t: 'org' });

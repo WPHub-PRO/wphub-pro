@@ -20,8 +20,8 @@ import UptimeIncidentsTable from '@/components/sites/UptimeIncidentsTable';
 import { SiteHealthAiAgentModal } from '@/views/sites/detail/SiteHealthAiAgentModal';
 import SiteHealthMetaPanel from '@/views/sites/detail/SiteHealthMetaPanel';
 import { formatChecked, formatSiteHealthCheckedOn } from '@/views/sites/detail/siteDetailFormat';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { Button, Card, CardBody, Col, Form, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
 import { TbAlertTriangle, TbCircleCheck, TbCircleX, TbSparkles } from 'react-icons/tb';
 import { useSearchParams } from 'react-router';
 
@@ -111,6 +111,283 @@ function LogItemsCell({ items }: { items: BulkResultItem[] }) {
           {item.label}
         </span>
       ))}
+    </div>
+  );
+}
+
+const LOG_STATUS_ORDER: BulkLogRowStatus[] = ['failure', 'partial', 'success', 'unknown'];
+
+const FILTER_CHIP_ACTIVE_CLASS = 'border border-secondary-subtle rounded';
+
+function logStatusSoftClass(status: BulkLogRowStatus): string {
+  switch (status) {
+    case 'success':
+      return 'badge-soft-success';
+    case 'partial':
+      return 'badge-soft-warning';
+    case 'failure':
+      return 'badge-soft-danger';
+    default:
+      return 'badge-soft-secondary';
+  }
+}
+
+function logStatusDisplayName(status: BulkLogRowStatus): string {
+  switch (status) {
+    case 'success':
+      return 'Succeeded';
+    case 'partial':
+      return 'Partial';
+    case 'failure':
+      return 'Failed';
+    default:
+      return 'Unknown';
+  }
+}
+
+function logTypeDisplayName(type: string): string {
+  if (type === 'plugin' || type === 'theme') return type;
+  return type || '—';
+}
+
+type LogFilterDimensions = {
+  type: string;
+  action: string;
+  status: BulkLogRowStatus;
+};
+
+function matchesLogFilters(
+  row: LogFilterDimensions,
+  statusFilters: Set<BulkLogRowStatus>,
+  typeFilter: string | null,
+  actionFilter: string | null,
+): boolean {
+  if (statusFilters.size > 0 && !statusFilters.has(row.status)) return false;
+  if (typeFilter != null && row.type !== typeFilter) return false;
+  if (actionFilter != null && row.action !== actionFilter) return false;
+  return true;
+}
+
+type FilterStatusBadgeProps = {
+  status: BulkLogRowStatus;
+  count: number;
+  active: boolean;
+  onToggle: (status: BulkLogRowStatus) => void;
+};
+
+function FilterStatusBadge({ status, count, active, onToggle }: FilterStatusBadgeProps) {
+  const label = logStatusDisplayName(status);
+  const disabled = count <= 0;
+  return (
+    <button
+      type="button"
+      className={`badge ${logStatusSoftClass(status)} ${active ? FILTER_CHIP_ACTIVE_CLASS : 'border-0'}`}
+      style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+      disabled={disabled}
+      aria-pressed={active}
+      aria-label={
+        disabled
+          ? `${label}: no entries`
+          : active
+            ? `${label}: remove from filter`
+            : `Add ${label} to filter`
+      }
+      onClick={() => onToggle(status)}
+    >
+      {label} {count}
+    </button>
+  );
+}
+
+type SiteLogsFiltersProps = {
+  entries: LogFilterDimensions[];
+  statusFilters: Set<BulkLogRowStatus>;
+  setStatusFilters: Dispatch<SetStateAction<Set<BulkLogRowStatus>>>;
+  typeFilter: string | null;
+  setTypeFilter: Dispatch<SetStateAction<string | null>>;
+  actionFilter: string | null;
+  setActionFilter: Dispatch<SetStateAction<string | null>>;
+};
+
+function SiteLogsFilters({
+  entries,
+  statusFilters,
+  setStatusFilters,
+  typeFilter,
+  setTypeFilter,
+  actionFilter,
+  setActionFilter,
+}: SiteLogsFiltersProps) {
+  const statusTotals = useMemo(() => {
+    const totals: Record<BulkLogRowStatus, number> = {
+      success: 0,
+      partial: 0,
+      failure: 0,
+      unknown: 0,
+    };
+    for (const entry of entries) {
+      totals[entry.status] += 1;
+    }
+    return totals;
+  }, [entries]);
+
+  const afterStatus = useMemo(() => {
+    if (statusFilters.size === 0) return entries;
+    return entries.filter((e) => statusFilters.has(e.status));
+  }, [entries, statusFilters]);
+
+  const typeOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of afterStatus) {
+      counts.set(entry.type, (counts.get(entry.type) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [afterStatus]);
+
+  const afterType = useMemo(() => {
+    if (typeFilter == null) return afterStatus;
+    return afterStatus.filter((e) => e.type === typeFilter);
+  }, [afterStatus, typeFilter]);
+
+  const actionOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of afterType) {
+      counts.set(entry.action, (counts.get(entry.action) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [afterType]);
+
+  useEffect(() => {
+    const validTypes = new Set(typeOptions.map(([t]) => t));
+    setTypeFilter((prev) => (prev != null && !validTypes.has(prev) ? null : prev));
+  }, [typeOptions, setTypeFilter]);
+
+  useEffect(() => {
+    const validActions = new Set(actionOptions.map(([a]) => a));
+    setActionFilter((prev) => (prev != null && !validActions.has(prev) ? null : prev));
+  }, [actionOptions, setActionFilter]);
+
+  const hasActiveStatusFilter = statusFilters.size > 0;
+  const hasActiveTypeFilter = typeFilter != null;
+  const hasActiveActionFilter = actionFilter != null;
+  const hasAnyFilter = hasActiveStatusFilter || hasActiveTypeFilter || hasActiveActionFilter;
+
+  const toggleStatusFilter = (status: BulkLogRowStatus) => {
+    setStatusFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
+  const clearStatusFilters = () => setStatusFilters(new Set());
+
+  const clearAllFilters = () => {
+    setStatusFilters(new Set());
+    setTypeFilter(null);
+    setActionFilter(null);
+  };
+
+  return (
+    <div className="border-bottom border-secondary-subtle pb-3">
+      <div className="d-flex flex-wrap align-items-center column-gap-3 row-gap-2 w-100">
+        <div
+          className="d-flex flex-wrap align-items-center gap-2 flex-grow-1 min-w-0"
+          role="group"
+          aria-label="By status"
+        >
+          <span className="text-muted fs-sm flex-shrink-0 align-self-center">Filter by Status</span>
+          <div className="d-flex flex-wrap align-items-center gap-2 min-w-0">
+            {LOG_STATUS_ORDER.map((status) => (
+              <FilterStatusBadge
+                key={status}
+                status={status}
+                count={statusTotals[status]}
+                active={statusFilters.has(status)}
+                onToggle={toggleStatusFilter}
+              />
+            ))}
+            <button
+              type="button"
+              className={`badge badge-soft-secondary ${!hasActiveStatusFilter ? FILTER_CHIP_ACTIVE_CLASS : 'border-0'}`}
+              style={{ cursor: 'pointer' }}
+              aria-pressed={!hasActiveStatusFilter}
+              aria-label={`Show all log entries (${entries.length} total)`}
+              onClick={clearStatusFilters}
+            >
+              All ({entries.length})
+            </button>
+          </div>
+          {hasActiveStatusFilter ? (
+            <Button variant="outline-secondary" size="sm" className="flex-shrink-0" onClick={clearStatusFilters}>
+              Clear
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0">
+          <Form.Label
+            htmlFor="site-logs-type-filter"
+            className="text-muted fs-sm mb-0 flex-shrink-0 align-self-center text-nowrap"
+          >
+            Type
+          </Form.Label>
+          <Form.Select
+            id="site-logs-type-filter"
+            size="sm"
+            value={typeFilter ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              setTypeFilter(v === '' ? null : v);
+            }}
+            aria-label="Filter by type"
+            className="w-auto"
+            style={{ minWidth: '10rem', maxWidth: '18rem' }}
+          >
+            <option value="">All types</option>
+            {typeOptions.map(([type, count]) => (
+              <option key={type} value={type} disabled={count === 0}>
+                {logTypeDisplayName(type)} ({count})
+              </option>
+            ))}
+          </Form.Select>
+        </div>
+
+        <div className="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0">
+          <Form.Label
+            htmlFor="site-logs-action-filter"
+            className="text-muted fs-sm mb-0 flex-shrink-0 align-self-center text-nowrap"
+          >
+            Action
+          </Form.Label>
+          <Form.Select
+            id="site-logs-action-filter"
+            size="sm"
+            value={actionFilter ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              setActionFilter(v === '' ? null : v);
+            }}
+            aria-label="Filter by action"
+            className="w-auto"
+            style={{ minWidth: '10rem', maxWidth: '18rem' }}
+          >
+            <option value="">All actions</option>
+            {actionOptions.map(([action, count]) => (
+              <option key={action} value={action} disabled={count === 0}>
+                {action} ({count})
+              </option>
+            ))}
+          </Form.Select>
+        </div>
+
+        {hasAnyFilter ? (
+          <Button variant="outline-secondary" size="sm" className="flex-shrink-0 ms-auto" onClick={clearAllFilters}>
+            Clear all
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -413,9 +690,82 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
   );
   const auditLines = useMemo(() => parseActionLogForAudit(site.actionLog), [site.actionLog]);
 
+  const [statusFilters, setStatusFilters] = useState<Set<BulkLogRowStatus>>(() => new Set());
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [actionFilter, setActionFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStatusFilters(new Set());
+    setTypeFilter(null);
+    setActionFilter(null);
+  }, [site.$id, site.logData, site.actionLog]);
+
+  const filterableEntries = useMemo((): LogFilterDimensions[] => {
+    const entries: LogFilterDimensions[] = [];
+    for (const row of outgoing) {
+      const { type, action } = parseOutgoingLogDisplay(row.endpoint);
+      const parsed = parseBulkLogResponse(row.response);
+      entries.push({ type, action, status: parsed.status.status });
+    }
+    for (const line of auditLines) {
+      const statusInfo = actionLogRowStatus(line.failed);
+      entries.push({ type: line.kind, action: line.action, status: statusInfo.status });
+    }
+    return entries;
+  }, [outgoing, auditLines]);
+
+  const filteredOutgoing = useMemo(() => {
+    return outgoing.filter((row) => {
+      const { type, action } = parseOutgoingLogDisplay(row.endpoint);
+      const parsed = parseBulkLogResponse(row.response);
+      return matchesLogFilters(
+        { type, action, status: parsed.status.status },
+        statusFilters,
+        typeFilter,
+        actionFilter,
+      );
+    });
+  }, [outgoing, statusFilters, typeFilter, actionFilter]);
+
+  const filteredAuditLines = useMemo(() => {
+    return auditLines.filter((line) => {
+      const statusInfo = actionLogRowStatus(line.failed);
+      return matchesLogFilters(
+        { type: line.kind, action: line.action, status: statusInfo.status },
+        statusFilters,
+        typeFilter,
+        actionFilter,
+      );
+    });
+  }, [auditLines, statusFilters, typeFilter, actionFilter]);
+
+  const filteredIncoming = useMemo(() => {
+    if (typeFilter == null) return incoming;
+    return incoming.filter((row) => (row as { type?: string }).type === typeFilter);
+  }, [incoming, typeFilter]);
+
+  const hasActiveFilters =
+    statusFilters.size > 0 || typeFilter != null || actionFilter != null;
+  const noFilterMatches =
+    hasActiveFilters && filteredOutgoing.length === 0 && filteredAuditLines.length === 0;
+
   return (
     <div className="d-flex flex-column gap-3">
-      {outgoing.length > 0 && (
+      {filterableEntries.length > 0 ? (
+        <SiteLogsFilters
+          entries={filterableEntries}
+          statusFilters={statusFilters}
+          setStatusFilters={setStatusFilters}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          actionFilter={actionFilter}
+          setActionFilter={setActionFilter}
+        />
+      ) : null}
+
+      {noFilterMatches ? <p className="text-muted mb-0">No log entries match this filter.</p> : null}
+
+      {filteredOutgoing.length > 0 && (
         <Card>
           <CardBody>
             <h5 className="fs-base mb-3">Bridge / proxy (outgoing)</h5>
@@ -432,7 +782,7 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {outgoing.map((row: OutgoingLogRow, i: number) => {
+                  {filteredOutgoing.map((row: OutgoingLogRow, i: number) => {
                     const { type, action } = parseOutgoingLogDisplay(row.endpoint);
                     const parsed = parseBulkLogResponse(row.response);
                     return (
@@ -459,7 +809,7 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
         </Card>
       )}
 
-      {incoming.length > 0 && (
+      {filteredIncoming.length > 0 && (
         <Card>
           <CardBody>
             <h5 className="fs-base mb-3">Incoming</h5>
@@ -472,7 +822,7 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {incoming.map((row, i) => (
+                  {filteredIncoming.map((row, i) => (
                     <tr key={`in-${i}`}>
                       <td className="text-muted fs-xs">{formatChecked((row as { time?: string }).time)}</td>
                       <td className="fs-xs">{(row as { type?: string }).type ?? '—'}</td>
@@ -493,7 +843,7 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
           </p>
           {auditLines.length === 0 ? (
             <p className="text-muted mb-0 fs-xs">No plugin or theme actions recorded.</p>
-          ) : (
+          ) : filteredAuditLines.length === 0 && hasActiveFilters ? null : (
             <div className="table-responsive border rounded">
               <Table hover size="sm" className="table table-custom table-centered table-nowrap mb-0 align-middle">
                 <thead className="bg-light align-middle bg-opacity-25 thead-sm">
@@ -507,7 +857,7 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditLines.map((line) => {
+                  {filteredAuditLines.map((line) => {
                     const statusInfo = actionLogRowStatus(line.failed);
                     const items = [actionLogResultItem(line.extensionName, line.failed)];
                     const durationSec = findOutgoingDurationForAudit(

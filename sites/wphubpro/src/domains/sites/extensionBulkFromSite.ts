@@ -4,7 +4,7 @@
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
 import type { WordPressPlugin, WordPressTheme } from '@/types';
 import { formatAvailableUpdate } from './installedMeta';
-import { pluginDirectorySlug } from './pluginUpdateFromSite';
+import { isBridgePluginFile, pluginDirectorySlug } from './pluginUpdateFromSite';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
 
 const PROXY_TIMEOUT_MS = 180_000;
@@ -177,6 +177,19 @@ export function toBulkPluginItem(row: WordPressPlugin): BulkPluginItem {
   const slug = pluginDirectorySlug(plugin) || (row as { slug?: string }).slug?.trim() || '';
   const version = (row.version || '').trim();
   return { plugin, slug, version };
+}
+
+/** Target version from bridge `update` metadata (routes wp-proxy through manage/install). */
+export function toBulkPluginItemForUpdate(row: WordPressPlugin): BulkPluginItem {
+  const base = toBulkPluginItem(row);
+  if (isBridgePluginFile(base.plugin)) {
+    return { ...base, version: '' };
+  }
+  const target = formatAvailableUpdate(row.update);
+  return {
+    ...base,
+    version: target !== '—' ? target : '',
+  };
 }
 
 export function toBulkThemeItem(row: WordPressTheme): BulkThemeItem {

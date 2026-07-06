@@ -78,16 +78,24 @@ async function runOnePluginInstall(
   }
 
   if (libraryItemId && version) {
-    const official = await getResourceItem.resolvePluginLibraryInstallVersion({
-      databases,
-      libraryItemId,
-      routeSlug: routeSlug || slugHint,
-      log,
-    });
-    if (official.ok) {
-      const row = withPluginSlug({ slug: official.slug, version: official.version }, official.slug);
-      if (plugin) row.plugin = plugin;
-      return { ok: true, row, id: official.slug };
+    const sourceHint = String(item.source || topLevelBody.source || '')
+      .trim()
+      .toLowerCase();
+    const preferExplicitZip =
+      sourceHint === 'local' || sourceHint === 'remote';
+
+    if (!preferExplicitZip) {
+      const official = await getResourceItem.resolvePluginLibraryInstallVersion({
+        databases,
+        libraryItemId,
+        routeSlug: routeSlug || slugHint,
+        log,
+      });
+      if (official.ok) {
+        const row = withPluginSlug({ slug: official.slug, version: official.version }, official.slug);
+        if (plugin) row.plugin = plugin;
+        return { ok: true, row, id: official.slug };
+      }
     }
 
     const zipRes = await getResourceItem.resolvePluginUpdateZipUrl({

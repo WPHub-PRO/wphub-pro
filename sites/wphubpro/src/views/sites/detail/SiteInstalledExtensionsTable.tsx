@@ -9,7 +9,15 @@ import {
   bridgeRowHasPlatformUpdate,
   useBridgePluginPlatformVersion,
 } from '@/domains/bridge/platformBridgeVersion';
-import { formatAvailableUpdate, hasUpdate } from '@/domains/sites/installedMeta';
+import { hasUpdate } from '@/domains/sites/installedMeta';
+import {
+  hasLibraryPluginUpdate,
+  hasLibraryThemeUpdate,
+  pluginHasAvailableUpdate,
+  resolvePluginAvailableUpdateVersion,
+  resolveThemeAvailableUpdateVersion,
+  themeHasAvailableUpdate,
+} from '@/domains/sites/installedLibraryUpdate';
 import { findLibraryItemsForInstalledPlugin } from '@/domains/sites/installedPluginLibraryMatch';
 import { findLibraryItemsForInstalledTheme } from '@/domains/sites/installedThemeLibraryMatch';
 import {
@@ -23,6 +31,7 @@ import {
   runPluginsBulkForSite,
   runThemesBulkForSite,
   toBulkPluginItem,
+  toBulkPluginItemForUpdate,
   toBulkThemeItem,
   toBulkThemeItemForUpdate,
   type PluginsBulkAction,
@@ -38,13 +47,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   createColumnHelper,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type FilterFn,
   type RowSelectionState,
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
 import { useCallback, useMemo, useState } from 'react';
+import { LuSearch } from 'react-icons/lu';
 import { TbProgressBolt, TbTrash } from 'react-icons/tb';
 import { Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Link } from 'react-router';
@@ -55,6 +67,31 @@ import SiteExtensionRemoveConfirmModal from '@/views/sites/detail/SiteExtensionR
 
 const pluginHelper = createColumnHelper<WordPressPlugin>();
 const themeHelper = createColumnHelper<WordPressTheme>();
+
+const installedPluginGlobalFilterFn: FilterFn<WordPressPlugin> = (row, _columnId, filterValue) => {
+  const q = String(filterValue ?? '').trim().toLowerCase();
+  if (!q) return true;
+  const p = row.original;
+  return (
+    String(p.name ?? '').toLowerCase().includes(q) ||
+    String(p.plugin ?? '').toLowerCase().includes(q) ||
+    String(p.version ?? '').toLowerCase().includes(q) ||
+    String(p.status ?? '').toLowerCase().includes(q) ||
+    String(p.author ?? '').toLowerCase().includes(q)
+  );
+};
+
+const installedThemeGlobalFilterFn: FilterFn<WordPressTheme> = (row, _columnId, filterValue) => {
+  const q = String(filterValue ?? '').trim().toLowerCase();
+  if (!q) return true;
+  const t = row.original;
+  return (
+    String(t.name ?? '').toLowerCase().includes(q) ||
+    String(t.stylesheet ?? '').toLowerCase().includes(q) ||
+    String(t.version ?? '').toLowerCase().includes(q) ||
+    String(t.status ?? '').toLowerCase().includes(q)
+  );
+};
 
 type SiteInstalledPluginsTableProps = {
   siteId?: string;
@@ -160,7 +197,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         }
         return;
       }
-      if (!hasUpdate(p)) return;
+      if (!hasUpdate(p) && !hasLibraryPluginUpdate(libraryItems, p)) return;
       const forSlug = findLibraryItemsForInstalledPlugin(libraryItems, p);
       if (forSlug.length > 0) {
         setModalPlugin(p);
@@ -266,10 +303,13 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         sortingFn: siteInstalledPluginSortingFn,
         cell: ({ getValue, row }) => {
           const p = row.original;
-          const showUpdate = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+          const showUpdate =
+            hasUpdate(p) ||
+            bridgeRowHasPlatformUpdate(p, platformBridgeVersion) ||
+            hasLibraryPluginUpdate(libraryItems, p);
           const availableVersion = bridgeRowHasPlatformUpdate(p, platformBridgeVersion)
             ? String(platformBridgeVersion || '').trim() || '—'
-            : formatAvailableUpdate(p.update ?? null);
+            : resolvePluginAvailableUpdateVersion(p, libraryItems);
           const installedVersion = String(getValue() || '').trim();
           const installedLabel = installedVersion ? `v${installedVersion}` : '—';
           const availableLabel =
@@ -424,26 +464,31 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
       togglingPluginKey,
       togglingTowardActive,
       platformBridgeVersion,
+      libraryItems,
       uninstallingKey,
       updatingKey,
     ],
   );
 
+  const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, pagination, rowSelection },
+    state: { sorting, pagination, rowSelection, globalFilter },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
     enableRowSelection: (row) => !isBridgePluginFile(row.original.plugin),
     getRowId: (row) => row.plugin,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: installedPluginGlobalFilterFn,
   });
 
   const selectedPluginRows = table.getFilteredSelectedRowModel().rows;
@@ -453,10 +498,10 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const executeBulkPlugins = useCallback(
     async (pluginsList: WordPressPlugin[], action: PluginsBulkAction) => {
       if (!siteId) return;
-      let items = pluginsList.map((p) => toBulkPluginItem(p));
-      if (action === 'update') {
-        items = items.map((i) => ({ ...i, version: '' }));
-      }
+      const items =
+        action === 'update'
+          ? pluginsList.map(toBulkPluginItemForUpdate)
+          : pluginsList.map((p) => toBulkPluginItem(p));
       setBulkPluginBusy(true);
       try {
         const res = await runPluginsBulkForSite(siteId, action, items);
@@ -490,7 +535,9 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
     if (!selectedPluginsBulk.length) return;
     if (bulkPluginAction === 'update') {
       const eligible = selectedPluginsBulk.filter(
-        (p) => hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
+        (p) =>
+          pluginHasAvailableUpdate(p, libraryItems) ||
+          bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
       );
       if (!eligible.length) {
         showNotification({
@@ -512,6 +559,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
     bulkPluginAction,
     bulkPluginBusy,
     executeBulkPlugins,
+    libraryItems,
     platformBridgeVersion,
     selectedPluginsBulk,
     showNotification,
@@ -523,6 +571,8 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const totalItems = table.getFilteredRowModel().rows.length;
   const start = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
   const end = Math.min(start + pageSize - 1, totalItems);
+  const tableEmptyMessage =
+    globalFilter.trim() && totalItems === 0 ? 'No plugins match your search.' : emptyMessage;
 
   return (
     <>
@@ -580,11 +630,27 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           }}
         />
       )}
+      {data.length > 0 && (
+        <div className="app-search mb-3" style={{ maxWidth: '22rem' }}>
+          <input
+            type="search"
+            className="form-control"
+            placeholder="Search plugins…"
+            value={globalFilter}
+            onChange={(e) => {
+              setGlobalFilter(e.target.value);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
+            aria-label="Search plugins"
+          />
+          <LuSearch className="app-search-icon text-muted" />
+        </div>
+      )}
       <div className="table-responsive border rounded table-select">
         <DataTable<WordPressPlugin>
           table={table}
           className="border rounded"
-          emptyMessage={emptyMessage}
+          emptyMessage={tableEmptyMessage}
           dashboardUniformRows
         />
       </div>
@@ -729,7 +795,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
 
   const onUpdateClick = useCallback(
     (t: WordPressTheme) => {
-      if (!siteId || !t.stylesheet?.trim() || !hasUpdate(t)) return;
+      if (!siteId || !t.stylesheet?.trim() || (!hasUpdate(t) && !hasLibraryThemeUpdate(libraryItems, t))) return;
       const forSlug = findLibraryItemsForInstalledTheme(libraryItems, t);
       if (forSlug.length > 0) {
         setModalTheme(t);
@@ -827,8 +893,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
         header: 'Version',
         cell: ({ getValue, row }) => {
           const t = row.original;
-          const showUpdate = hasUpdate(t);
-          const availableVersion = formatAvailableUpdate(t.update ?? null);
+          const showUpdate = hasUpdate(t) || hasLibraryThemeUpdate(libraryItems, t);
+          const availableVersion = resolveThemeAvailableUpdateVersion(t, libraryItems);
           const installedVersion = String(getValue() || '').trim();
           const installedLabel = installedVersion ? `v${installedVersion}` : '—';
           const availableLabel =
@@ -973,6 +1039,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     [
       activatingStylesheet,
       deletingStylesheet,
+      libraryItems,
       onToggleThemeStatus,
       onUpdateClick,
       siteId,
@@ -981,21 +1048,25 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     ],
   );
 
+  const [themeGlobalFilter, setThemeGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const themeTable = useReactTable({
     data,
     columns,
-    state: { sorting, pagination, rowSelection: themeRowSelection },
+    state: { sorting, pagination, rowSelection: themeRowSelection, globalFilter: themeGlobalFilter },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     onRowSelectionChange: setThemeRowSelection,
+    onGlobalFilterChange: setThemeGlobalFilter,
     enableRowSelection: (row) => row.original.status !== 'active',
     getRowId: (row) => row.stylesheet,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: installedThemeGlobalFilterFn,
   });
 
   const selectedThemeRows = themeTable.getFilteredSelectedRowModel().rows;
@@ -1040,7 +1111,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     if (!siteId || !bulkThemeAction || bulkThemeBusy) return;
     if (!selectedThemesBulk.length) return;
     if (bulkThemeAction === 'update') {
-      const eligible = selectedThemesBulk.filter((t) => hasUpdate(t));
+      const eligible = selectedThemesBulk.filter((t) => themeHasAvailableUpdate(t, libraryItems));
       if (!eligible.length) {
         showNotification({
           title: 'Update',
@@ -1059,6 +1130,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     bulkThemeAction,
     bulkThemeBusy,
     executeBulkThemes,
+    libraryItems,
     selectedThemesBulk,
     showNotification,
     siteId,
@@ -1069,6 +1141,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
   const totalItems = themeTable.getFilteredRowModel().rows.length;
   const start = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
   const end = Math.min(start + pageSize - 1, totalItems);
+  const themeTableEmptyMessage =
+    themeGlobalFilter.trim() && totalItems === 0 ? 'No themes match your search.' : emptyMessage;
 
   return (
     <>
@@ -1126,11 +1200,27 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
           if (bulkThemesRemove?.length) void executeBulkThemes(bulkThemesRemove, 'delete');
         }}
       />
+      {data.length > 0 && (
+        <div className="app-search mb-3" style={{ maxWidth: '22rem' }}>
+          <input
+            type="search"
+            className="form-control"
+            placeholder="Search themes…"
+            value={themeGlobalFilter}
+            onChange={(e) => {
+              setThemeGlobalFilter(e.target.value);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
+            aria-label="Search themes"
+          />
+          <LuSearch className="app-search-icon text-muted" />
+        </div>
+      )}
       <div className="table-responsive border rounded table-select">
         <DataTable<WordPressTheme>
           table={themeTable}
           className="border rounded"
-          emptyMessage={emptyMessage}
+          emptyMessage={themeTableEmptyMessage}
           dashboardUniformRows
         />
       </div>

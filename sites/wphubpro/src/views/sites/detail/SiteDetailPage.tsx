@@ -3,10 +3,24 @@ import PageBreadcrumb from '@/components/PageBreadcrumb.tsx';
 import { ContactSupportButton } from '@/components/support/ContactSupportButton';
 import { TabNavLabel } from '@/components/TabNavLabel';
 import { useNotificationContext } from '@/context/useNotificationContext';
+import { useAuth } from '@/domains/auth';
 import { useSite, useRequestSiteHealthRefresh, useSitesStatusPoll } from '@/domains/sites';
-import { formatAvailableUpdate, hasUpdate, parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
+import {
+  runPluginsBulkForSite,
+  runThemesBulkForSite,
+  toBulkPluginItemForUpdate,
+  toBulkThemeItemForUpdate,
+} from '@/domains/sites/extensionBulkFromSite';
+import { parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
+import {
+  pluginHasAvailableUpdate,
+  resolvePluginAvailableUpdateVersion,
+  resolveThemeAvailableUpdateVersion,
+  themeHasAvailableUpdate,
+} from '@/domains/sites/installedLibraryUpdate';
+import { useLibraryItems } from '@/hooks/useLibrary';
 import type { DocsHelpContextKey } from '@/domains/docs/docsHelpMap'
-import type { Site, WordPressPlugin, WordPressTheme } from '@/types';
+import type { LibraryItem, Site, WordPressPlugin, WordPressTheme } from '@/types';
 import { useLibraryAddItemFlow } from '@/views/library/hooks/useLibraryAddItemFlow';
 import ViewModeToggle, { type LibraryViewMode } from '@/views/library/components/ViewModeToggle';
 import SiteDetailSidebarCard from '@/views/sites/detail/SiteDetailSidebarCard';
@@ -17,8 +31,9 @@ import { SiteInstalledPluginsTable, SiteInstalledThemesTable } from '@/views/sit
 import { SiteDetailHealthPanel, SiteDetailLogsPanel } from '@/views/sites/detail/SiteDetailSharedPanels';
 import { SiteHealthTabStatusBadge } from '@/views/sites/detail/SiteHealthTabStatusBadge';
 import { SITE_DETAIL_TAB_CONFIG } from '@/views/sites/detail/siteDetailNavTabs';
-import { useEffect, useMemo, useState } from 'react';
-import { TbStethoscope } from 'react-icons/tb';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { TbProgressBolt, TbStethoscope } from 'react-icons/tb';
 import { Button, Card, CardBody, Col, Container, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
 import { Link, useParams, useSearchParams } from 'react-router';
 
@@ -41,24 +56,80 @@ function siteDetailHelpContext(tabIndex: number): DocsHelpContextKey {
 }
 
 function SiteDetailOverview({
+  siteId,
   site,
+  libraryItems,
   pluginsWithUpdates,
   themesWithUpdates,
   pluginTotal,
   themeTotal,
   onGoHealth,
 }: {
+  siteId: string;
   site: Site;
+  libraryItems: LibraryItem[];
   pluginsWithUpdates: WordPressPlugin[];
   themesWithUpdates: WordPressTheme[];
   pluginTotal: number;
   themeTotal: number;
   onGoHealth: () => void;
 }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationContext();
   const healthOk = site.healthStatus === 'healthy';
   const nPlugins = pluginsWithUpdates.length;
   const nThemes = themesWithUpdates.length;
   const [updatesTab, setUpdatesTab] = useState<'plugins' | 'themes'>('plugins');
+  const [updatesBusy, setUpdatesBusy] = useState(false);
+
+  const activeUpdateCount = updatesTab === 'plugins' ? nPlugins : nThemes;
+
+  const onUpdateAll = useCallback(async () => {
+    if (!siteId || updatesBusy || activeUpdateCount === 0) return;
+    setUpdatesBusy(true);
+    try {
+      const res =
+        updatesTab === 'plugins'
+          ? await runPluginsBulkForSite(
+              siteId,
+              'update',
+              pluginsWithUpdates.map(toBulkPluginItemForUpdate),
+            )
+          : await runThemesBulkForSite(
+              siteId,
+              'update',
+              themesWithUpdates.map(toBulkThemeItemForUpdate),
+            );
+      const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
+      if (res.ok) {
+        showNotification({
+          title: 'Update',
+          message: res.message,
+          variant: partial ? 'warning' : 'success',
+        });
+        void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+        if (user?.$id) {
+          void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+          void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+        }
+      } else {
+        showNotification({ title: 'Update', message: res.message, variant: 'danger' });
+      }
+    } finally {
+      setUpdatesBusy(false);
+    }
+  }, [
+    activeUpdateCount,
+    pluginsWithUpdates,
+    queryClient,
+    showNotification,
+    siteId,
+    themesWithUpdates,
+    updatesBusy,
+    updatesTab,
+    user?.$id,
+  ]);
 
   return (
     <>
@@ -66,9 +137,33 @@ function SiteDetailOverview({
         <Col xs={12} md={6} className="d-flex flex-column gap-3 min-h-0 h-100">
           <Card className="flex-grow-1 w-100 border shadow-none d-flex flex-column min-h-0">
             <CardBody className="d-flex flex-column h-100 min-w-0">
-              <div className="mb-2">
-                <p className="text-muted fs-xs text-uppercase fw-semibold mb-0">Updates needed</p>
-                <p className="text-muted fs-xxs mb-0">Plugins and themes with an available update from the last sync</p>
+              <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <p className="text-muted fs-xs text-uppercase fw-semibold mb-0">Updates needed</p>
+                  <p className="text-muted fs-xxs mb-0">
+                    Plugins and themes with an available update from the last sync
+                  </p>
+                </div>
+                {activeUpdateCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="d-inline-flex align-items-center gap-1 flex-shrink-0"
+                    disabled={!siteId || updatesBusy}
+                    aria-busy={updatesBusy}
+                    onClick={() => void onUpdateAll()}
+                  >
+                    {updatesBusy ? (
+                      <span className="fs-sm">…</span>
+                    ) : (
+                      <>
+                        <TbProgressBolt className="fs-lg" aria-hidden />
+                        Update all
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               <div className="flex-grow-1 d-flex flex-column min-h-0">
                 <Card className="border-0 shadow-none mb-0 flex-grow-1 d-flex flex-column min-h-0 bg-transparent">
@@ -122,7 +217,9 @@ function SiteDetailOverview({
                                       </td>
                                       <td className="text-muted fs-xs text-nowrap">{p.version || '—'}</td>
                                       <td className="fs-xs">
-                                        <span className="badge badge-soft-warning fs-xxs">{formatAvailableUpdate(p.update)}</span>
+                                        <span className="badge badge-soft-warning fs-xxs">
+                                          {resolvePluginAvailableUpdateVersion(p, libraryItems)}
+                                        </span>
                                       </td>
                                     </tr>
                                   ))}
@@ -155,7 +252,7 @@ function SiteDetailOverview({
                                       <td className="text-muted fs-xs text-nowrap">{t.version || '—'}</td>
                                       <td className="fs-xs">
                                         <span className="badge badge-soft-warning fs-xxs">
-                                          {formatAvailableUpdate(t.update ?? null)}
+                                          {resolveThemeAvailableUpdateVersion(t, libraryItems)}
                                         </span>
                                       </td>
                                     </tr>
@@ -250,11 +347,18 @@ const SiteDetailPage = () => {
 
   useSitesStatusPoll(siteId && enabled ? [siteId] : []);
 
+  const { data: libraryItems = [] } = useLibraryItems();
   const plugins = useMemo(() => parsePluginsMeta(site?.pluginsMeta), [site?.pluginsMeta]);
   const themes = useMemo(() => parseThemesMeta(site?.themesMeta), [site?.themesMeta]);
 
-  const pluginsWithUpdates = useMemo(() => plugins.filter(hasUpdate), [plugins]);
-  const themesWithUpdates = useMemo(() => themes.filter(hasUpdate), [themes]);
+  const pluginsWithUpdates = useMemo(
+    () => plugins.filter((p) => pluginHasAvailableUpdate(p, libraryItems)),
+    [plugins, libraryItems],
+  );
+  const themesWithUpdates = useMemo(
+    () => themes.filter((t) => themeHasAvailableUpdate(t, libraryItems)),
+    [themes, libraryItems],
+  );
 
   const pluginRows = useMemo(() => plugins.map((item) => ({ kind: 'plugin' as const, item })), [plugins]);
   const themeRows = useMemo(() => themes.map((item) => ({ kind: 'theme' as const, item })), [themes]);
@@ -376,11 +480,13 @@ const SiteDetailPage = () => {
                 <CardBody className="pt-4 pb-4">
               {tab === 0 && (
                 <SiteDetailOverview
+                  siteId={site.$id}
                   site={site}
-                      pluginsWithUpdates={pluginsWithUpdates}
-                      themesWithUpdates={themesWithUpdates}
-                      pluginTotal={plugins.length}
-                      themeTotal={themes.length}
+                  libraryItems={libraryItems}
+                  pluginsWithUpdates={pluginsWithUpdates}
+                  themesWithUpdates={themesWithUpdates}
+                  pluginTotal={plugins.length}
+                  themeTotal={themes.length}
                   onGoHealth={() => setTabKey('health')}
                 />
               )}

@@ -4,6 +4,7 @@ import { ContactSupportButton } from '@/components/support/ContactSupportButton'
 import { TabNavLabel } from '@/components/TabNavLabel';
 import {
   TABLE_ACTION_ICON_DANGER_CLASS,
+  TABLE_ACTION_ICON_OUTLINE_PRIMARY_CLASS,
   TABLE_ACTION_ICON_OUTLINE_SECONDARY_CLASS,
 } from '@/components/table/tableActionClasses';
 import { ROUTE_PATHS } from '@/config/routePaths';
@@ -33,7 +34,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, CardBody, Col, Container, Form, Nav, Row, Spinner, Table } from 'react-bootstrap';
 import Modal from '@/components/ui/AppModal'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { TbBrandWordpress, TbCloudUpload, TbLink, TbTrash, TbUpload } from 'react-icons/tb';
+import { TbBrandWordpress, TbCloudUpload, TbLink, TbStar, TbTrash, TbUpload } from 'react-icons/tb';
 
 const TAB_KEYS = ['overview', 'sites'] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -344,20 +345,6 @@ const LibraryItemDetailPage = () => {
       return;
     }
 
-    const docId = target.libraryDocumentId;
-    const vKey = target.versionKey ?? target.version;
-    if (docId && vKey && target.isDefault !== true) {
-      try {
-        await setLibraryDefaultVersionMutation.mutateAsync({
-          libraryDocumentId: docId,
-          versionKey: vKey,
-          silent: true,
-        });
-      } catch {
-        return;
-      }
-    }
-
     setInstallBridgeRunning(true);
     const siteList = [...installSiteIds];
     const lines: string[] = [];
@@ -435,6 +422,20 @@ const LibraryItemDetailPage = () => {
     const label = item.version || item.$id;
     if (!window.confirm(`Remove version "${label}" from the library?`)) return;
     deleteMutation.mutate(item.$id);
+  };
+
+  const handleSetDefaultVersion = async (item: LibraryItem) => {
+    const docId = item.libraryDocumentId;
+    const vKey = item.versionKey ?? item.version;
+    if (!docId || !vKey || item.isDefault === true) return;
+    try {
+      await setLibraryDefaultVersionMutation.mutateAsync({
+        libraryDocumentId: docId,
+        versionKey: vKey,
+      });
+    } catch {
+      /* onError from hook */
+    }
   };
 
   if (!itemKind || !slug) {
@@ -667,6 +668,19 @@ const LibraryItemDetailPage = () => {
                                   <td>{item.isDefault ? <span className="text-success fw-medium">Yes</span> : '—'}</td>
                                   <td className="text-end">
                                     <div className="d-inline-flex flex-wrap align-items-center justify-content-end gap-2">
+                                      {!item.isDefault ? (
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          className={TABLE_ACTION_ICON_OUTLINE_PRIMARY_CLASS}
+                                          disabled={setLibraryDefaultVersionMutation.isPending}
+                                          aria-label="Set as default version"
+                                          title="Set as default version"
+                                          onClick={() => void handleSetDefaultVersion(item)}
+                                        >
+                                          <TbStar className="fs-lg" aria-hidden />
+                                        </Button>
+                                      ) : null}
                                       <Button
                                         variant="outline-secondary"
                                         size="sm"
@@ -854,8 +868,7 @@ const LibraryItemDetailPage = () => {
               })}
             </Form.Select>
             <Form.Text className="d-block mt-1">
-              If this row is not already your library default, we update the default before installing so the bridge
-              matches your choice.
+              The selected version is installed as-is; your library default is not changed.
             </Form.Text>
           </Form.Group>
           {installTargetItem ? (
@@ -878,7 +891,7 @@ const LibraryItemDetailPage = () => {
               {bridgeInstallPlan.kind === 'plugin-install-version'
                 ? `Will install plugin ${bridgeInstallPlan.slug} at version ${bridgeInstallPlan.version} from WordPress.org.`
                 : bridgeInstallPlan.kind === 'plugin-install-from-library'
-                  ? 'Will install the plugin from your uploaded library build (the site downloads an HTTPS ZIP from the Hub).'
+                  ? `Will install the plugin from your uploaded library build (version ${bridgeInstallPlan.version}) on each selected site.`
                   : bridgeInstallPlan.kind === 'plugin-install-zip'
                     ? 'Will install the plugin from your library’s remote HTTPS ZIP URL on the site.'
                     : 'Will install the theme from the resolved ZIP package on each selected site.'}
@@ -958,19 +971,13 @@ const LibraryItemDetailPage = () => {
             disabled={
               installSiteIds.size === 0 ||
               connectedSitesForInstall.length === 0 ||
-              setLibraryDefaultVersionMutation.isPending ||
               installBridgeRunning ||
               bridgeInstallWaitingForWp ||
               bridgeInstallPlan.kind === 'unsupported'
             }
             onClick={() => void installOnSelectedSitesViaBridge()}
           >
-            {setLibraryDefaultVersionMutation.isPending ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Updating default…
-              </>
-            ) : installBridgeRunning ? (
+            {installBridgeRunning ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
                 Installing…

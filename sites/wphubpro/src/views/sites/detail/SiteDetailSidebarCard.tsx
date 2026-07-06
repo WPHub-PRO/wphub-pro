@@ -70,6 +70,11 @@ function bridgeVersionFromPluginsMeta(pluginsMeta: string | undefined): string |
   return null;
 }
 
+function formatVersionLabel(version: string): string {
+  const trimmed = version.trim();
+  return trimmed && trimmed !== '—' ? `v${trimmed}` : '—';
+}
+
 function normalizeSiteUrl(siteUrl: string): string {
   const t = siteUrl.trim();
   if (!t) return '';
@@ -476,15 +481,15 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
           <div className="row g-2 small text-white">
             <div className="col-6">
               <span className="text-white-50 d-block fs-xs">WordPress</span>
-              <span className="fw-medium">{wpVersion}</span>
+              <span className="fw-medium">{formatVersionLabel(wpVersion)}</span>
             </div>
             <div className="col-6">
               <span className="text-white-50 d-block fs-xs">PHP</span>
-              <span className="fw-medium">{phpVersion}</span>
+              <span className="fw-medium">{formatVersionLabel(phpVersion)}</span>
             </div>
             <div className="col-12">
               <span className="text-white-50 d-block fs-xs">WPHub Pro Bridge</span>
-              <span className="fw-medium">{bridgeVersion}</span>
+              <span className="fw-medium">{formatVersionLabel(bridgeVersion)}</span>
             </div>
           </div>
         </div>
