@@ -94,12 +94,12 @@ function SiteDetailOverview({
           ? await runPluginsBulkForSite(
               siteId,
               'update',
-              pluginsWithUpdates.map(toBulkPluginItemForUpdate),
+              pluginsWithUpdates.map((p) => toBulkPluginItemForUpdate(p, libraryItems)),
             )
           : await runThemesBulkForSite(
               siteId,
               'update',
-              themesWithUpdates.map(toBulkThemeItemForUpdate),
+              themesWithUpdates.map((t) => toBulkThemeItemForUpdate(t, libraryItems)),
             );
       const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
       if (res.ok) {
@@ -128,6 +128,7 @@ function SiteDetailOverview({
     themesWithUpdates,
     updatesBusy,
     updatesTab,
+    libraryItems,
     user?.$id,
   ]);
 

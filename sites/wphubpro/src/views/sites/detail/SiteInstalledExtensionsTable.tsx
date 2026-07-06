@@ -500,7 +500,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
       if (!siteId) return;
       const items =
         action === 'update'
-          ? pluginsList.map(toBulkPluginItemForUpdate)
+          ? pluginsList.map((p) => toBulkPluginItemForUpdate(p, libraryItems))
           : pluginsList.map((p) => toBulkPluginItem(p));
       setBulkPluginBusy(true);
       try {
@@ -1077,7 +1077,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     async (themesList: WordPressTheme[], action: ThemesBulkAction) => {
       if (!siteId) return;
       const items = themesList.map((t) =>
-        action === 'update' ? toBulkThemeItemForUpdate(t) : toBulkThemeItem(t),
+        action === 'update' ? toBulkThemeItemForUpdate(t, libraryItems) : toBulkThemeItem(t),
       );
       setBulkThemeBusy(true);
       try {

@@ -2,16 +2,29 @@
  * Hub → wp-proxy → bridge: bulk plugin/theme actions (`body.plugins` / `body.themes` object arrays).
  */
 import { postBridgeApiJsonWithMeta } from '@/lib/platform-api';
-import type { WordPressPlugin, WordPressTheme } from '@/types';
+import type { LibraryItem, WordPressPlugin, WordPressTheme } from '@/types';
 import { formatAvailableUpdate } from './installedMeta';
+import { getLibraryPluginUpdateTarget, getLibraryThemeUpdateTarget } from './installedLibraryUpdate';
 import { isBridgePluginFile, pluginDirectorySlug } from './pluginUpdateFromSite';
 import { parseWpProxyFailureMessage } from './wpProxyResponse';
 
 const PROXY_TIMEOUT_MS = 180_000;
 
-export type BulkPluginItem = { plugin: string; slug: string; version: string };
+export type BulkPluginItem = {
+  plugin: string;
+  slug: string;
+  version: string;
+  libraryItemId?: string;
+  source?: LibraryItem['source'];
+};
 
-export type BulkThemeItem = { stylesheet: string; slug: string; version: string };
+export type BulkThemeItem = {
+  stylesheet: string;
+  slug: string;
+  version: string;
+  libraryItemId?: string;
+  source?: LibraryItem['source'];
+};
 
 export type BulkItemResult = {
   id: string;
@@ -179,17 +192,36 @@ export function toBulkPluginItem(row: WordPressPlugin): BulkPluginItem {
   return { plugin, slug, version };
 }
 
-/** Target version from bridge `update` metadata (routes wp-proxy through manage/install). */
-export function toBulkPluginItemForUpdate(row: WordPressPlugin): BulkPluginItem {
+/** Target version from bridge `update` metadata or library default when newer. */
+export function toBulkPluginItemForUpdate(
+  row: WordPressPlugin,
+  libraryItems?: LibraryItem[],
+): BulkPluginItem {
   const base = toBulkPluginItem(row);
   if (isBridgePluginFile(base.plugin)) {
     return { ...base, version: '' };
   }
-  const target = formatAvailableUpdate(row.update);
-  return {
-    ...base,
-    version: target !== '—' ? target : '',
-  };
+  const wpTarget = formatAvailableUpdate(row.update);
+  if (wpTarget !== '—') {
+    return { ...base, version: wpTarget };
+  }
+  if (libraryItems?.length) {
+    const lib = getLibraryPluginUpdateTarget(libraryItems, row);
+    if (lib) {
+      const item = lib.item;
+      const libraryDocumentId = (item.libraryDocumentId ?? item.$id).trim();
+      const versionKey = (item.versionKey ?? item.version).trim();
+      if (libraryDocumentId && versionKey) {
+        return {
+          ...base,
+          version: versionKey,
+          libraryItemId: libraryDocumentId,
+          source: item.source,
+        };
+      }
+    }
+  }
+  return { ...base, version: '' };
 }
 
 export function toBulkThemeItem(row: WordPressTheme): BulkThemeItem {
@@ -199,13 +231,32 @@ export function toBulkThemeItem(row: WordPressTheme): BulkThemeItem {
   return { stylesheet, slug, version };
 }
 
-export function toBulkThemeItemForUpdate(theme: WordPressTheme): BulkThemeItem {
+export function toBulkThemeItemForUpdate(
+  theme: WordPressTheme,
+  libraryItems?: LibraryItem[],
+): BulkThemeItem {
   const base = toBulkThemeItem(theme);
-  const target = formatAvailableUpdate(theme.update);
-  return {
-    ...base,
-    version: target !== '—' ? target : base.version,
-  };
+  const wpTarget = formatAvailableUpdate(theme.update);
+  if (wpTarget !== '—') {
+    return { ...base, version: wpTarget };
+  }
+  if (libraryItems?.length) {
+    const lib = getLibraryThemeUpdateTarget(libraryItems, theme);
+    if (lib) {
+      const item = lib.item;
+      const libraryDocumentId = (item.libraryDocumentId ?? item.$id).trim();
+      const versionKey = (item.versionKey ?? item.version).trim();
+      if (libraryDocumentId && versionKey) {
+        return {
+          ...base,
+          version: versionKey,
+          libraryItemId: libraryDocumentId,
+          source: item.source,
+        };
+      }
+    }
+  }
+  return { ...base, version: '' };
 }
 
 export function toBulkThemeItemFromStylesheet(stylesheet: string): BulkThemeItem {

@@ -13,7 +13,9 @@ import {
   filterLibraryItemsBySlugAndType,
   planLibraryBridgeInstall,
   runLibraryBridgeInstallOnSite,
+  withInstalledPluginFileOnPlan,
 } from '@/domains/library';
+import { installedPluginFileForSlug } from '@/domains/sites/installedPluginLibraryMatch';
 import { parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
 import { useSitesForLibraryInstall } from '@/domains/sites';
 import { useDeleteLibraryItem, useLibraryItems, useSetLibraryDefaultVersion } from '@/hooks/useLibrary';
@@ -354,7 +356,14 @@ const LibraryItemDetailPage = () => {
       for (const siteId of siteList) {
         const site = connectedSitesForInstall.find((s) => s.$id === siteId);
         const label = site?.siteName?.trim() || siteId;
-        const result = await runLibraryBridgeInstallOnSite(siteId, plan);
+        const sitePlan =
+          itemKind === 'plugin' && plan.kind === 'plugin-install-from-library'
+            ? withInstalledPluginFileOnPlan(
+                plan,
+                installedPluginFileForSlug(parsePluginsMeta(site?.pluginsMeta), slug),
+              )
+            : plan;
+        const result = await runLibraryBridgeInstallOnSite(siteId, sitePlan);
         if (result.ok) {
           okCount += 1;
           lines.push(`${label}: installed`);

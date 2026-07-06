@@ -66,6 +66,7 @@ export function planToPluginInstallRow(plan: LibraryBridgeInstallPlan): PluginIn
         source: plan.source,
         slug: plan.slug,
         routeSlug: plan.slug,
+        ...(plan.plugin ? { plugin: plan.plugin } : {}),
       };
     default:
       return null;
@@ -172,6 +173,8 @@ export type LibraryBridgeInstallPlan =
       version: string;
       slug: string;
       source: LibraryItem['source'];
+      /** Installed plugin basename when replacing an existing package on the site. */
+      plugin?: string;
     }
   | { kind: 'theme-install-zip'; zipUrl: string; slug: string; source?: LibraryItem['source'] }
   | {
@@ -316,6 +319,15 @@ export function planLibraryBridgeInstall(
   }
 
   return { kind: 'unsupported', message: 'Unsupported theme source.' };
+}
+
+export function withInstalledPluginFileOnPlan(
+  plan: LibraryBridgeInstallPlan,
+  pluginFile: string | undefined,
+): LibraryBridgeInstallPlan {
+  const plugin = (pluginFile ?? '').trim();
+  if (!plugin || plan.kind !== 'plugin-install-from-library') return plan;
+  return { ...plan, plugin };
 }
 
 export async function runLibraryBridgeInstallOnSite(

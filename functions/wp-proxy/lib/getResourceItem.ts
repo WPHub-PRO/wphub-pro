@@ -137,6 +137,32 @@ function pickVersionMapEntry(map, version) {
   return null;
 }
 
+/**
+ * Resolve storage/remote location for a specific version entry.
+ * Legacy document-level s3_path / remote_url only applies to the mirrored default version.
+ */
+function resolveVersionEntryLocation(doc, map, picked) {
+  const entry = picked?.entry;
+  if (!entry) return '';
+  const explicit = entry.location && String(entry.location).trim();
+  if (explicit) return explicit;
+
+  const source = String(entry.source || '').trim().toLowerCase();
+  if (source !== 'local' && source !== 'remote') return '';
+
+  const mapKeys = Object.keys(map || {});
+  const mirrorVersion = String(doc.version ?? '').trim();
+  const mayUseDocFallback =
+    mapKeys.length <= 1 || (mirrorVersion !== '' && picked.key === mirrorVersion);
+  if (!mayUseDocFallback) return '';
+
+  return (
+    String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
+    String(doc.remoteUrl || doc.remote_url || '').trim() ||
+    ''
+  );
+}
+
 function getOrBuildVersionsMap(doc) {
   const raw = doc.versions_json ?? doc.versionsJson;
   const p = parseVersionsJson(typeof raw === 'string' ? raw : null);
@@ -249,15 +275,7 @@ async function resolvePluginUpdateZipUrl({ databases, fetchImpl, log, body }) {
       }
       const { entry } = picked;
 
-      const docFallbackLoc =
-        String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
-        String(doc.remoteUrl || doc.remote_url || '').trim() ||
-        '';
-      const loc =
-        (entry.location && String(entry.location).trim()) ||
-        (entry.source === 'local' || entry.source === 'remote' ? docFallbackLoc : '');
-
-
+      const loc = resolveVersionEntryLocation(doc, map, picked);
       switch (entry.source) {
         case 'official': {
           if (loc && loc.startsWith('https://')) {
@@ -469,13 +487,7 @@ async function resolveThemeUpdateZipUrl({ databases, fetchImpl, log, body }) {
         .trim()
         .toLowerCase();
 
-      const docFallbackLoc =
-        String(doc.s3Path || doc.s3_path || doc.s3_key || '').trim() ||
-        String(doc.remoteUrl || doc.remote_url || '').trim() ||
-        '';
-      const loc =
-        (entry.location && String(entry.location).trim()) ||
-        (entry.source === 'local' || entry.source === 'remote' ? docFallbackLoc : '');
+      const loc = resolveVersionEntryLocation(doc, map, picked);
 
       switch (entry.source) {
         case 'official': {
