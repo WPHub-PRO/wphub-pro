@@ -1,5 +1,6 @@
 import { ok, fail, verifyIncomingBridgeSecret, WPHUB_APPWRITE_IDS, appwriteDatabaseId } from '@code045/wphubpro-shared';
 import { notifyAfterSiteMetaSync } from '../lib/siteMetaNotifications.ts';
+import { parseSiteLogData, stringifySiteLogData } from '../lib/siteLogData.ts';
 
 export default async function handleSyncSiteMeta({ req, res, log, error, databases, users, teams, ENCRYPTION_KEY }) {
   if (!ENCRYPTION_KEY) {
@@ -52,19 +53,7 @@ export default async function handleSyncSiteMeta({ req, res, log, error, databas
     }
 
     const now = new Date().toISOString();
-    const raw = siteDoc.log_data || siteDoc.incoming_log || '{}';
-    let logData = { incoming: [], outgoing: [] };
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        logData.incoming = parsed;
-      } else if (parsed && typeof parsed === 'object') {
-        logData.incoming = Array.isArray(parsed.incoming) ? parsed.incoming : [];
-        logData.outgoing = Array.isArray(parsed.outgoing) ? parsed.outgoing : [];
-      }
-    } catch {
-      /* ignore */
-    }
+    const logData = parseSiteLogData(siteDoc.log_data || siteDoc.incoming_log);
     logData.incoming.push({
       type: 'meta_sync',
       time: now,
@@ -73,7 +62,7 @@ export default async function handleSyncSiteMeta({ req, res, log, error, databas
       wp_meta: hasWpMeta,
     });
     if (logData.incoming.length > 50) logData.incoming = logData.incoming.slice(-50);
-    updates.log_data = JSON.stringify(logData);
+    updates.log_data = stringifySiteLogData(logData);
 
     await databases.updateDocument(dbId, coll, siteId, updates);
     log(`[sites] sync_site_meta ${siteId}`);

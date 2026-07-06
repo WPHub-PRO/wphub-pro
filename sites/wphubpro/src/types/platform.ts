@@ -163,6 +163,7 @@ export interface Site {
   logData?: {
     incoming: Array<{ type: string; time: string; plugins?: boolean; themes?: boolean }>;
     outgoing: Array<{ time: string; method: string; endpoint: string; statusCode: number; duration?: number; request?: string; response?: string }>;
+    actions?: ActionLogEntry[];
   };
   /** Team workspace — Appwrite `team_id` when site belongs to a team. */
   teamId?: string;

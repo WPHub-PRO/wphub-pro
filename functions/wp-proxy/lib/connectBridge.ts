@@ -355,7 +355,11 @@ async function callBridgeRest(ctx, opts) {
 
   try {
     const raw = siteDocument.log_data || siteDocument.incoming_log || '{}';
-    let logData = { incoming: [], outgoing: [] };
+    let logData: { incoming: unknown[]; outgoing: unknown[]; actions: unknown[] } = {
+      incoming: [],
+      outgoing: [],
+      actions: [],
+    };
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -363,6 +367,7 @@ async function callBridgeRest(ctx, opts) {
       } else if (parsed && typeof parsed === 'object') {
         logData.incoming = Array.isArray(parsed.incoming) ? parsed.incoming : [];
         logData.outgoing = Array.isArray(parsed.outgoing) ? parsed.outgoing : [];
+        logData.actions = Array.isArray(parsed.actions) ? parsed.actions : [];
       }
     } catch {
       /* defaults */

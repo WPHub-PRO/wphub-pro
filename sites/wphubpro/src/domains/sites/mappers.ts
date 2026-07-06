@@ -1,4 +1,4 @@
-import type { Site, ConnectionStatus } from '../../types';
+import type { ActionLogEntry, Site, ConnectionStatus } from '../../types';
 
 /** Appwrite may return large JSON attributes as strings or as already-parsed objects. */
 function jsonBlobToOptionalString(raw: unknown): string | undefined {
@@ -60,23 +60,32 @@ export const mapSiteDocumentToSite = (doc: Record<string, unknown>): Site => {
   const enabled = meta.enabled !== false;
 
   const rawLog = doc.log_data ?? doc.logData ?? doc.incoming_log ?? doc.incomingLog;
-  const logData: { incoming: unknown[]; outgoing: unknown[] } = { incoming: [], outgoing: [] };
+  const logData: { incoming: unknown[]; outgoing: unknown[]; actions: ActionLogEntry[] } = {
+    incoming: [],
+    outgoing: [],
+    actions: [],
+  };
   if (rawLog && typeof rawLog === 'string') {
     try {
       const parsed: unknown = JSON.parse(rawLog);
       if (Array.isArray(parsed)) {
         logData.incoming = parsed;
       } else if (parsed && typeof parsed === 'object') {
-        const o = parsed as { incoming?: unknown[]; outgoing?: unknown[] };
+        const o = parsed as {
+          incoming?: unknown[];
+          outgoing?: unknown[];
+          actions?: ActionLogEntry[];
+        };
         logData.incoming = Array.isArray(o.incoming) ? o.incoming : [];
         logData.outgoing = Array.isArray(o.outgoing) ? o.outgoing : [];
+        logData.actions = Array.isArray(o.actions) ? o.actions : [];
       }
     } catch {
       /* ignore */
     }
   }
 
-  const actionLog = Array.isArray(doc.action_log) ? doc.action_log : undefined;
+  const actionLog = logData.actions.length > 0 ? logData.actions : undefined;
 
   return {
     ...(doc as unknown as Site),

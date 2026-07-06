@@ -24,6 +24,7 @@ export type SitesAction =
   | 'fetch_site_meta'
   | 'sync_site_meta'
   | 'push_site_health'
+  | 'append_site_action_log'
   | 'check_site_health'
   | 'run_pagespeed'
   | 'get_health_ai_suggestions'
