@@ -37,6 +37,15 @@ function isPluginOrThemeManageEndpoint(endpoint: string): boolean {
   return e.includes('plugins/manage') || e.includes('themes/manage');
 }
 
+function kindFromEntry(entry: ActionLogEntry): 'plugin' | 'theme' {
+  const req =
+    entry.request && typeof entry.request === 'object' ? (entry.request as Record<string, unknown>) : {};
+  const kind = pickStr(req, ['kind']);
+  if (kind === 'theme') return 'theme';
+  if (kind === 'plugin') return 'plugin';
+  return kindFromEndpoint(entry.endpoint);
+}
+
 function kindFromEndpoint(endpoint: string): 'plugin' | 'theme' {
   return endpoint.toLowerCase().includes('themes/') ? 'theme' : 'plugin';
 }
@@ -51,7 +60,9 @@ function mapManageVerb(action: string): string | null {
       return 'deactivated';
     case 'update':
       return 'updated';
+    case 'install':
     case 'install-from-zip':
+    case 'install-version':
       return 'installed';
     case 'delete':
       return 'uninstalled';
@@ -97,16 +108,24 @@ function pickExtensionName(entry: ActionLogEntry, kind: 'plugin' | 'theme'): str
   if (kind === 'theme') {
     const fromRes = responseThemeName(entry);
     if (fromRes) return fromRes;
-    if (entry.action.toLowerCase() === 'install-from-zip') return 'Theme package';
+    const action = entry.action.toLowerCase();
+    if (action === 'install-from-zip' || action === 'install' || action === 'install-version') {
+      return 'Theme package';
+    }
   }
-  if (kind === 'plugin' && entry.action.toLowerCase() === 'install-from-zip') return 'Plugin package';
+  const action = entry.action.toLowerCase();
+  if (kind === 'plugin' && (action === 'install-from-zip' || action === 'install' || action === 'install-version')) {
+    return 'Plugin package';
+  }
   return kind === 'theme' ? 'Theme' : 'Plugin';
 }
 
 function entryFailed(entry: ActionLogEntry): boolean {
   const r = entry.response;
   if (!r || typeof r !== 'object') return false;
-  const err = (r as { error?: unknown }).error;
+  const o = r as { error?: unknown; success?: unknown };
+  if (o.success === false) return true;
+  const err = o.error;
   return err != null && err !== '' && err !== false;
 }
 
@@ -114,7 +133,7 @@ function auditLineFromEntry(entry: ActionLogEntry, index: number): ActionAuditLi
   if (!isPluginOrThemeManageEndpoint(entry.endpoint)) return null;
   const verb = mapManageVerb(entry.action);
   if (!verb) return null;
-  const kind = kindFromEndpoint(entry.endpoint);
+  const kind = kindFromEntry(entry);
   const extensionName = pickExtensionName(entry, kind);
   const atMs = entryAtMs(entry);
   return {
@@ -150,7 +169,8 @@ function extensionKeyMatchesRequest(
   if (kind === 'plugin') {
     const plugin = pickStr(req, ['plugin']);
     if (plugin && plugin.replace(/\\/g, '/').trim().toLowerCase() === nk) return true;
-    return false;
+    const slug = pickStr(req, ['slug']);
+    return !!(slug && slug.trim().toLowerCase() === nk);
   }
   const ss = pickStr(req, ['stylesheet', 'slug']);
   return !!(ss && ss.trim().toLowerCase() === nk);
@@ -168,7 +188,7 @@ export function parseActionLogForExtensionAudit(
   const lines: ActionAuditLine[] = [];
   entries.forEach((entry, index) => {
     if (!isPluginOrThemeManageEndpoint(entry.endpoint)) return;
-    const entryKind = kindFromEndpoint(entry.endpoint);
+    const entryKind = kindFromEntry(entry);
     if (entryKind !== kind) return;
     if (!extensionKeyMatchesRequest(entry, kind, norm)) return;
     const line = auditLineFromEntry(entry, index);

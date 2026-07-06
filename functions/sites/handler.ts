@@ -17,6 +17,7 @@ import handleConnectSite from './handlers/connectSite.ts';
 import handleFetchSiteMeta from './handlers/fetchSiteMeta.ts';
 import handleSyncSiteMeta from './handlers/syncSiteMeta.ts';
 import handlePushSiteHealth from './handlers/pushSiteHealth.ts';
+import handleAppendSiteActionLog from './handlers/appendSiteActionLog.ts';
 import handleCheckSiteHealth from './handlers/checkSiteHealth.ts';
 import handleRunPagespeed from './handlers/runPagespeed.ts';
 import handleHealthAi from './handlers/healthAi.ts';
@@ -98,6 +99,8 @@ export default async ({
         return await handleSyncSiteMeta(ctxBase);
       case 'push_site_health':
         return await handlePushSiteHealth(ctxBase);
+      case 'append_site_action_log':
+        return await handleAppendSiteActionLog(ctxBase);
       case 'check_site_health':
         return await handleCheckSiteHealth(ctxBase);
       case 'run_pagespeed':
@@ -117,6 +120,7 @@ export default async ({
             'fetch_site_meta',
             'sync_site_meta',
             'push_site_health',
+            'append_site_action_log',
             'check_site_health',
             'run_pagespeed',
             'get_health_ai_suggestions',
@@ -127,7 +131,7 @@ export default async ({
       default:
         return fail(
           res,
-          'Invalid or missing action. Expected: create_site, update_site, connect_site, fetch_site_meta, sync_site_meta, push_site_health, check_site_health, run_pagespeed, get_health_ai_suggestions, execute_health_ai_step, dry_run_health_ai.',
+          'Invalid or missing action. Expected: create_site, update_site, connect_site, fetch_site_meta, sync_site_meta, push_site_health, append_site_action_log, check_site_health, run_pagespeed, get_health_ai_suggestions, execute_health_ai_step, dry_run_health_ai.',
           400,
         );
     }

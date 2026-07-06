@@ -12,6 +12,7 @@ import {
 } from '@code045/wphubpro-shared';
 import { verifyJwtUser } from '../lib/jwt.ts';
 import { notifyAfterSiteMetaSync } from '../lib/siteMetaNotifications.ts';
+import { parseSiteLogData, stringifySiteLogData } from '../lib/siteLogData.ts';
 
 export default async function handleFetchSiteMeta({
   req,
@@ -135,19 +136,7 @@ export default async function handleFetchSiteMeta({
     }
 
     const now = new Date().toISOString();
-    const raw = siteDoc.log_data || siteDoc.incoming_log || '{}';
-    let logData = { incoming: [], outgoing: [] };
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        logData.incoming = parsed;
-      } else if (parsed && typeof parsed === 'object') {
-        logData.incoming = Array.isArray(parsed.incoming) ? parsed.incoming : [];
-        logData.outgoing = Array.isArray(parsed.outgoing) ? parsed.outgoing : [];
-      }
-    } catch {
-      /* ignore */
-    }
+    const logData = parseSiteLogData(siteDoc.log_data || siteDoc.incoming_log);
     logData.incoming.push({
       type: 'plugin_theme_update',
       time: now,
@@ -156,7 +145,7 @@ export default async function handleFetchSiteMeta({
       source: 'sites:fetch_site_meta',
     });
     if (logData.incoming.length > 50) logData.incoming = logData.incoming.slice(-50);
-    updates.log_data = JSON.stringify(logData);
+    updates.log_data = stringifySiteLogData(logData);
 
     await databases.updateDocument(dbId, coll, siteId, updates);
     log(`[sites] fetch_site_meta updated ${siteId}`);

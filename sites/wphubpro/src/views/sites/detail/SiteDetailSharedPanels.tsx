@@ -13,7 +13,7 @@ import { SiteHealthAiAgentModal } from '@/views/sites/detail/SiteHealthAiAgentMo
 import SiteHealthMetaPanel from '@/views/sites/detail/SiteHealthMetaPanel';
 import { formatChecked, formatSiteHealthCheckedOn } from '@/views/sites/detail/siteDetailFormat';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab } from 'react-bootstrap';
+import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
 import { TbSparkles } from 'react-icons/tb';
 import { useSearchParams } from 'react-router';
 
