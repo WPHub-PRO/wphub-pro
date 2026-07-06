@@ -86,3 +86,17 @@ export function isInstalledPluginInLibrary(
 ): boolean {
   return findLibraryItemsForInstalledPlugin(libraryItems, plugin).length > 0;
 }
+
+/** Plugin file path from synced site meta for a WordPress directory slug. */
+export function installedPluginFileForSlug(
+  plugins: WordPressPlugin[],
+  slug: string,
+): string | undefined {
+  const target = slug.trim().toLowerCase();
+  if (!target) return undefined;
+  for (const p of plugins) {
+    const dir = pluginDirectorySlug(p.plugin).toLowerCase();
+    if (dir === target && p.plugin?.trim()) return p.plugin.trim();
+  }
+  return undefined;
+}

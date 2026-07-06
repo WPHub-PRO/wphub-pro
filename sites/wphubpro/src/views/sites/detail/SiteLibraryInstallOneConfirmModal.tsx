@@ -3,7 +3,11 @@ import {
   filterLibraryItemsBySlugAndType,
   planLibraryBridgeInstall,
   runLibraryBridgeInstallOnSite,
+  withInstalledPluginFileOnPlan,
 } from '@/domains/library';
+import { parsePluginsMeta } from '@/domains/sites/installedMeta';
+import { installedPluginFileForSlug } from '@/domains/sites/installedPluginLibraryMatch';
+import { useSite } from '@/domains/sites';
 import { useAuth } from '@/domains/auth';
 import { useNotificationContext } from '@/context/useNotificationContext';
 import { getWpPluginInfo, getWpThemeInfo } from '@/services/wordpress';
@@ -43,6 +47,9 @@ const SiteLibraryInstallOneConfirmModal = ({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { showNotification } = useNotificationContext();
+
+  const { data: site } = useSite(siteId);
+  const installedPlugins = useMemo(() => parsePluginsMeta(site?.pluginsMeta), [site?.pluginsMeta]);
 
   const groupItems = useMemo(
     () => (slug ? filterLibraryItemsBySlugAndType(libraryItems, slug, itemKind) : []),
@@ -113,9 +120,17 @@ const SiteLibraryInstallOneConfirmModal = ({
       return;
     }
 
+    const installPlan =
+      itemKind === 'plugin' && plan.kind === 'plugin-install-from-library'
+        ? withInstalledPluginFileOnPlan(
+            plan,
+            installedPluginFileForSlug(installedPlugins, slug),
+          )
+        : plan;
+
     setInstallBridgeRunning(true);
     try {
-      const result = await runLibraryBridgeInstallOnSite(siteId, plan);
+      const result = await runLibraryBridgeInstallOnSite(siteId, installPlan);
       if (result.ok) {
         showNotification({ title: 'Install', message: result.message, variant: 'success' });
         if (user?.$id) {
