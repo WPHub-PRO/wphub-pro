@@ -8,6 +8,7 @@ export * from './queries';
 export * from './queryKeys';
 export * from './hooks';
 export * from './installedMeta';
+export * from './installedLibraryUpdate';
 export * from './installedPluginLibraryMatch';
 export * from './installedThemeLibraryMatch';
 export * from './themeActivateFromSite';

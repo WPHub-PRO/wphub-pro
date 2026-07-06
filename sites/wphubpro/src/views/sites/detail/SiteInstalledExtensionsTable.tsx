@@ -9,7 +9,15 @@ import {
   bridgeRowHasPlatformUpdate,
   useBridgePluginPlatformVersion,
 } from '@/domains/bridge/platformBridgeVersion';
-import { formatAvailableUpdate, hasUpdate } from '@/domains/sites/installedMeta';
+import { hasUpdate } from '@/domains/sites/installedMeta';
+import {
+  hasLibraryPluginUpdate,
+  hasLibraryThemeUpdate,
+  pluginHasAvailableUpdate,
+  resolvePluginAvailableUpdateVersion,
+  resolveThemeAvailableUpdateVersion,
+  themeHasAvailableUpdate,
+} from '@/domains/sites/installedLibraryUpdate';
 import { findLibraryItemsForInstalledPlugin } from '@/domains/sites/installedPluginLibraryMatch';
 import { findLibraryItemsForInstalledTheme } from '@/domains/sites/installedThemeLibraryMatch';
 import {
@@ -189,7 +197,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         }
         return;
       }
-      if (!hasUpdate(p)) return;
+      if (!hasUpdate(p) && !hasLibraryPluginUpdate(libraryItems, p)) return;
       const forSlug = findLibraryItemsForInstalledPlugin(libraryItems, p);
       if (forSlug.length > 0) {
         setModalPlugin(p);
@@ -295,10 +303,13 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         sortingFn: siteInstalledPluginSortingFn,
         cell: ({ getValue, row }) => {
           const p = row.original;
-          const showUpdate = hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion);
+          const showUpdate =
+            hasUpdate(p) ||
+            bridgeRowHasPlatformUpdate(p, platformBridgeVersion) ||
+            hasLibraryPluginUpdate(libraryItems, p);
           const availableVersion = bridgeRowHasPlatformUpdate(p, platformBridgeVersion)
             ? String(platformBridgeVersion || '').trim() || '—'
-            : formatAvailableUpdate(p.update ?? null);
+            : resolvePluginAvailableUpdateVersion(p, libraryItems);
           const installedVersion = String(getValue() || '').trim();
           const installedLabel = installedVersion ? `v${installedVersion}` : '—';
           const availableLabel =
@@ -453,6 +464,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
       togglingPluginKey,
       togglingTowardActive,
       platformBridgeVersion,
+      libraryItems,
       uninstallingKey,
       updatingKey,
     ],
@@ -523,7 +535,9 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
     if (!selectedPluginsBulk.length) return;
     if (bulkPluginAction === 'update') {
       const eligible = selectedPluginsBulk.filter(
-        (p) => hasUpdate(p) || bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
+        (p) =>
+          pluginHasAvailableUpdate(p, libraryItems) ||
+          bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
       );
       if (!eligible.length) {
         showNotification({
@@ -545,6 +559,7 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
     bulkPluginAction,
     bulkPluginBusy,
     executeBulkPlugins,
+    libraryItems,
     platformBridgeVersion,
     selectedPluginsBulk,
     showNotification,
@@ -780,7 +795,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
 
   const onUpdateClick = useCallback(
     (t: WordPressTheme) => {
-      if (!siteId || !t.stylesheet?.trim() || !hasUpdate(t)) return;
+      if (!siteId || !t.stylesheet?.trim() || (!hasUpdate(t) && !hasLibraryThemeUpdate(libraryItems, t))) return;
       const forSlug = findLibraryItemsForInstalledTheme(libraryItems, t);
       if (forSlug.length > 0) {
         setModalTheme(t);
@@ -878,8 +893,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
         header: 'Version',
         cell: ({ getValue, row }) => {
           const t = row.original;
-          const showUpdate = hasUpdate(t);
-          const availableVersion = formatAvailableUpdate(t.update ?? null);
+          const showUpdate = hasUpdate(t) || hasLibraryThemeUpdate(libraryItems, t);
+          const availableVersion = resolveThemeAvailableUpdateVersion(t, libraryItems);
           const installedVersion = String(getValue() || '').trim();
           const installedLabel = installedVersion ? `v${installedVersion}` : '—';
           const availableLabel =
@@ -1024,6 +1039,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     [
       activatingStylesheet,
       deletingStylesheet,
+      libraryItems,
       onToggleThemeStatus,
       onUpdateClick,
       siteId,
@@ -1095,7 +1111,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     if (!siteId || !bulkThemeAction || bulkThemeBusy) return;
     if (!selectedThemesBulk.length) return;
     if (bulkThemeAction === 'update') {
-      const eligible = selectedThemesBulk.filter((t) => hasUpdate(t));
+      const eligible = selectedThemesBulk.filter((t) => themeHasAvailableUpdate(t, libraryItems));
       if (!eligible.length) {
         showNotification({
           title: 'Update',
@@ -1114,6 +1130,7 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     bulkThemeAction,
     bulkThemeBusy,
     executeBulkThemes,
+    libraryItems,
     selectedThemesBulk,
     showNotification,
     siteId,

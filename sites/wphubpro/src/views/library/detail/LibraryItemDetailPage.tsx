@@ -345,20 +345,6 @@ const LibraryItemDetailPage = () => {
       return;
     }
 
-    const docId = target.libraryDocumentId;
-    const vKey = target.versionKey ?? target.version;
-    if (docId && vKey && target.isDefault !== true) {
-      try {
-        await setLibraryDefaultVersionMutation.mutateAsync({
-          libraryDocumentId: docId,
-          versionKey: vKey,
-          silent: true,
-        });
-      } catch {
-        return;
-      }
-    }
-
     setInstallBridgeRunning(true);
     const siteList = [...installSiteIds];
     const lines: string[] = [];
@@ -882,8 +868,7 @@ const LibraryItemDetailPage = () => {
               })}
             </Form.Select>
             <Form.Text className="d-block mt-1">
-              If this row is not already your library default, we update the default before installing so the bridge
-              matches your choice.
+              The selected version is installed as-is; your library default is not changed.
             </Form.Text>
           </Form.Group>
           {installTargetItem ? (
@@ -906,7 +891,7 @@ const LibraryItemDetailPage = () => {
               {bridgeInstallPlan.kind === 'plugin-install-version'
                 ? `Will install plugin ${bridgeInstallPlan.slug} at version ${bridgeInstallPlan.version} from WordPress.org.`
                 : bridgeInstallPlan.kind === 'plugin-install-from-library'
-                  ? 'Will install the plugin from your uploaded library build (the site downloads an HTTPS ZIP from the Hub).'
+                  ? `Will install the plugin from your uploaded library build (version ${bridgeInstallPlan.version}) on each selected site.`
                   : bridgeInstallPlan.kind === 'plugin-install-zip'
                     ? 'Will install the plugin from your library’s remote HTTPS ZIP URL on the site.'
                     : 'Will install the theme from the resolved ZIP package on each selected site.'}
@@ -986,19 +971,13 @@ const LibraryItemDetailPage = () => {
             disabled={
               installSiteIds.size === 0 ||
               connectedSitesForInstall.length === 0 ||
-              setLibraryDefaultVersionMutation.isPending ||
               installBridgeRunning ||
               bridgeInstallWaitingForWp ||
               bridgeInstallPlan.kind === 'unsupported'
             }
             onClick={() => void installOnSelectedSitesViaBridge()}
           >
-            {setLibraryDefaultVersionMutation.isPending ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Updating default…
-              </>
-            ) : installBridgeRunning ? (
+            {installBridgeRunning ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
                 Installing…

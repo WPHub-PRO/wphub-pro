@@ -6,7 +6,6 @@ import {
 } from '@/domains/library';
 import { useAuth } from '@/domains/auth';
 import { useNotificationContext } from '@/context/useNotificationContext';
-import { useSetLibraryDefaultVersion } from '@/hooks/useLibrary';
 import { getWpPluginInfo, getWpThemeInfo } from '@/services/wordpress';
 import type { LibraryItem, LibraryItemSource } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,7 +43,6 @@ const SiteLibraryInstallOneConfirmModal = ({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { showNotification } = useNotificationContext();
-  const setLibraryDefaultVersionMutation = useSetLibraryDefaultVersion();
 
   const groupItems = useMemo(
     () => (slug ? filterLibraryItemsBySlugAndType(libraryItems, slug, itemKind) : []),
@@ -52,12 +50,16 @@ const SiteLibraryInstallOneConfirmModal = ({
   );
 
   useEffect(() => {
-    if (!show || groupItems.length === 0) {
+    if (!show) {
       setInstallVersionItemId('');
       return;
     }
-    const def = groupItems.find((i) => i.isDefault === true) ?? groupItems[0];
-    setInstallVersionItemId(def?.$id ?? '');
+    if (groupItems.length === 0) return;
+    setInstallVersionItemId((prev) => {
+      if (prev && groupItems.some((i) => i.$id === prev)) return prev;
+      const def = groupItems.find((i) => i.isDefault === true) ?? groupItems[0];
+      return def?.$id ?? '';
+    });
   }, [show, groupItems]);
 
   const { data: wpInfo, isLoading: wpLoading } = useQuery({
@@ -93,7 +95,7 @@ const SiteLibraryInstallOneConfirmModal = ({
   }, [installTargetItem, itemKind, wpLoading, wpThemeLoading]);
 
   const handleClose = () => {
-    if (installBridgeRunning || setLibraryDefaultVersionMutation.isPending) return;
+    if (installBridgeRunning) return;
     onHide();
   };
 
@@ -109,20 +111,6 @@ const SiteLibraryInstallOneConfirmModal = ({
         variant: 'warning',
       });
       return;
-    }
-
-    const docId = target.libraryDocumentId;
-    const vKey = target.versionKey ?? target.version;
-    if (docId && vKey && target.isDefault !== true) {
-      try {
-        await setLibraryDefaultVersionMutation.mutateAsync({
-          libraryDocumentId: docId,
-          versionKey: vKey,
-          silent: true,
-        });
-      } catch {
-        return;
-      }
     }
 
     setInstallBridgeRunning(true);
@@ -158,8 +146,8 @@ const SiteLibraryInstallOneConfirmModal = ({
       onHide={handleClose}
       centered
       scrollable
-      backdrop={installBridgeRunning || setLibraryDefaultVersionMutation.isPending ? 'static' : true}
-      keyboard={!installBridgeRunning && !setLibraryDefaultVersionMutation.isPending}
+      backdrop={installBridgeRunning ? 'static' : true}
+      keyboard={!installBridgeRunning}
     >
       <Modal.Header closeButton>
         <Modal.Title className="fs-lg">Install on this site</Modal.Title>
@@ -201,7 +189,7 @@ const SiteLibraryInstallOneConfirmModal = ({
                 })}
               </Form.Select>
               <Form.Text className="d-block mt-1">
-                If this version is not your library default, we update the default before installing.
+                The selected version is installed as-is; your library default is not changed.
               </Form.Text>
             </Form.Group>
 
@@ -220,7 +208,7 @@ const SiteLibraryInstallOneConfirmModal = ({
                 {bridgeInstallPlan.kind === 'plugin-install-version'
                   ? `Will install plugin ${bridgeInstallPlan.slug} at version ${bridgeInstallPlan.version} from WordPress.org.`
                   : bridgeInstallPlan.kind === 'plugin-install-from-library'
-                    ? 'Will install the plugin from your uploaded library build (the site downloads an HTTPS ZIP from the Hub).'
+                    ? `Will install the plugin from your uploaded library build (version ${bridgeInstallPlan.version}).`
                     : bridgeInstallPlan.kind === 'plugin-install-zip'
                       ? 'Will install the plugin from your library’s remote HTTPS ZIP URL on this site.'
                       : 'Will install the theme from the resolved ZIP package on this site.'}
@@ -239,19 +227,13 @@ const SiteLibraryInstallOneConfirmModal = ({
           disabled={
             groupItems.length === 0 ||
             !installTargetItem ||
-            setLibraryDefaultVersionMutation.isPending ||
             installBridgeRunning ||
             bridgeInstallWaitingForWp ||
             bridgeInstallPlan.kind === 'unsupported'
           }
           onClick={() => void runInstall()}
         >
-          {setLibraryDefaultVersionMutation.isPending ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Updating default…
-            </>
-          ) : installBridgeRunning ? (
+          {installBridgeRunning ? (
             <>
               <Spinner animation="border" size="sm" className="me-2" />
               Installing…

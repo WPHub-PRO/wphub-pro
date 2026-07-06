@@ -66,18 +66,26 @@ async function runOneThemeInstall(
   }
 
   if (libraryItemId && version) {
-    const official = await getResourceItem.resolveThemeLibraryInstallVersion({
-      databases,
-      libraryItemId,
-      routeSlug,
-      log,
-    });
-    if (official.ok) {
-      return {
-        ok: true,
-        row: { slug: official.slug, version: official.version },
-        id: official.slug,
-      };
+    const sourceHint = String(item.source || topLevelBody.source || '')
+      .trim()
+      .toLowerCase();
+    const preferExplicitZip =
+      sourceHint === 'local' || sourceHint === 'remote';
+
+    if (!preferExplicitZip) {
+      const official = await getResourceItem.resolveThemeLibraryInstallVersion({
+        databases,
+        libraryItemId,
+        routeSlug,
+        log,
+      });
+      if (official.ok) {
+        return {
+          ok: true,
+          row: { slug: official.slug, version: official.version },
+          id: official.slug,
+        };
+      }
     }
 
     const zipRes = await getResourceItem.resolveThemeUpdateZipUrl({

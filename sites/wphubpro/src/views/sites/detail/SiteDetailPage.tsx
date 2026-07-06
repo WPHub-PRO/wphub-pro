@@ -11,9 +11,16 @@ import {
   toBulkPluginItemForUpdate,
   toBulkThemeItemForUpdate,
 } from '@/domains/sites/extensionBulkFromSite';
-import { formatAvailableUpdate, hasUpdate, parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
+import { parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
+import {
+  pluginHasAvailableUpdate,
+  resolvePluginAvailableUpdateVersion,
+  resolveThemeAvailableUpdateVersion,
+  themeHasAvailableUpdate,
+} from '@/domains/sites/installedLibraryUpdate';
+import { useLibraryItems } from '@/hooks/useLibrary';
 import type { DocsHelpContextKey } from '@/domains/docs/docsHelpMap'
-import type { Site, WordPressPlugin, WordPressTheme } from '@/types';
+import type { LibraryItem, Site, WordPressPlugin, WordPressTheme } from '@/types';
 import { useLibraryAddItemFlow } from '@/views/library/hooks/useLibraryAddItemFlow';
 import ViewModeToggle, { type LibraryViewMode } from '@/views/library/components/ViewModeToggle';
 import SiteDetailSidebarCard from '@/views/sites/detail/SiteDetailSidebarCard';
@@ -51,6 +58,7 @@ function siteDetailHelpContext(tabIndex: number): DocsHelpContextKey {
 function SiteDetailOverview({
   siteId,
   site,
+  libraryItems,
   pluginsWithUpdates,
   themesWithUpdates,
   pluginTotal,
@@ -59,6 +67,7 @@ function SiteDetailOverview({
 }: {
   siteId: string;
   site: Site;
+  libraryItems: LibraryItem[];
   pluginsWithUpdates: WordPressPlugin[];
   themesWithUpdates: WordPressTheme[];
   pluginTotal: number;
@@ -208,7 +217,9 @@ function SiteDetailOverview({
                                       </td>
                                       <td className="text-muted fs-xs text-nowrap">{p.version || '—'}</td>
                                       <td className="fs-xs">
-                                        <span className="badge badge-soft-warning fs-xxs">{formatAvailableUpdate(p.update)}</span>
+                                        <span className="badge badge-soft-warning fs-xxs">
+                                          {resolvePluginAvailableUpdateVersion(p, libraryItems)}
+                                        </span>
                                       </td>
                                     </tr>
                                   ))}
@@ -241,7 +252,7 @@ function SiteDetailOverview({
                                       <td className="text-muted fs-xs text-nowrap">{t.version || '—'}</td>
                                       <td className="fs-xs">
                                         <span className="badge badge-soft-warning fs-xxs">
-                                          {formatAvailableUpdate(t.update ?? null)}
+                                          {resolveThemeAvailableUpdateVersion(t, libraryItems)}
                                         </span>
                                       </td>
                                     </tr>
@@ -336,11 +347,18 @@ const SiteDetailPage = () => {
 
   useSitesStatusPoll(siteId && enabled ? [siteId] : []);
 
+  const { data: libraryItems = [] } = useLibraryItems();
   const plugins = useMemo(() => parsePluginsMeta(site?.pluginsMeta), [site?.pluginsMeta]);
   const themes = useMemo(() => parseThemesMeta(site?.themesMeta), [site?.themesMeta]);
 
-  const pluginsWithUpdates = useMemo(() => plugins.filter(hasUpdate), [plugins]);
-  const themesWithUpdates = useMemo(() => themes.filter(hasUpdate), [themes]);
+  const pluginsWithUpdates = useMemo(
+    () => plugins.filter((p) => pluginHasAvailableUpdate(p, libraryItems)),
+    [plugins, libraryItems],
+  );
+  const themesWithUpdates = useMemo(
+    () => themes.filter((t) => themeHasAvailableUpdate(t, libraryItems)),
+    [themes, libraryItems],
+  );
 
   const pluginRows = useMemo(() => plugins.map((item) => ({ kind: 'plugin' as const, item })), [plugins]);
   const themeRows = useMemo(() => themes.map((item) => ({ kind: 'theme' as const, item })), [themes]);
@@ -464,6 +482,7 @@ const SiteDetailPage = () => {
                 <SiteDetailOverview
                   siteId={site.$id}
                   site={site}
+                  libraryItems={libraryItems}
                   pluginsWithUpdates={pluginsWithUpdates}
                   themesWithUpdates={themesWithUpdates}
                   pluginTotal={plugins.length}
