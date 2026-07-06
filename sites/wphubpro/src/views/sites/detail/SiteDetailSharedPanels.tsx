@@ -70,6 +70,23 @@ function LogStatusCell({ status, label }: { status: BulkLogRowStatus; label: str
       <TbCircleX className="text-danger flex-shrink-0" size={16} aria-hidden />
     ) : null;
 
+  if (status === 'success') {
+    return (
+      <span className="d-inline-flex align-items-center justify-content-end" aria-label={label} title={label}>
+        {icon}
+      </span>
+    );
+  }
+
+  if (status === 'partial') {
+    return (
+      <span className="d-inline-flex align-items-center justify-content-end gap-1">
+        <span>{label}</span>
+        {icon}
+      </span>
+    );
+  }
+
   return (
     <span className="d-inline-flex align-items-center justify-content-end gap-1">
       {icon}
