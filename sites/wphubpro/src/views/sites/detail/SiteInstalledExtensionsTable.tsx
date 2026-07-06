@@ -23,6 +23,7 @@ import {
   runPluginsBulkForSite,
   runThemesBulkForSite,
   toBulkPluginItem,
+  toBulkPluginItemForUpdate,
   toBulkThemeItem,
   toBulkThemeItemForUpdate,
   type PluginsBulkAction,
@@ -485,10 +486,10 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
   const executeBulkPlugins = useCallback(
     async (pluginsList: WordPressPlugin[], action: PluginsBulkAction) => {
       if (!siteId) return;
-      let items = pluginsList.map((p) => toBulkPluginItem(p));
-      if (action === 'update') {
-        items = items.map((i) => ({ ...i, version: '' }));
-      }
+      const items =
+        action === 'update'
+          ? pluginsList.map(toBulkPluginItemForUpdate)
+          : pluginsList.map((p) => toBulkPluginItem(p));
       setBulkPluginBusy(true);
       try {
         const res = await runPluginsBulkForSite(siteId, action, items);

@@ -3,7 +3,14 @@ import PageBreadcrumb from '@/components/PageBreadcrumb.tsx';
 import { ContactSupportButton } from '@/components/support/ContactSupportButton';
 import { TabNavLabel } from '@/components/TabNavLabel';
 import { useNotificationContext } from '@/context/useNotificationContext';
+import { useAuth } from '@/domains/auth';
 import { useSite, useRequestSiteHealthRefresh, useSitesStatusPoll } from '@/domains/sites';
+import {
+  runPluginsBulkForSite,
+  runThemesBulkForSite,
+  toBulkPluginItemForUpdate,
+  toBulkThemeItemForUpdate,
+} from '@/domains/sites/extensionBulkFromSite';
 import { formatAvailableUpdate, hasUpdate, parsePluginsMeta, parseThemesMeta } from '@/domains/sites/installedMeta';
 import type { DocsHelpContextKey } from '@/domains/docs/docsHelpMap'
 import type { Site, WordPressPlugin, WordPressTheme } from '@/types';
@@ -17,8 +24,9 @@ import { SiteInstalledPluginsTable, SiteInstalledThemesTable } from '@/views/sit
 import { SiteDetailHealthPanel, SiteDetailLogsPanel } from '@/views/sites/detail/SiteDetailSharedPanels';
 import { SiteHealthTabStatusBadge } from '@/views/sites/detail/SiteHealthTabStatusBadge';
 import { SITE_DETAIL_TAB_CONFIG } from '@/views/sites/detail/siteDetailNavTabs';
-import { useEffect, useMemo, useState } from 'react';
-import { TbStethoscope } from 'react-icons/tb';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { TbProgressBolt, TbStethoscope } from 'react-icons/tb';
 import { Button, Card, CardBody, Col, Container, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
 import { Link, useParams, useSearchParams } from 'react-router';
 
@@ -41,6 +49,7 @@ function siteDetailHelpContext(tabIndex: number): DocsHelpContextKey {
 }
 
 function SiteDetailOverview({
+  siteId,
   site,
   pluginsWithUpdates,
   themesWithUpdates,
@@ -48,6 +57,7 @@ function SiteDetailOverview({
   themeTotal,
   onGoHealth,
 }: {
+  siteId: string;
   site: Site;
   pluginsWithUpdates: WordPressPlugin[];
   themesWithUpdates: WordPressTheme[];
@@ -55,10 +65,62 @@ function SiteDetailOverview({
   themeTotal: number;
   onGoHealth: () => void;
 }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationContext();
   const healthOk = site.healthStatus === 'healthy';
   const nPlugins = pluginsWithUpdates.length;
   const nThemes = themesWithUpdates.length;
   const [updatesTab, setUpdatesTab] = useState<'plugins' | 'themes'>('plugins');
+  const [updatesBusy, setUpdatesBusy] = useState(false);
+
+  const activeUpdateCount = updatesTab === 'plugins' ? nPlugins : nThemes;
+
+  const onUpdateAll = useCallback(async () => {
+    if (!siteId || updatesBusy || activeUpdateCount === 0) return;
+    setUpdatesBusy(true);
+    try {
+      const res =
+        updatesTab === 'plugins'
+          ? await runPluginsBulkForSite(
+              siteId,
+              'update',
+              pluginsWithUpdates.map(toBulkPluginItemForUpdate),
+            )
+          : await runThemesBulkForSite(
+              siteId,
+              'update',
+              themesWithUpdates.map(toBulkThemeItemForUpdate),
+            );
+      const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
+      if (res.ok) {
+        showNotification({
+          title: 'Update',
+          message: res.message,
+          variant: partial ? 'warning' : 'success',
+        });
+        void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+        if (user?.$id) {
+          void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
+          void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
+        }
+      } else {
+        showNotification({ title: 'Update', message: res.message, variant: 'danger' });
+      }
+    } finally {
+      setUpdatesBusy(false);
+    }
+  }, [
+    activeUpdateCount,
+    pluginsWithUpdates,
+    queryClient,
+    showNotification,
+    siteId,
+    themesWithUpdates,
+    updatesBusy,
+    updatesTab,
+    user?.$id,
+  ]);
 
   return (
     <>
@@ -66,9 +128,33 @@ function SiteDetailOverview({
         <Col xs={12} md={6} className="d-flex flex-column gap-3 min-h-0 h-100">
           <Card className="flex-grow-1 w-100 border shadow-none d-flex flex-column min-h-0">
             <CardBody className="d-flex flex-column h-100 min-w-0">
-              <div className="mb-2">
-                <p className="text-muted fs-xs text-uppercase fw-semibold mb-0">Updates needed</p>
-                <p className="text-muted fs-xxs mb-0">Plugins and themes with an available update from the last sync</p>
+              <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <p className="text-muted fs-xs text-uppercase fw-semibold mb-0">Updates needed</p>
+                  <p className="text-muted fs-xxs mb-0">
+                    Plugins and themes with an available update from the last sync
+                  </p>
+                </div>
+                {activeUpdateCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="d-inline-flex align-items-center gap-1 flex-shrink-0"
+                    disabled={!siteId || updatesBusy}
+                    aria-busy={updatesBusy}
+                    onClick={() => void onUpdateAll()}
+                  >
+                    {updatesBusy ? (
+                      <span className="fs-sm">…</span>
+                    ) : (
+                      <>
+                        <TbProgressBolt className="fs-lg" aria-hidden />
+                        Update all
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               <div className="flex-grow-1 d-flex flex-column min-h-0">
                 <Card className="border-0 shadow-none mb-0 flex-grow-1 d-flex flex-column min-h-0 bg-transparent">
@@ -376,11 +462,12 @@ const SiteDetailPage = () => {
                 <CardBody className="pt-4 pb-4">
               {tab === 0 && (
                 <SiteDetailOverview
+                  siteId={site.$id}
                   site={site}
-                      pluginsWithUpdates={pluginsWithUpdates}
-                      themesWithUpdates={themesWithUpdates}
-                      pluginTotal={plugins.length}
-                      themeTotal={themes.length}
+                  pluginsWithUpdates={pluginsWithUpdates}
+                  themesWithUpdates={themesWithUpdates}
+                  pluginTotal={plugins.length}
+                  themeTotal={themes.length}
                   onGoHealth={() => setTabKey('health')}
                 />
               )}
