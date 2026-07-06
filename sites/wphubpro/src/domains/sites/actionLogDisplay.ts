@@ -6,6 +6,8 @@ export type ActionAuditLine = {
   dateTime: string;
   extensionName: string;
   kind: 'plugin' | 'theme';
+  /** Present-tense manage verb: activate, deactivate, update, install, delete */
+  action: string;
   actionLabel: string;
   failed: boolean;
 };
@@ -48,6 +50,13 @@ function kindFromEntry(entry: ActionLogEntry): 'plugin' | 'theme' {
 
 function kindFromEndpoint(endpoint: string): 'plugin' | 'theme' {
   return endpoint.toLowerCase().includes('themes/') ? 'theme' : 'plugin';
+}
+
+/** Present-tense manage verb for tables (activate, update, install, …). */
+function normalizeManageAction(action: string): string {
+  const a = action.toLowerCase().trim();
+  if (a === 'install-from-zip' || a === 'install-version') return 'install';
+  return a;
 }
 
 /** Past-tense verb shown in the UI (bridge uses present-tense action names). */
@@ -142,6 +151,7 @@ function auditLineFromEntry(entry: ActionLogEntry, index: number): ActionAuditLi
     dateTime: formatActionTimestamp(entry.timestamp),
     extensionName,
     kind,
+    action: normalizeManageAction(entry.action),
     actionLabel: verb,
     failed: entryFailed(entry),
   };

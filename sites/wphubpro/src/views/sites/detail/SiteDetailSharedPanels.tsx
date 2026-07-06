@@ -1,5 +1,14 @@
 import { parseActionLogForAudit, useSiteUptimeMonitor } from '@/domains/sites';
 import {
+  actionLogResultItem,
+  actionLogRowStatus,
+  findOutgoingDurationForAudit,
+  formatLogDurationSeconds,
+  parseBulkLogResponse,
+  type BulkLogRowStatus,
+  type BulkResultItem,
+} from '@/domains/sites/logRowStatus';
+import {
   buildUptimeBarsForIncidents,
   last24HourBarWindowStats,
   uptimeWindowStatsFromIncidents,
@@ -8,18 +17,86 @@ import { getChecksForDashboard, parseSiteHealthMeta, severityTotalsForChecks } f
 import type { Site, SiteHealthSeverity } from '@/types';
 import SiteUptimeBars from '@/components/sites/SiteUptimeBars';
 import UptimeIncidentsTable from '@/components/sites/UptimeIncidentsTable';
-import SiteActionHistoryList from '@/views/sites/detail/SiteActionHistoryList';
 import { SiteHealthAiAgentModal } from '@/views/sites/detail/SiteHealthAiAgentModal';
 import SiteHealthMetaPanel from '@/views/sites/detail/SiteHealthMetaPanel';
 import { formatChecked, formatSiteHealthCheckedOn } from '@/views/sites/detail/siteDetailFormat';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, CardBody, Col, Nav, Row, Spinner, Tab, Table } from 'react-bootstrap';
-import { TbSparkles } from 'react-icons/tb';
+import { TbAlertTriangle, TbCircleCheck, TbCircleX, TbSparkles } from 'react-icons/tb';
 import { useSearchParams } from 'react-router';
 
 export { formatChecked } from '@/views/sites/detail/siteDetailFormat';
 
 type OutgoingLogRow = NonNullable<Site['logData']>['outgoing'][number];
+
+function logTimeMs(time: string | undefined): number {
+  if (!time) return 0;
+  const ms = Date.parse(time);
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+/** Newest log entries first (for SiteDetail → Logs tables). */
+function sortLogRowsNewestFirst<T extends { time?: string }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => logTimeMs(b.time) - logTimeMs(a.time));
+}
+
+function parseOutgoingLogDisplay(endpoint: string): { type: string; action: string } {
+  const path = endpoint.trim().toLowerCase();
+  const manageMatch = path.match(/\/(plugins|themes)\/manage\/([^/?]+)/);
+  if (manageMatch) {
+    return {
+      type: manageMatch[1] === 'themes' ? 'theme' : 'plugin',
+      action: manageMatch[2],
+    };
+  }
+  if (path.includes('/themes/')) {
+    const segment = path.split('/').filter(Boolean).pop();
+    return { type: 'theme', action: segment ?? '—' };
+  }
+  if (path.includes('/plugins/')) {
+    const segment = path.split('/').filter(Boolean).pop();
+    return { type: 'plugin', action: segment ?? '—' };
+  }
+  return { type: '—', action: endpoint || '—' };
+}
+
+function LogStatusCell({ status, label }: { status: BulkLogRowStatus; label: string }) {
+  const icon =
+    status === 'success' ? (
+      <TbCircleCheck className="text-success flex-shrink-0" size={16} aria-hidden />
+    ) : status === 'partial' ? (
+      <TbAlertTriangle className="text-warning flex-shrink-0" size={16} aria-hidden />
+    ) : status === 'failure' ? (
+      <TbCircleX className="text-danger flex-shrink-0" size={16} aria-hidden />
+    ) : null;
+
+  return (
+    <span className="d-inline-flex align-items-center justify-content-end gap-1">
+      {icon}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function LogItemsCell({ items }: { items: BulkResultItem[] }) {
+  if (items.length === 0) {
+    return <span className="text-muted fs-xs">—</span>;
+  }
+
+  return (
+    <div className="d-flex flex-wrap align-items-center gap-1">
+      {items.map((item, index) => (
+        <span
+          key={`${item.id}-${index}`}
+          className={`badge fs-xxs ${item.ok ? 'badge-soft-success' : 'badge-soft-danger'}`}
+          title={item.id}
+        >
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /** e.g. `18h, 12m, 29s` — omits zero units except `0s` when there is no downtime. */
 function formatDowntimeHmsCommaSeparated(ms: number): string {
@@ -309,8 +386,14 @@ export function SiteDetailHealthPanel({ site }: { site: Site }) {
 }
 
 export function SiteDetailLogsPanel({ site }: { site: Site }) {
-  const outgoing = site.logData?.outgoing ?? [];
-  const incoming = site.logData?.incoming ?? [];
+  const outgoing = useMemo(
+    () => sortLogRowsNewestFirst(site.logData?.outgoing ?? []),
+    [site.logData?.outgoing],
+  );
+  const incoming = useMemo(
+    () => sortLogRowsNewestFirst(site.logData?.incoming ?? []),
+    [site.logData?.incoming],
+  );
   const auditLines = useMemo(() => parseActionLogForAudit(site.actionLog), [site.actionLog]);
 
   return (
@@ -324,20 +407,34 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
                 <thead className="bg-light align-middle bg-opacity-25 thead-sm">
                   <tr className="text-uppercase fs-xxs">
                     <th>Time</th>
-                    <th>Method</th>
-                    <th>Endpoint</th>
+                    <th>Duration</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                    <th>Items</th>
                     <th className="text-end">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {outgoing.map((row: OutgoingLogRow, i: number) => (
+                  {outgoing.map((row: OutgoingLogRow, i: number) => {
+                    const { type, action } = parseOutgoingLogDisplay(row.endpoint);
+                    const parsed = parseBulkLogResponse(row.response);
+                    return (
                     <tr key={`${row.time}-${i}`}>
                       <td className="text-muted fs-xs text-nowrap">{formatChecked(row.time)}</td>
-                      <td className="fs-xs">{row.method}</td>
-                      <td className="fs-xs text-break">{row.endpoint}</td>
-                      <td className="text-end fs-xs">{row.statusCode}</td>
+                      <td className="text-muted fs-xs text-nowrap font-monospace">
+                        {formatLogDurationSeconds(row.duration)}
+                      </td>
+                      <td className="fs-xs">{type}</td>
+                      <td className="fs-xs text-break">{action}</td>
+                      <td className="fs-xs">
+                        <LogItemsCell items={parsed.items} />
+                      </td>
+                      <td className="text-end fs-xs">
+                        <LogStatusCell status={parsed.status.status} label={parsed.status.label} />
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </Table>
             </div>
@@ -377,11 +474,52 @@ export function SiteDetailLogsPanel({ site }: { site: Site }) {
           <p className="text-muted fs-xs mb-3">
             Same list as the sidebar — date, extension name, type, and what happened (including failed attempts).
           </p>
-          <SiteActionHistoryList
-            lines={auditLines}
-            emptyText="No plugin or theme actions recorded."
-            variant="panel-light"
-          />
+          {auditLines.length === 0 ? (
+            <p className="text-muted mb-0 fs-xs">No plugin or theme actions recorded.</p>
+          ) : (
+            <div className="table-responsive border rounded">
+              <Table hover size="sm" className="table table-custom table-centered table-nowrap mb-0 align-middle">
+                <thead className="bg-light align-middle bg-opacity-25 thead-sm">
+                  <tr className="text-uppercase fs-xxs">
+                    <th>Time</th>
+                    <th>Duration</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                    <th>Items</th>
+                    <th className="text-end">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLines.map((line) => {
+                    const statusInfo = actionLogRowStatus(line.failed);
+                    const items = [actionLogResultItem(line.extensionName, line.failed)];
+                    const durationSec = findOutgoingDurationForAudit(
+                      outgoing,
+                      line.kind,
+                      line.action,
+                      line.atMs,
+                    );
+                    return (
+                    <tr key={line.id}>
+                      <td className="text-muted fs-xs text-nowrap">{line.dateTime}</td>
+                      <td className="text-muted fs-xs text-nowrap font-monospace">
+                        {formatLogDurationSeconds(durationSec)}
+                      </td>
+                      <td className="fs-xs">{line.kind}</td>
+                      <td className="fs-xs">{line.action}</td>
+                      <td className="fs-xs">
+                        <LogItemsCell items={items} />
+                      </td>
+                      <td className="text-end fs-xs">
+                        <LogStatusCell status={statusInfo.status} label={statusInfo.label} />
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </div>
+          )}
         </CardBody>
       </Card>
 
