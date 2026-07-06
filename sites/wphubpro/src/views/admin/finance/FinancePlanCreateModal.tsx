@@ -51,7 +51,7 @@ const FinancePlanCreateModal = ({ show, onHide, defaultPlanType }: FinancePlanCr
   const submit = async () => {
     const name = form.name?.trim() ?? ''
     if (!name) {
-      showNotification({ title: 'Plan', message: 'Name is required.', variant: 'warning', delay: 4000 })
+      showNotification({ title: 'Plan', message: 'Name is required.', variant: 'warning' })
       return
     }
     if (planType === 'team plan') {
@@ -61,7 +61,6 @@ const FinancePlanCreateModal = ({ show, onHide, defaultPlanType }: FinancePlanCr
           title: 'Team plan',
           message: 'Enter the number of seats included for a team plan.',
           variant: 'warning',
-          delay: 5000,
         })
         return
       }
@@ -81,7 +80,7 @@ const FinancePlanCreateModal = ({ show, onHide, defaultPlanType }: FinancePlanCr
             : undefined,
       }
       const { productId } = await createMut.mutateAsync(payload)
-      showNotification({ title: 'Created', message: 'Plan was created in Stripe.', variant: 'success', delay: 3000 })
+      showNotification({ title: 'Created', message: 'Plan was created in Stripe.', variant: 'success' })
       onHide()
       navigate(ROUTE_PATHS.adminFinancePlanPath(productId))
     } catch (e) {
@@ -89,7 +88,6 @@ const FinancePlanCreateModal = ({ show, onHide, defaultPlanType }: FinancePlanCr
         title: 'Create failed',
         message: e instanceof Error ? e.message : 'Unknown error',
         variant: 'danger',
-        delay: 6000,
       })
     }
   }

@@ -92,9 +92,9 @@ const FinancePlanDetailPage = () => {
   }
 
   const notifyOk = (t: string, m: string) =>
-    showNotification({ title: t, message: m, variant: 'success', delay: 3000 })
+    showNotification({ title: t, message: m, variant: 'success' })
   const notifyErr = (t: string, m: string) =>
-    showNotification({ title: t, message: m, variant: 'danger', delay: 5000 })
+    showNotification({ title: t, message: m, variant: 'danger' })
 
   const patchForm = useCallback((patch: Partial<FinancePlanDetailSettingsForm>) => {
     setForm((f) => ({ ...f, ...patch }))

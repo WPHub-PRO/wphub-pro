@@ -12,6 +12,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
 import Modal from '@/components/ui/AppModal'
+import {
+  extensionInstallBlockedToast,
+  extensionInstallToast,
+  resolveInstallTargetVersion,
+} from '@/views/sites/detail/siteExtensionToastFeedback';
 
 function sourceLabel(source: LibraryItemSource): string {
   if (source === 'official') return 'WordPress.org';
@@ -105,19 +110,18 @@ const SiteLibraryInstallOneConfirmModal = ({
 
     const plan = planLibraryBridgeInstall(target, itemKind, slug, wpInfo, wpThemeInfo);
     if (plan.kind === 'unsupported') {
-      showNotification({
-        title: 'Cannot install from Hub',
-        message: plan.message,
-        variant: 'warning',
-      });
+      const toast = extensionInstallBlockedToast(itemKind, plan.message);
+      showNotification({ ...toast, variant: 'warning' });
       return;
     }
 
     setInstallBridgeRunning(true);
+    const installVersion = resolveInstallTargetVersion(target, itemKind, wpInfo, wpThemeInfo);
     try {
       const result = await runLibraryBridgeInstallOnSite(siteId, plan);
       if (result.ok) {
-        showNotification({ title: 'Install', message: result.message, variant: 'success' });
+        const toast = extensionInstallToast(itemKind, displayName, true, undefined, installVersion);
+        showNotification({ ...toast, variant: 'success' });
         if (user?.$id) {
           void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
@@ -125,14 +129,17 @@ const SiteLibraryInstallOneConfirmModal = ({
         }
         onHide();
       } else {
-        showNotification({ title: 'Install failed', message: result.message, variant: 'danger' });
+        const toast = extensionInstallToast(itemKind, displayName, false, result.message);
+        showNotification({ ...toast, variant: 'danger' });
       }
     } catch (e) {
-      showNotification({
-        title: 'Install failed',
-        message: e instanceof Error ? e.message : String(e),
-        variant: 'danger',
-      });
+      const toast = extensionInstallToast(
+        itemKind,
+        displayName,
+        false,
+        e instanceof Error ? e.message : String(e),
+      );
+      showNotification({ ...toast, variant: 'danger' });
     } finally {
       setInstallBridgeRunning(false);
     }

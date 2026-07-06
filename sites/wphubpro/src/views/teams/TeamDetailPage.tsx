@@ -392,7 +392,6 @@ export default function TeamDetailPage() {
                         title: 'Workspace',
                         message: functionErrorMessage(err),
                         variant: 'danger',
-                        delay: 4000,
                       });
                     }
                   }
@@ -403,7 +402,6 @@ export default function TeamDetailPage() {
                     title: 'Leave team',
                     message: functionErrorMessage(err),
                     variant: 'danger',
-                    delay: 5000,
                   });
                 },
               });
@@ -453,7 +451,6 @@ export default function TeamDetailPage() {
                     title: 'Team',
                     message: 'Ownership transferred.',
                     variant: 'success',
-                    delay: 4000,
                   });
                 },
                 onError: (err: unknown) => {
@@ -461,7 +458,6 @@ export default function TeamDetailPage() {
                     title: 'Transfer ownership',
                     message: functionErrorMessage(err),
                     variant: 'danger',
-                    delay: 5000,
                   });
                 },
               });
@@ -504,7 +500,6 @@ export default function TeamDetailPage() {
                         title: 'Workspace',
                         message: functionErrorMessage(err),
                         variant: 'danger',
-                        delay: 4000,
                       });
                     }
                   }
@@ -515,7 +510,6 @@ export default function TeamDetailPage() {
                     title: 'Delete team',
                     message: functionErrorMessage(err),
                     variant: 'danger',
-                    delay: 5000,
                   });
                 },
               });

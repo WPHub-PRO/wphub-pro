@@ -65,7 +65,6 @@ export default function SupportTicketCreatePage() {
             title: 'Ticket created',
             message: 'We will get back to you as soon as possible.',
             variant: 'success',
-            delay: 4000,
           });
           if (id) {
             navigate(ROUTE_PATHS.supportTicketPath(id), { replace: true });
@@ -78,7 +77,6 @@ export default function SupportTicketCreatePage() {
             title: 'Could not create ticket',
             message: err instanceof Error ? err.message : 'Please try again.',
             variant: 'danger',
-            delay: 6000,
           });
         },
       }

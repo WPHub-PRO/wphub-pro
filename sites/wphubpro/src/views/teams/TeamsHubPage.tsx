@@ -82,7 +82,7 @@ export default function TeamsHubPage() {
         navigate(ROUTE_PATHS.teamPath(id));
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Could not switch workspace.';
-        showNotification({ title: 'Workspace', message: msg, variant: 'danger', delay: 4000 });
+        showNotification({ title: 'Workspace', message: msg, variant: 'danger' });
       }
     },
     [

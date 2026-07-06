@@ -215,7 +215,6 @@ export function SubscriptionBillingPanel({
         title: 'Success',
         message: 'Your subscription has been updated.',
         variant: 'success',
-        delay: 4000,
       });
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
@@ -228,7 +227,6 @@ export function SubscriptionBillingPanel({
         title: 'Canceled',
         message: 'Checkout was canceled.',
         variant: 'light',
-        delay: 4000,
       });
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
@@ -343,7 +341,6 @@ export function SubscriptionBillingPanel({
         title: 'Plan',
         message: 'Could not resolve the selected price.',
         variant: 'danger',
-        delay: 4000,
       });
       return;
     }
@@ -1147,7 +1144,6 @@ export function SubscriptionBillingPanel({
             title: 'Payment successful',
             message: 'Your payment was processed.',
             variant: 'success',
-            delay: 4000,
           });
           setPayIntent(null);
         }}

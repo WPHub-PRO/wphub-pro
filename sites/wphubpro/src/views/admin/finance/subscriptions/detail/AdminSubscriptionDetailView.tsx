@@ -45,9 +45,9 @@ const AdminSubscriptionDetailView = () => {
   const actionMut = useAdminSubscriptionAction()
 
   const notifyOk = (title: string, message: string) =>
-    showNotification({ title, message, variant: 'success', delay: 3500 })
+    showNotification({ title, message, variant: 'success' })
   const notifyErr = (title: string, message: string) =>
-    showNotification({ title, message, variant: 'danger', delay: 6000 })
+    showNotification({ title, message, variant: 'danger' })
 
   const runAction = (label: string, fn: () => ReturnType<typeof actionMut.mutateAsync>) => {
     void fn()

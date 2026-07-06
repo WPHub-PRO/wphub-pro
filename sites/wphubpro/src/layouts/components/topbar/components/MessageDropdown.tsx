@@ -104,7 +104,6 @@ const MessageDropdown = () => {
                                 title: 'Notifications',
                                 message: markReadErrorMessage(error),
                                 variant: 'danger',
-                                delay: 5000,
                               })
                             },
                           })

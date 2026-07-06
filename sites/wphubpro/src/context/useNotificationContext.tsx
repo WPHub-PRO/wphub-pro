@@ -4,6 +4,8 @@ import { ToastBody, ToastHeader } from 'react-bootstrap'
 import Toast, {type  ToastProps } from 'react-bootstrap/Toast'
 import ToastContainer from 'react-bootstrap/ToastContainer'
 
+export const DEFAULT_TOAST_DELAY_MS = 30_000
+
 type ShowNotificationType = {
   title?: string
   message: string
@@ -50,7 +52,7 @@ export function NotificationProvider({ children }: ChildrenType) {
     show: false,
     message: '',
     title: '',
-    delay: 2000,
+    delay: DEFAULT_TOAST_DELAY_MS,
   })
 
   const hideNotification = useCallback(() => {
@@ -58,7 +60,7 @@ export function NotificationProvider({ children }: ChildrenType) {
   }, [])
 
   const showNotification = useCallback(
-    ({ title, message, variant, delay = 2000 }: ShowNotificationType) => {
+    ({ title, message, variant, delay = DEFAULT_TOAST_DELAY_MS }: ShowNotificationType) => {
       setConfig({
         show: true,
         title,

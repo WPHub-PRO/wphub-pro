@@ -107,7 +107,7 @@ export default function WorkspaceSwitcher({ placement = 'sidebar' }: WorkspaceSw
               setMode('user');
               void setWs.mutateAsync(null).catch((err: unknown) => {
                 const msg = err instanceof Error ? err.message : 'Could not switch workspace.';
-                showNotification({ title: 'Workspace', message: msg, variant: 'danger', delay: 4000 });
+                showNotification({ title: 'Workspace', message: msg, variant: 'danger' });
               });
             }}
             disabled={setWs.isPending}
@@ -134,7 +134,7 @@ export default function WorkspaceSwitcher({ placement = 'sidebar' }: WorkspaceSw
                   setMode('user');
                   void setWs.mutateAsync(id).catch((err: unknown) => {
                     const msg = err instanceof Error ? err.message : 'Could not switch workspace.';
-                    showNotification({ title: 'Workspace', message: msg, variant: 'danger', delay: 4000 });
+                    showNotification({ title: 'Workspace', message: msg, variant: 'danger' });
                   });
                 }}
                 disabled={setWs.isPending}

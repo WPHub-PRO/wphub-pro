@@ -64,6 +64,15 @@ import type { MouseEvent } from 'react';
 import PluginUpdateSourceModal from '@/views/sites/detail/PluginUpdateSourceModal';
 import ThemeUpdateSourceModal from '@/views/sites/detail/ThemeUpdateSourceModal';
 import SiteExtensionRemoveConfirmModal from '@/views/sites/detail/SiteExtensionRemoveConfirmModal';
+import {
+  noExtensionUpdatesToast,
+  pluginActionToast,
+  pluginsBulkToast,
+  resolvePluginUpdateTargetVersion,
+  resolveThemeUpdateTargetVersion,
+  themeActionToast,
+  themesBulkToast,
+} from '@/views/sites/detail/siteExtensionToastFeedback';
 
 const pluginHelper = createColumnHelper<WordPressPlugin>();
 const themeHelper = createColumnHelper<WordPressTheme>();
@@ -124,30 +133,40 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
       if (!siteId) return;
       setUpdatingKey(plugin.plugin);
       try {
+        const targetVersion = resolvePluginUpdateTargetVersion(
+          plugin,
+          choice,
+          libraryItems,
+          platformBridgeVersion,
+        );
         const res = await runPluginUpdateForSite(siteId, plugin, choice);
         if (res.ok) {
-          showNotification({ title: 'Update', message: res.message, variant: 'success' });
+          const toast = pluginActionToast('update', plugin, true, undefined, targetVersion);
+          showNotification({ ...toast, variant: 'success' });
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
           if (user?.$id) {
             void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
             void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
           }
         } else {
-          showNotification({ title: 'Update failed', message: res.message, variant: 'danger' });
+          const toast = pluginActionToast('update', plugin, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Update failed',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = pluginActionToast(
+          'update',
+          plugin,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setUpdatingKey(null);
         setShowSourceModal(false);
         setModalPlugin(null);
       }
     },
-    [queryClient, showNotification, siteId, user?.$id],
+    [libraryItems, platformBridgeVersion, queryClient, showNotification, siteId, user?.$id],
   );
 
   const onTogglePluginStatus = useCallback(
@@ -160,25 +179,25 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           ? await runPluginActivateForSite(siteId, plugin.plugin)
           : await runPluginDeactivateForSite(siteId, plugin.plugin);
         if (res.ok) {
-          showNotification({
-            title: wantActive ? 'Activated' : 'Deactivated',
-            message: res.message,
-            variant: 'success',
-          });
+          const toast = pluginActionToast(wantActive ? 'activate' : 'deactivate', plugin, true);
+          showNotification({ ...toast, variant: 'success' });
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
           if (user?.$id) {
             void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
             void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
           }
         } else {
-          showNotification({ title: 'Plugin status', message: res.message, variant: 'danger' });
+          const toast = pluginActionToast(wantActive ? 'activate' : 'deactivate', plugin, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Plugin status',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = pluginActionToast(
+          wantActive ? 'activate' : 'deactivate',
+          plugin,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setTogglingPluginKey(null);
         setTogglingTowardActive(null);
@@ -216,21 +235,25 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
       try {
         const res = await runPluginUninstallForSite(siteId, plugin.plugin);
         if (res.ok) {
-          showNotification({ title: 'Plugin removed', message: res.message, variant: 'success' });
+          const toast = pluginActionToast('remove', plugin, true);
+          showNotification({ ...toast, variant: 'success' });
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
           if (user?.$id) {
             void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
             void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
           }
         } else {
-          showNotification({ title: 'Remove failed', message: res.message, variant: 'danger' });
+          const toast = pluginActionToast('remove', plugin, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Remove failed',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = pluginActionToast(
+          'remove',
+          plugin,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setUninstallingKey(null);
         setRemovePlugin(null);
@@ -507,11 +530,8 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
         const res = await runPluginsBulkForSite(siteId, action, items);
         const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
         if (res.ok) {
-          showNotification({
-            title: action === 'delete' ? 'Removed' : action === 'update' ? 'Update' : 'Plugins',
-            message: res.message,
-            variant: partial ? 'warning' : 'success',
-          });
+          const toast = pluginsBulkToast(action, pluginsList.length, true, partial, res.message);
+          showNotification({ ...toast, variant: partial ? 'warning' : 'success' });
           setRowSelection({});
           setBulkPluginAction('');
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
@@ -520,7 +540,8 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
             void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
           }
         } else {
-          showNotification({ title: 'Bulk action', message: res.message, variant: 'danger' });
+          const toast = pluginsBulkToast(action, pluginsList.length, false, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } finally {
         setBulkPluginBusy(false);
@@ -540,11 +561,8 @@ export function SiteInstalledPluginsTable({ siteId, plugins, emptyMessage }: Sit
           bridgeRowHasPlatformUpdate(p, platformBridgeVersion),
       );
       if (!eligible.length) {
-        showNotification({
-          title: 'Update',
-          message: 'No selected plugins have an available update.',
-          variant: 'warning',
-        });
+        const toast = noExtensionUpdatesToast('plugin');
+        showNotification({ ...toast, variant: 'warning' });
         return;
       }
       void executeBulkPlugins(eligible, 'update');
@@ -743,26 +761,31 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
       if (!siteId) return;
       setUpdatingStylesheet(theme.stylesheet);
       try {
+        const targetVersion = resolveThemeUpdateTargetVersion(theme, choice, libraryItems);
         const res = await runThemeUpdateForSite(siteId, theme, choice);
         if (res.ok) {
-          showNotification({ title: 'Update', message: res.message, variant: 'success' });
+          const toast = themeActionToast('update', theme, true, undefined, targetVersion);
+          showNotification({ ...toast, variant: 'success' });
           invalidateSite();
         } else {
-          showNotification({ title: 'Update failed', message: res.message, variant: 'danger' });
+          const toast = themeActionToast('update', theme, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Update failed',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = themeActionToast(
+          'update',
+          theme,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setUpdatingStylesheet(null);
         setShowSourceModal(false);
         setModalTheme(null);
       }
     },
-    [invalidateSite, showNotification, siteId],
+    [invalidateSite, libraryItems, showNotification, siteId],
   );
 
   const onToggleThemeStatus = useCallback(
@@ -774,17 +797,21 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
       try {
         const res = await runThemeActivateForSite(siteId, theme.stylesheet);
         if (res.ok) {
-          showNotification({ title: 'Activated', message: res.message, variant: 'success' });
+          const toast = themeActionToast('activate', theme, true);
+          showNotification({ ...toast, variant: 'success' });
           invalidateSite();
         } else {
-          showNotification({ title: 'Theme status', message: res.message, variant: 'danger' });
+          const toast = themeActionToast('activate', theme, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Theme status',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = themeActionToast(
+          'activate',
+          theme,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setActivatingStylesheet(null);
         setTogglingTowardActive(null);
@@ -814,17 +841,21 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
       try {
         const res = await runThemeDeleteForSite(siteId, theme.stylesheet);
         if (res.ok) {
-          showNotification({ title: 'Theme removed', message: res.message, variant: 'success' });
+          const toast = themeActionToast('remove', theme, true);
+          showNotification({ ...toast, variant: 'success' });
           invalidateSite();
         } else {
-          showNotification({ title: 'Remove failed', message: res.message, variant: 'danger' });
+          const toast = themeActionToast('remove', theme, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } catch (e) {
-        showNotification({
-          title: 'Remove failed',
-          message: e instanceof Error ? e.message : String(e),
-          variant: 'danger',
-        });
+        const toast = themeActionToast(
+          'remove',
+          theme,
+          false,
+          e instanceof Error ? e.message : String(e),
+        );
+        showNotification({ ...toast, variant: 'danger' });
       } finally {
         setDeletingStylesheet(null);
         setRemoveTheme(null);
@@ -1084,11 +1115,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
         const res = await runThemesBulkForSite(siteId, action, items);
         const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
         if (res.ok) {
-          showNotification({
-            title: action === 'delete' ? 'Removed' : 'Update',
-            message: res.message,
-            variant: partial ? 'warning' : 'success',
-          });
+          const toast = themesBulkToast(action, themesList.length, true, partial, res.message);
+          showNotification({ ...toast, variant: partial ? 'warning' : 'success' });
           setThemeRowSelection({});
           setBulkThemeAction('');
           void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
@@ -1097,7 +1125,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
             void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
           }
         } else {
-          showNotification({ title: 'Bulk action', message: res.message, variant: 'danger' });
+          const toast = themesBulkToast(action, themesList.length, false, false, res.message);
+          showNotification({ ...toast, variant: 'danger' });
         }
       } finally {
         setBulkThemeBusy(false);
@@ -1113,11 +1142,8 @@ export function SiteInstalledThemesTable({ siteId, themes, emptyMessage }: SiteI
     if (bulkThemeAction === 'update') {
       const eligible = selectedThemesBulk.filter((t) => themeHasAvailableUpdate(t, libraryItems));
       if (!eligible.length) {
-        showNotification({
-          title: 'Update',
-          message: 'No selected themes have an available update.',
-          variant: 'warning',
-        });
+        const toast = noExtensionUpdatesToast('theme');
+        showNotification({ ...toast, variant: 'warning' });
         return;
       }
       void executeBulkThemes(eligible, 'update');

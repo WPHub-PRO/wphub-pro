@@ -99,7 +99,6 @@ export function TeamPendingInvitesSection({ teamId, enabled }: TeamPendingInvite
                                       ? 'Invitation email sent.'
                                       : 'Invite updated.',
                                 variant: ok ? 'success' : 'warning',
-                                delay: 4500,
                               });
                             },
                           });
@@ -184,7 +183,6 @@ export function TeamPendingInvitesSection({ teamId, enabled }: TeamPendingInvite
                     title: 'Invitation',
                     message: 'Invite revoked.',
                     variant: 'success',
-                    delay: 3500,
                   });
                 },
               });
