@@ -87,7 +87,7 @@ const AddFromWordPressModal = ({
     const base = {
       name: row.name,
       slug: row.slug,
-      version: row.version,
+      version: 'latest',
       author: typeof row.author === 'string' ? row.author : '',
       short_description: row.short_description ?? '',
     };
