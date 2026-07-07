@@ -27,7 +27,7 @@ export function useTeamWorkspaceWithActiveSync(teamId: string | null) {
     setMode('user');
     void setWs.mutateAsync({ activeTeamId: tid, skipDashboardRedirect: true }).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : 'Could not switch workspace.';
-      showNotification({ title: 'Workspace', message: msg, variant: 'danger', delay: 4000 });
+      showNotification({ title: 'Workspace', message: msg, variant: 'danger' });
     });
   }, [
     tid,

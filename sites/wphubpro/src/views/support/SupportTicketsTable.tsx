@@ -207,14 +207,12 @@ export function SupportTicketsTable({ tickets, adminMode, newTicketTo }: Props) 
               title: 'Partially deleted',
               message: `Removed ${n} ticket(s); ${failed.length} could not be deleted.`,
               variant: 'warning',
-              delay: 6000,
             });
           } else {
             showNotification({
               title: 'Deleted',
               message: `Removed ${n} ticket(s). Messages and activity history were removed.`,
               variant: 'success',
-              delay: 4000,
             });
           }
         },
@@ -223,7 +221,6 @@ export function SupportTicketsTable({ tickets, adminMode, newTicketTo }: Props) 
             title: 'Delete failed',
             message: e instanceof Error ? e.message : 'Try again.',
             variant: 'danger',
-            delay: 6000,
           }),
       },
     );

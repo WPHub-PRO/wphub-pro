@@ -154,14 +154,12 @@ const MediaLibraryTab = () => {
           title: 'Copied',
           message: 'View link (inline) copied to the clipboard.',
           variant: 'success',
-          delay: 2500,
         })
       } catch {
         showNotification({
           title: 'Clipboard',
           message: 'Could not copy. View link: ' + url,
           variant: 'warning',
-          delay: 8000,
         })
       }
     },
@@ -177,14 +175,12 @@ const MediaLibraryTab = () => {
           title: 'Copied',
           message: 'File (download) URL copied to the clipboard.',
           variant: 'success',
-          delay: 2500,
         })
       } catch {
         showNotification({
           title: 'Clipboard',
           message: 'Could not copy. File URL: ' + url,
           variant: 'warning',
-          delay: 8000,
         })
       }
     },
@@ -203,11 +199,10 @@ const MediaLibraryTab = () => {
           title: 'Delete failed',
           message: e instanceof Error ? e.message : 'Unknown error',
           variant: 'danger',
-          delay: 6000,
         })
       },
       onSuccess: () => {
-        showNotification({ title: 'Deleted', message: f.name, variant: 'success', delay: 2500 })
+        showNotification({ title: 'Deleted', message: f.name, variant: 'success' })
         if (viewer?.$id === f.$id) setViewer(null)
       },
     })
@@ -271,14 +266,12 @@ const MediaLibraryTab = () => {
             ? 'All files were uploaded.'
             : `${successCount} of ${arr.length} file(s) uploaded; check errors below.`,
         variant: successCount === arr.length ? 'success' : 'warning',
-        delay: 4000,
       })
     } else {
       showNotification({
         title: 'Upload failed',
         message: 'No files were uploaded.',
         variant: 'danger',
-        delay: 5000,
       })
     }
     if (fileInputRef.current) fileInputRef.current.value = ''

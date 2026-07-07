@@ -204,7 +204,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                   ? 'The site was moved to the selected workspace.'
                   : 'The site now appears in the selected workspace.',
                 variant: 'success',
-                delay: 4000,
               });
               if (leftView) {
                 navigate(ROUTE_PATHS.SITES);
@@ -215,7 +214,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                 title: 'Transfer site',
                 message: err instanceof Error ? err.message : 'Request failed.',
                 variant: 'danger',
-                delay: 6000,
               });
             },
           },
@@ -237,7 +235,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
               title: 'Site removed',
               message: 'The site was removed from the platform.',
               variant: 'success',
-              delay: 4000,
             });
             navigate(ROUTE_PATHS.SITES);
           },
@@ -246,7 +243,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
               title: 'Remove site',
               message: err instanceof Error ? err.message : 'Request failed.',
               variant: 'danger',
-              delay: 6000,
             });
           },
         });
@@ -297,7 +293,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                       title: 'Site deactivated',
                       message: 'The site is paused and hidden from the list.',
                       variant: 'success',
-                      delay: 4000,
                     });
                   },
                   onError: (err) => {
@@ -305,7 +300,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                       title: 'Deactivate site',
                       message: err instanceof Error ? err.message : 'Request failed.',
                       variant: 'danger',
-                      delay: 6000,
                     });
                   },
                 },
@@ -455,7 +449,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                           title: 'Site activated',
                           message: 'The site is visible again and uptime monitoring will resume.',
                           variant: 'success',
-                          delay: 4000,
                         });
                       },
                       onError: (err) => {
@@ -463,7 +456,6 @@ const SiteDetailSidebarCard = ({ site, onViewFullLogs }: SiteDetailSidebarCardPr
                           title: 'Activate site',
                           message: err instanceof Error ? err.message : 'Request failed.',
                           variant: 'danger',
-                          delay: 6000,
                         });
                       },
                     },

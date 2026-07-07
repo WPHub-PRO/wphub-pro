@@ -383,7 +383,6 @@ const DashboardSitesTable = ({ sites, initialPageSize = 5, embedded = false }: D
               title: 'Remove site',
               message: err.message || 'Request failed.',
               variant: 'danger',
-              delay: 6000,
             });
           },
         });

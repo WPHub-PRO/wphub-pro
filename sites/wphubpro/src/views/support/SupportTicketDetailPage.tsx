@@ -238,7 +238,7 @@ export default function SupportTicketDetailPage() {
       admPriority !== ticket.priority ||
       (admAssignee || '') !== (curAssign || '');
     if (!changed) {
-      showNotification({ title: 'No changes', message: 'Update status, priority, or assignee first.', variant: 'light', delay: 3000 });
+      showNotification({ title: 'No changes', message: 'Update status, priority, or assignee first.', variant: 'light' });
       return;
     }
     // Always send status (required by older ticket functions); server applies only changed fields.
@@ -251,13 +251,12 @@ export default function SupportTicketDetailPage() {
       },
       {
         onSuccess: () =>
-          showNotification({ title: 'Saved', message: 'Ticket updated.', variant: 'success', delay: 3000 }),
+          showNotification({ title: 'Saved', message: 'Ticket updated.', variant: 'success' }),
         onError: (e) =>
           showNotification({
             title: 'Update failed',
             message: e instanceof Error ? e.message : 'Try again.',
             variant: 'danger',
-            delay: 5000,
           }),
       },
     );
@@ -269,7 +268,7 @@ export default function SupportTicketDetailPage() {
       { ticketId, status: 'closed' },
       {
         onSuccess: () =>
-          showNotification({ title: 'Closed', message: 'Ticket marked closed.', variant: 'success', delay: 3000 }),
+          showNotification({ title: 'Closed', message: 'Ticket marked closed.', variant: 'success' }),
       }
     );
   };
@@ -284,7 +283,6 @@ export default function SupportTicketDetailPage() {
             title: 'Follow failed',
             message: e instanceof Error ? e.message : 'Schema may need migration (follower_ids).',
             variant: 'danger',
-            delay: 6000,
           }),
       }
     );
@@ -303,7 +301,6 @@ export default function SupportTicketDetailPage() {
               title: 'Delete failed',
               message: failed[0]?.message || 'Could not delete ticket.',
               variant: 'danger',
-              delay: 6000,
             });
             return;
           }
@@ -311,7 +308,6 @@ export default function SupportTicketDetailPage() {
             title: 'Deleted',
             message: 'Ticket and its messages were removed.',
             variant: 'success',
-            delay: 4000,
           });
           navigate(effectiveAdmin ? ROUTE_PATHS.ADMIN_SUPPORT : ROUTE_PATHS.SUPPORT, { replace: true });
         },
@@ -320,7 +316,6 @@ export default function SupportTicketDetailPage() {
             title: 'Delete failed',
             message: e instanceof Error ? e.message : 'Try again.',
             variant: 'danger',
-            delay: 6000,
           }),
       },
     );
@@ -474,7 +469,6 @@ export default function SupportTicketDetailPage() {
                                     title: 'Reporter linked',
                                     message: 'Guest email cleared on the ticket and matching messages.',
                                     variant: 'success',
-                                    delay: 4000,
                                   });
                                   setGuestUserSearch('');
                                   setGuestPickerUserId(null);
@@ -484,7 +478,6 @@ export default function SupportTicketDetailPage() {
                                     title: 'Could not link user',
                                     message: e instanceof Error ? e.message : 'Try again.',
                                     variant: 'danger',
-                                    delay: 5000,
                                   }),
                               },
                             );

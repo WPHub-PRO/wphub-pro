@@ -46,9 +46,9 @@ function useBillingNotify() {
   const { showNotification } = useNotificationContext();
   return {
     error: (title: string, message: string) =>
-      showNotification({ title, message, variant: 'danger', delay: 4000 }),
+      showNotification({ title, message, variant: 'danger' }),
     success: (title: string, message: string) =>
-      showNotification({ title, message, variant: 'success', delay: 3000 }),
+      showNotification({ title, message, variant: 'success' }),
   };
 }
 

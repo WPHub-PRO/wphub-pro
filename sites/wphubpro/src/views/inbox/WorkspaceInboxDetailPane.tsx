@@ -179,7 +179,6 @@ export default function WorkspaceInboxDetailPane() {
               ? `Support ticket ${tid.slice(0, 8)}… created from this message.`
               : 'Support ticket created from this message.',
             variant: 'success',
-            delay: 4500,
           });
           void q.refetch();
         },
@@ -188,7 +187,6 @@ export default function WorkspaceInboxDetailPane() {
             title: 'Could not create ticket',
             message: e instanceof Error ? e.message : 'Try again.',
             variant: 'danger',
-            delay: 6000,
           });
         },
       },

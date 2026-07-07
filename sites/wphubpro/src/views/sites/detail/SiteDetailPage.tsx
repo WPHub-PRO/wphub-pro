@@ -31,6 +31,7 @@ import { SiteInstalledPluginsTable, SiteInstalledThemesTable } from '@/views/sit
 import { SiteDetailHealthPanel, SiteDetailLogsPanel } from '@/views/sites/detail/SiteDetailSharedPanels';
 import { SiteHealthTabStatusBadge } from '@/views/sites/detail/SiteHealthTabStatusBadge';
 import { SITE_DETAIL_TAB_CONFIG } from '@/views/sites/detail/siteDetailNavTabs';
+import { updateAllExtensionsToast } from '@/views/sites/detail/siteExtensionToastFeedback';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TbProgressBolt, TbStethoscope } from 'react-icons/tb';
@@ -102,19 +103,19 @@ function SiteDetailOverview({
               themesWithUpdates.map((t) => toBulkThemeItemForUpdate(t, libraryItems)),
             );
       const partial = res.results.length > 0 && res.results.some((r) => !r.ok);
+      const kind = updatesTab === 'plugins' ? 'plugin' : 'theme';
+      const count = updatesTab === 'plugins' ? pluginsWithUpdates.length : themesWithUpdates.length;
       if (res.ok) {
-        showNotification({
-          title: 'Update',
-          message: res.message,
-          variant: partial ? 'warning' : 'success',
-        });
+        const toast = updateAllExtensionsToast(kind, count, true, partial, res.message);
+        showNotification({ ...toast, variant: partial ? 'warning' : 'success' });
         void queryClient.invalidateQueries({ queryKey: ['site', siteId] });
         if (user?.$id) {
           void queryClient.invalidateQueries({ queryKey: ['sites', user.$id] });
           void queryClient.invalidateQueries({ queryKey: ['libraryItems', user.$id] });
         }
       } else {
-        showNotification({ title: 'Update', message: res.message, variant: 'danger' });
+        const toast = updateAllExtensionsToast(kind, count, false, false, res.message);
+        showNotification({ ...toast, variant: 'danger' });
       }
     } finally {
       setUpdatesBusy(false);
@@ -459,7 +460,6 @@ const SiteDetailPage = () => {
                               title: 'Site Health',
                               message: res.message,
                               variant: 'success',
-                              delay: 4000,
                             });
                           },
                           onError: (err) => {
@@ -467,7 +467,6 @@ const SiteDetailPage = () => {
                               title: 'Site Health',
                               message: err instanceof Error ? err.message : 'Request failed.',
                               variant: 'danger',
-                              delay: 6000,
                             });
                           },
                         });

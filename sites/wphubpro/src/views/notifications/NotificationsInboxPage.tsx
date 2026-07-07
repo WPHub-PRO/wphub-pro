@@ -93,7 +93,6 @@ const NotificationsInboxPage = () => {
           title: 'Team invite',
           message: teamId ? 'Invitation accepted. Switched to the team workspace.' : 'Invitation accepted.',
           variant: 'success',
-          delay: 4000,
         })
         if (teamId) navigate(ROUTE_PATHS.teamPath(teamId))
         return
@@ -114,7 +113,6 @@ const NotificationsInboxPage = () => {
           title: 'Team invite',
           message: 'Invitation declined.',
           variant: 'success',
-          delay: 4000,
         })
       }
     } catch (actionError) {
@@ -122,7 +120,6 @@ const NotificationsInboxPage = () => {
         title: 'Notification action',
         message: errorMessage(actionError),
         variant: 'danger',
-        delay: 5000,
       })
     } finally {
       setActingNotificationId(null)
@@ -202,7 +199,6 @@ const NotificationsInboxPage = () => {
                               title: 'Notifications',
                               message: errorMessage(error),
                               variant: 'danger',
-                              delay: 5000,
                             })
                           },
                         })
