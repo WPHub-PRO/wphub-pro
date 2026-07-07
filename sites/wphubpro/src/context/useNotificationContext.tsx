@@ -1,4 +1,5 @@
 import type { ChildrenType } from '@/types'
+import { sanitizeToastMessageHtml, toastMessageContainsHtml } from '@/lib/sanitizeToastHtml'
 import { createContext, use, useCallback, useMemo, useRef, useState } from 'react'
 import { ToastBody, ToastHeader } from 'react-bootstrap'
 import Toast, { type ToastProps } from 'react-bootstrap/Toast'
@@ -27,6 +28,17 @@ type NotificationContextType = {
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
+
+function ToastMessageContent({ message }: Readonly<{ message: string }>) {
+  const usesHtml = toastMessageContainsHtml(message)
+  const safeHtml = usesHtml ? sanitizeToastMessageHtml(message) : message
+
+  if (usesHtml) {
+    return <div className="toast-message-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+  }
+
+  return <>{message}</>
+}
 
 function ToastStack({
   toasts,
@@ -58,7 +70,7 @@ function ToastStack({
               ? 'text-white'
               : ''}
           >
-            {toast.message}
+            <ToastMessageContent message={toast.message} />
           </ToastBody>
         </Toast>
       ))}

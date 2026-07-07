@@ -570,4 +570,16 @@ html[data-skin="modern"]:not([data-sidenav-size="condensed"]) {
     margin-bottom: 0 !important;
     transition: transform 0.25s ease, opacity 0.25s ease;
   }
+
+  .toast-message-html {
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 0.12em;
+    }
+  }
 }
