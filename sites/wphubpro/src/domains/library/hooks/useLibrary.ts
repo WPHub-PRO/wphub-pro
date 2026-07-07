@@ -169,8 +169,7 @@ export const useAddOfficialPlugin = () => {
 
       if (existing) {
         let map = getOrBuildVersionsMap(existing);
-        map[version] = { source: 'official', isDefault: true };
-        map = setDefaultVersionInMap(map, version);
+        map[version] = { source: 'official', isDefault: false };
         map = ensureSingleDefaultInVersionMap(map);
         const mirror = mirrorLegacyFieldsFromVersions(map);
         const response = await databases.updateDocument(
@@ -279,8 +278,7 @@ export const useAddOfficialTheme = () => {
 
       if (existing) {
         let map = getOrBuildVersionsMap(existing);
-        map[version] = { source: 'official', isDefault: true };
-        map = setDefaultVersionInMap(map, version);
+        map[version] = { source: 'official', isDefault: false };
         map = ensureSingleDefaultInVersionMap(map);
         const mirror = mirrorLegacyFieldsFromVersions(map);
         const response = await databases.updateDocument(

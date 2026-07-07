@@ -45,7 +45,7 @@ const SitePluginAddToLibraryCard = ({ plugin, onUploadZip }: SitePluginAddToLibr
       {
         name: orgInfo.name ?? plugin.name ?? slug,
         slug: orgInfo.slug ?? slug,
-        version: String(orgInfo.version),
+        version: 'latest',
         author: author || 'Unknown',
         short_description: plugin.description ?? orgInfo.description,
         prefillPluginSlug: slug,
