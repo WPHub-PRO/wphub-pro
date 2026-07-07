@@ -6,6 +6,7 @@ import {
   buildLibraryDashboardRows,
   libraryCategoriesForItemKind,
   libraryCategoriesForItemsView,
+  useLibraryWpVersionMap,
 } from '@/domains/library';
 import { useLibraryItems } from '@/hooks/useLibrary';
 import { useLibraryCollections, useLibraryFamilies } from '@/hooks/useLibraryFamiliesAndCollections';
@@ -130,9 +131,11 @@ const LibraryPage = () => {
     return libraryCategoriesForItemKind(favKindParam === 'plugins' ? 'plugin' : 'theme', categories);
   }, [view, favKindParam, categories, categoriesForItemsView]);
 
+  const wpVersions = useLibraryWpVersionMap(libraryItems);
+
   const libraryRows = useMemo(
-    () => buildLibraryDashboardRows(libraryItems, categoryNameById),
-    [libraryItems, categoryNameById],
+    () => buildLibraryDashboardRows(libraryItems, categoryNameById, wpVersions),
+    [libraryItems, categoryNameById, wpVersions],
   );
 
   const favouritesKindForFilter = view === 'favourites' ? favKindParam : null;

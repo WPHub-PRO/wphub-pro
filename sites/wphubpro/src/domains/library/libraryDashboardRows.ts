@@ -1,6 +1,6 @@
 import type { LibraryItem } from '@/types';
 import { getLibraryItemSlug } from './libraryItemSlug';
-import { getPluginGroups } from './libraryPluginGroups';
+import { getItemsForGrouping, getPluginGroups } from './libraryPluginGroups';
 
 function decodeHtmlEntitiesFallback(text: string): string {
   return text
@@ -42,6 +42,96 @@ function tagsForThemeItem(item: LibraryItem): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
+function compareSemverDesc(a: string, b: string): number {
+  const pa = a.split('.').map((x) => parseInt(x, 10) || 0);
+  const pb = b.split('.').map((x) => parseInt(x, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] ?? 0;
+    const y = pb[i] ?? 0;
+    if (x !== y) return y - x;
+  }
+  return 0;
+}
+
+function pickDefaultLibraryItem(items: LibraryItem[]): LibraryItem | undefined {
+  if (items.length === 0) return undefined;
+  return items.find((i) => i.isDefault === true) ?? items[0];
+}
+
+export type LibraryWpVersionMap = {
+  plugins: Record<string, string | undefined>;
+  themes: Record<string, string | undefined>;
+};
+
+const EMPTY_WP_VERSIONS: LibraryWpVersionMap = { plugins: {}, themes: {} };
+
+function resolveItemVersion(
+  item: LibraryItem,
+  itemKind: 'plugin' | 'theme',
+  wpVersions: LibraryWpVersionMap,
+): string {
+  const raw = item.version?.trim() ?? '';
+  if (!raw) return '';
+  if (item.source === 'official' && raw === 'latest') {
+    const slug = getLibraryItemSlug(item).toLowerCase();
+    const resolved =
+      itemKind === 'plugin' ? wpVersions.plugins[slug] : wpVersions.themes[slug];
+    return resolved?.trim() || raw;
+  }
+  return raw;
+}
+
+function highestKnownVersion(
+  items: LibraryItem[],
+  itemKind: 'plugin' | 'theme',
+  wpVersions: LibraryWpVersionMap,
+): string | undefined {
+  const versions = items
+    .map((i) => resolveItemVersion(i, itemKind, wpVersions))
+    .filter((v): v is string => !!v && v !== 'latest');
+  if (versions.length === 0) return undefined;
+  return [...new Set(versions)].sort(compareSemverDesc)[0];
+}
+
+function isLatestVersionInGroup(
+  item: LibraryItem,
+  items: LibraryItem[],
+  itemKind: 'plugin' | 'theme',
+  wpVersions: LibraryWpVersionMap,
+): boolean {
+  const raw = item.version?.trim() ?? '';
+  if (raw === 'latest') return true;
+  const version = resolveItemVersion(item, itemKind, wpVersions);
+  const highest = highestKnownVersion(items, itemKind, wpVersions);
+  if (!highest || !version || version === 'latest') return false;
+  return compareSemverDesc(version, highest) === 0;
+}
+
+function buildVersionLabelForItem(
+  item: LibraryItem,
+  groupItems: LibraryItem[],
+  itemKind: 'plugin' | 'theme',
+  wpVersions: LibraryWpVersionMap,
+): string {
+  const resolved = resolveItemVersion(item, itemKind, wpVersions);
+  if (!resolved) return '—';
+  if (isLatestVersionInGroup(item, groupItems, itemKind, wpVersions)) {
+    return `${resolved} (latest)`;
+  }
+  return resolved;
+}
+
+function buildDefaultVersionLabel(
+  items: LibraryItem[],
+  itemKind: 'plugin' | 'theme',
+  wpVersions: LibraryWpVersionMap,
+): string {
+  const defaultItem = pickDefaultLibraryItem(items);
+  if (!defaultItem) return '—';
+  return buildVersionLabelForItem(defaultItem, items, itemKind, wpVersions);
+}
+
 /** Flat list row aligned with wphubpro Library page “Library items” table (plugin groups + theme rows). */
 export type LibraryDashboardRow = {
   id: string;
@@ -66,6 +156,7 @@ export type LibraryDashboardRow = {
 export function buildLibraryDashboardRows(
   libraryItems: LibraryItem[],
   categoryNameById: Record<string, string> = {},
+  wpVersions: LibraryWpVersionMap = EMPTY_WP_VERSIONS,
 ): LibraryDashboardRow[] {
   const pluginItems = libraryItems.filter((i) => i.type === 'plugin');
   const themeItems = libraryItems.filter((i) => i.type === 'theme');
@@ -73,8 +164,8 @@ export function buildLibraryDashboardRows(
   const rows: LibraryDashboardRow[] = [];
 
   for (const g of pluginGroups) {
-    const first = g.items[0];
-    const versionLabel = g.items.length > 1 ? `${g.items.length} versions` : String(first?.version ?? '');
+    const first = pickDefaultLibraryItem(g.items) ?? g.items[0];
+    const versionLabel = buildDefaultVersionLabel(g.items, 'plugin', wpVersions);
     const libraryDocumentId = first?.libraryDocumentId ?? parseThemeDocId(first?.$id ?? '');
     const routeSlug = getLibraryItemSlug(first!).toLowerCase();
     const categoryIds =
@@ -103,6 +194,7 @@ export function buildLibraryDashboardRows(
   }
 
   for (const item of themeItems) {
+    const themeGroupItems = getItemsForGrouping(item, themeItems);
     const libraryDocumentId = item.libraryDocumentId ?? parseThemeDocId(item.$id);
     const routeSlug = getLibraryItemSlug(item).toLowerCase();
     const categoryIds =
@@ -117,7 +209,7 @@ export function buildLibraryDashboardRows(
       kind: 'theme',
       name: decodeHtmlEntities(item.name),
       tags: tagsForThemeItem(item),
-      versionLabel: item.version || '—',
+      versionLabel: buildVersionLabelForItem(item, themeGroupItems, 'theme', wpVersions),
       author: item.author || '—',
       libraryDocumentId,
       routeSlug,

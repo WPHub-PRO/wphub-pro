@@ -1,7 +1,7 @@
 import UptimeIncidentsTable from '@/components/sites/UptimeIncidentsTable'
 import { DocHelpButton } from '@/components/docs/DocHelpButton'
 import PageBreadcrumb from '@/components/PageBreadcrumb.tsx'
-import { buildLibraryDashboardRows } from '@/domains/library'
+import { buildLibraryDashboardRows, useLibraryWpVersionMap } from '@/domains/library'
 import { useDashboardUptimeIncidents, useSites, useSitesStatusPoll } from '@/domains/sites'
 import { useLibraryItems } from '@/hooks/useLibrary'
 import { useSitesUpdateStats } from '@/hooks/useSitesUpdateStats'
@@ -113,7 +113,11 @@ const DashboardPage = () => {
   const { data: sites, isLoading: sitesLoading } = useSites();
   const { data: libraryItems = [], isLoading: libraryLoading, isError: libraryError, error: libraryErr } =
     useLibraryItems();
-  const libraryRows = useMemo(() => buildLibraryDashboardRows(libraryItems), [libraryItems]);
+  const wpVersions = useLibraryWpVersionMap(libraryItems);
+  const libraryRows = useMemo(
+    () => buildLibraryDashboardRows(libraryItems, {}, wpVersions),
+    [libraryItems, wpVersions],
+  );
   const siteList: Site[] = sites ?? [];
   const enabledSites: Site[] = useMemo(() => {
     return siteList.filter((s) => s.enabled !== false);
