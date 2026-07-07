@@ -557,3 +557,17 @@ html[data-skin="modern"]:not([data-sidenav-size="condensed"]) {
 .jvm-zoom-btn.jvm-zoomout {
   top: 34px !important;
 }
+
+// Stacked platform toasts: newest on top, older toasts slide down
+.notification-toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+
+  > .toast {
+    pointer-events: auto;
+    margin-bottom: 0 !important;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+}
