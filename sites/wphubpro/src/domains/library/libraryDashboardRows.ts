@@ -2,12 +2,26 @@ import type { LibraryItem } from '@/types';
 import { getLibraryItemSlug } from './libraryItemSlug';
 import { getPluginGroups } from './libraryPluginGroups';
 
+function decodeHtmlEntitiesFallback(text: string): string {
+  return text
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, num) => String.fromCodePoint(parseInt(num, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, '\u00A0');
+}
+
 export function decodeHtmlEntities(text: string): string {
   if (!text) return '';
-  if (typeof document === 'undefined') return text;
-  const el = document.createElement('div');
-  el.innerHTML = text;
-  return el.textContent || el.innerText || text;
+  if (typeof document !== 'undefined') {
+    const el = document.createElement('textarea');
+    el.innerHTML = text;
+    return el.value;
+  }
+  return decodeHtmlEntitiesFallback(text);
 }
 
 function tagsForGroup(group: { items: LibraryItem[] }): string[] {

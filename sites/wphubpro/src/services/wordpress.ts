@@ -1,6 +1,23 @@
 /** WordPress.org plugins API (public). */
 
+import { decodeHtmlEntities } from '@/domains/library/libraryDashboardRows';
+
 const API_BASE = 'https://api.wordpress.org/plugins/info/1.2/';
+
+function normalizeWpOrgText(text: unknown): string {
+  const stripped = String(text ?? '')
+    .replace(/<[^>]*>/g, '')
+    .trim();
+  return decodeHtmlEntities(stripped);
+}
+
+function normalizeWpOrgDescription(text: unknown): string {
+  const stripped = String(text ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return decodeHtmlEntities(stripped);
+}
 
 export interface WpPluginInfo {
   name: string;
@@ -41,10 +58,10 @@ export const getWpPluginInfo = async (slug: string): Promise<WpPluginInfo | null
     const authorRaw = typeof data.author === 'string' ? data.author : '';
     const authorMatch = authorRaw.match(/<a\s+[^>]*href=["']([^"']+)["']/i);
     return {
-      name: String(data.name ?? ''),
+      name: normalizeWpOrgText(data.name ?? ''),
       slug: String(data.slug ?? trimmed),
       version: String(data.version ?? ''),
-      author: authorRaw.replace(/<[^>]*>/g, '').trim(),
+      author: normalizeWpOrgText(authorRaw),
       authorUri: authorMatch?.[1] ?? (data.homepage as string | undefined),
       description: (data.sections as { description?: string } | undefined)?.description,
       homepage: data.homepage as string | undefined,
@@ -62,26 +79,51 @@ export const getWpPluginInfo = async (slug: string): Promise<WpPluginInfo | null
   }
 };
 
-export const searchWpPlugins = async (searchTerm: string) => {
+export type WpPluginSearchRow = {
+  name: string;
+  slug: string;
+  version: string;
+  author: string;
+  short_description?: string;
+};
+
+export const searchWpPlugins = async (searchTerm: string): Promise<WpPluginSearchRow[]> => {
   if (!searchTerm) return [];
   const url = `${API_BASE}?action=query_plugins&request[search]=${encodeURIComponent(searchTerm)}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`WordPress.org API returned status ${response.status}`);
   }
-  const data = (await response.json()) as { plugins?: unknown[] };
-  return data.plugins || [];
+  const data = (await response.json()) as { plugins?: Record<string, unknown>[] };
+  const plugins = data.plugins || [];
+  const out: WpPluginSearchRow[] = [];
+  for (const raw of plugins) {
+    const slug = String(raw.slug ?? '').trim();
+    if (!slug) continue;
+    const row: WpPluginSearchRow = {
+      name: normalizeWpOrgText(raw.name ?? slug),
+      slug,
+      version: String(raw.version ?? ''),
+      author: normalizeWpOrgText(raw.author),
+    };
+    const desc = raw.short_description;
+    if (typeof desc === 'string' && desc.trim()) {
+      row.short_description = normalizeWpOrgDescription(desc).slice(0, 500);
+    }
+    out.push(row);
+  }
+  return out;
 };
 
 /** WordPress.org themes API (public). */
 const THEMES_API_BASE = 'https://api.wordpress.org/themes/info/1.2/';
 
 function themeAuthorToString(author: unknown): string {
-  if (typeof author === 'string') return author.replace(/<[^>]*>/g, '').trim();
+  if (typeof author === 'string') return normalizeWpOrgText(author);
   if (author && typeof author === 'object') {
     const o = author as Record<string, unknown>;
     const raw = o.author ?? o.display_name ?? o.user_nicename ?? '';
-    return String(raw).replace(/<[^>]*>/g, '').trim();
+    return normalizeWpOrgText(raw);
   }
   return '';
 }
@@ -126,7 +168,7 @@ export const getWpThemeInfo = async (slug: string): Promise<WpThemeInfo | null> 
         ? descRaw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
         : undefined;
     return {
-      name: String(data.name ?? trimmed),
+      name: normalizeWpOrgText(data.name ?? trimmed),
       slug: String(data.slug ?? trimmed),
       version: String(data.version ?? ''),
       author: themeAuthorToString(data.author) || 'Unknown',
@@ -162,12 +204,12 @@ export const searchWpThemes = async (searchTerm: string): Promise<WpThemeSearchR
     if (!s) continue;
     const desc = typeof t.description === 'string' ? t.description : '';
     const row: WpThemeSearchRow = {
-      name: String(t.name ?? s),
+      name: normalizeWpOrgText(t.name ?? s),
       slug: s,
       version: String(t.version ?? ''),
       author: themeAuthorToString(t.author),
     };
-    if (desc) row.short_description = desc.slice(0, 500);
+    if (desc) row.short_description = normalizeWpOrgDescription(desc).slice(0, 500);
     out.push(row);
   }
   return out;

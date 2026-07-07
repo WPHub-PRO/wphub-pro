@@ -7,12 +7,37 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 
 const STRIP_TAGS = 'script, style, iframe, object, embed, link, meta, base, form, input, button'
 
-function isSafeHref(value: string): boolean {
+function platformOrigin(): string {
+  return typeof window !== 'undefined' ? window.location.origin : ''
+}
+
+function isPlatformHref(value: string): boolean {
   const href = value.trim()
   if (!href) return false
   if (/^\s*javascript:/i.test(href)) return false
   if (/^\s*data:/i.test(href)) return false
-  return /^(https?:\/\/|mailto:|tel:|#|\/)/i.test(href)
+
+  if (href.startsWith('#')) return true
+  if (href.startsWith('/') && !href.startsWith('//')) return true
+
+  try {
+    const origin = platformOrigin()
+    const base = origin || 'http://localhost'
+    const url = new URL(href, base)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
+    if (!origin) return false
+    return url.origin === origin
+  } catch {
+    return false
+  }
+}
+
+function unwrapElement(el: Element, walk: (node: Node) => void): void {
+  const parent = el.parentNode
+  if (!parent) return
+  while (el.firstChild) parent.insertBefore(el.firstChild, el)
+  parent.removeChild(el)
+  ;[...parent.childNodes].forEach(walk)
 }
 
 function looksLikeHtml(value: string): boolean {
@@ -34,12 +59,16 @@ function sanitizeElementTree(root: ParentNode): void {
     const tag = el.tagName.toLowerCase()
 
     if (!ALLOWED_TAGS.has(tag)) {
-      const parent = el.parentNode
-      if (!parent) return
-      while (el.firstChild) parent.insertBefore(el.firstChild, el)
-      parent.removeChild(el)
-      ;[...parent.childNodes].forEach(walk)
+      unwrapElement(el, walk)
       return
+    }
+
+    if (tag === 'a') {
+      const href = el.getAttribute('href') ?? ''
+      if (!isPlatformHref(href)) {
+        unwrapElement(el, walk)
+        return
+      }
     }
 
     ;[...el.attributes].forEach((attr) => {
@@ -49,7 +78,7 @@ function sanitizeElementTree(root: ParentNode): void {
         el.removeAttribute(attr.name)
         return
       }
-      if (name === 'href' && !isSafeHref(attr.value)) {
+      if (name === 'href' && !isPlatformHref(attr.value)) {
         el.removeAttribute(attr.name)
       }
     })

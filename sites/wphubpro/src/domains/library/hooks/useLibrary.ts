@@ -21,6 +21,7 @@ import {
 } from '@/domains/workspace/workspaceRowPermissions';
 import {
   dedupeLibraryDocumentsForTeamWorkspace,
+  decodeHtmlEntities,
   expandLibraryDocumentToItems,
   getOrBuildVersionsMap,
   mapLibraryDocumentToItem,
@@ -149,9 +150,13 @@ export const useAddOfficialPlugin = () => {
       if (ws.mode === 'team' && !ws.activeTeamId) throw new Error('No active team workspace.');
       const wpSlugRaw = plugin.prefillPluginSlug ?? plugin.slug;
       const wpSlug = normalizeWpSlug(wpSlugRaw);
-      const name = plugin.prefillPluginName ?? plugin.name;
-      const author = (plugin.author ?? '').replace(/<[^>]*>/g, '').trim();
-      const description = (plugin.short_description ?? '')?.slice(0, 10000) || undefined;
+      const name = decodeHtmlEntities(String(plugin.prefillPluginName ?? plugin.name ?? ''));
+      const author = decodeHtmlEntities((plugin.author ?? '').replace(/<[^>]*>/g, '').trim());
+      const description =
+        decodeHtmlEntities((plugin.short_description ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()).slice(
+          0,
+          10000,
+        ) || undefined;
       const version = plugin.version ?? 'latest';
 
       const existing = await fetchLibraryPluginByWpSlug(
@@ -254,9 +259,13 @@ export const useAddOfficialTheme = () => {
       if (ws.mode === 'team' && !ws.activeTeamId) throw new Error('No active team workspace.');
       const wpSlugRaw = theme.prefillThemeSlug ?? theme.slug;
       const wpSlug = normalizeWpSlug(wpSlugRaw);
-      const name = theme.prefillThemeName ?? theme.name;
-      const author = (theme.author ?? '').replace(/<[^>]*>/g, '').trim();
-      const description = (theme.short_description ?? '')?.slice(0, 10000) || undefined;
+      const name = decodeHtmlEntities(String(theme.prefillThemeName ?? theme.name ?? ''));
+      const author = decodeHtmlEntities((theme.author ?? '').replace(/<[^>]*>/g, '').trim());
+      const description =
+        decodeHtmlEntities((theme.short_description ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()).slice(
+          0,
+          10000,
+        ) || undefined;
       const version = theme.version ?? 'latest';
 
       const existing = await fetchLibraryDocByWpSlugAndType(
