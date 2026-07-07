@@ -1,6 +1,7 @@
 export * from './api';
 export * from './queryKeys';
 export * from './hooks/useLibrary';
+export * from './hooks/useLibraryWpVersionMap';
 export * from './categoryTree';
 export * from './libraryBridgeInstall';
 export * from './libraryDocument';

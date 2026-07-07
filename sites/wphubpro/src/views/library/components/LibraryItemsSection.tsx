@@ -26,6 +26,23 @@ const libraryGlobalFilterFn: FilterFn<LibraryDashboardRow> = () => true;
 
 const columnHelper = createColumnHelper<LibraryDashboardRow>();
 
+function LibraryTableVersionCell({ label }: { label: string }) {
+  if (!label || label === '—') {
+    return <span className="fw-medium text-reset">—</span>;
+  }
+  const latestSuffix = ' (latest)';
+  if (label.endsWith(latestSuffix)) {
+    const version = label.slice(0, -latestSuffix.length);
+    return (
+      <>
+        <span className="fw-medium text-reset">v{version}</span>
+        <span className="fs-xs text-muted">{latestSuffix}</span>
+      </>
+    );
+  }
+  return <span className="fw-medium text-reset">v{label}</span>;
+}
+
 type LibraryTableMeta = { patchPending: boolean };
 
 type LibraryItemsSectionProps = {
@@ -49,21 +66,23 @@ const LibraryItemsSection = ({ rows, view, categories = [] }: LibraryItemsSectio
           const fav = r.isFavourite;
           const patchPending = (table.options.meta as LibraryTableMeta | undefined)?.patchPending ?? false;
           return (
-            <button
-              type="button"
-              className="btn btn-link p-0 text-warning"
-              aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
-              title={fav ? 'Remove from favourites' : 'Add to favourites'}
-              disabled={patchPending}
-              onClick={() => {
-                patchMutation.mutate({
-                  itemId: r.libraryDocumentId,
-                  isFavourite: !fav,
-                });
-              }}
-            >
-              {fav ? <TbStarFilled className="fs-lg" /> : <TbStar className="fs-lg text-muted" />}
-            </button>
+            <div data-row-click-ignore onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="btn btn-link p-0 text-warning"
+                aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
+                title={fav ? 'Remove from favourites' : 'Add to favourites'}
+                disabled={patchPending}
+                onClick={() => {
+                  patchMutation.mutate({
+                    itemId: r.libraryDocumentId,
+                    isFavourite: !fav,
+                  });
+                }}
+              >
+                {fav ? <TbStarFilled className="fs-lg" /> : <TbStar className="fs-lg text-muted" />}
+              </button>
+            </div>
           );
         },
       }),
@@ -76,74 +95,15 @@ const LibraryItemsSection = ({ rows, view, categories = [] }: LibraryItemsSectio
       }),
       columnHelper.accessor('name', {
         header: 'Name',
-        cell: ({ getValue, row }) => {
-          const r = row.original;
-          const to = ROUTE_PATHS.libraryItemDetailPath(r.kind, r.routeSlug);
-          return (
-            <Link
-              to={to}
-              className="fw-medium text-truncate d-inline-block align-middle text-reset text-decoration-none"
-              style={{ maxWidth: '18rem' }}
-              title={String(getValue() || '')}
-            >
-              {String(getValue() || '—')}
-            </Link>
-          );
-        },
-        enableColumnFilter: false,
-      }),
-      columnHelper.display({
-        id: 'category',
-        header: 'Category',
-        enableSorting: false,
-        cell: ({ row, table }) => {
-          const r = row.original;
-          const rowCategories = libraryCategoriesForLibraryItemRow(r, categories);
-          const patchPending = (table.options.meta as LibraryTableMeta | undefined)?.patchPending ?? false;
-          return (
-            <LibraryCategoryGroupedSelect
-              categories={rowCategories}
-              value={r.categoryId}
-              onChange={(categoryId) =>
-                patchMutation.mutate({
-                  itemId: r.libraryDocumentId,
-                  categoryId,
-                })
-              }
-              disabled={patchPending}
-              aria-label="Category"
-              noneOptionLabel="—"
-              noneGroupLabel="No category"
-              size="sm"
-              className="w-auto max-w-100"
-              minWidth="10rem"
-            />
-          );
-        },
-      }),
-      columnHelper.accessor('tags', {
-        header: 'Tags',
-        sortingFn: (a, b) => {
-          const ta = a.original.tags.join(', ');
-          const tb = b.original.tags.join(', ');
-          return ta.localeCompare(tb, undefined, { sensitivity: 'base' });
-        },
-        cell: ({ row }) =>
-          row.original.tags.length === 0 ? (
-            <span className="text-muted fs-xs">—</span>
-          ) : (
-            <span className="d-flex flex-wrap gap-1">
-              {row.original.tags.map((t) => (
-                <span key={t} className="badge badge-soft-secondary fs-xxs">
-                  {t}
-                </span>
-              ))}
-            </span>
-          ),
-        enableColumnFilter: false,
-      }),
-      columnHelper.accessor('versionLabel', {
-        header: 'Version',
+        cell: ({ getValue }) => (
+          <span
+            className="fw-medium text-truncate d-inline-block align-middle"
+            style={{ maxWidth: '18rem' }}
+            title={String(getValue() || '')}
+          >
+            {String(getValue() || '—')}
+          </span>
+        ),
         enableColumnFilter: false,
       }),
       columnHelper.accessor('author', {
@@ -159,6 +119,42 @@ const LibraryItemsSection = ({ rows, view, categories = [] }: LibraryItemsSectio
         ),
         enableColumnFilter: false,
       }),
+      columnHelper.accessor('versionLabel', {
+        header: 'Version',
+        cell: ({ getValue }) => <LibraryTableVersionCell label={String(getValue() || '')} />,
+        enableColumnFilter: false,
+      }),
+      columnHelper.display({
+        id: 'category',
+        header: 'Category',
+        enableSorting: false,
+        cell: ({ row, table }) => {
+          const r = row.original;
+          const rowCategories = libraryCategoriesForLibraryItemRow(r, categories);
+          const patchPending = (table.options.meta as LibraryTableMeta | undefined)?.patchPending ?? false;
+          return (
+            <div data-row-click-ignore onClick={(e) => e.stopPropagation()}>
+              <LibraryCategoryGroupedSelect
+                categories={rowCategories}
+                value={r.categoryId}
+                onChange={(categoryId) =>
+                  patchMutation.mutate({
+                    itemId: r.libraryDocumentId,
+                    categoryId,
+                  })
+                }
+                disabled={patchPending}
+                aria-label="Category"
+                noneOptionLabel="—"
+                noneGroupLabel="No category"
+                size="sm"
+                className="w-auto max-w-100"
+                minWidth="10rem"
+              />
+            </div>
+          );
+        },
+      }),
       columnHelper.display({
         id: 'actions',
         header: '',
@@ -166,7 +162,7 @@ const LibraryItemsSection = ({ rows, view, categories = [] }: LibraryItemsSectio
         cell: ({ row }) => {
           const r = row.original;
           return (
-            <div className="text-end">
+            <div className="text-end" data-row-click-ignore onClick={(e) => e.stopPropagation()}>
               <div className={TABLE_ACTION_GROUP_CLASS}>
                 <button
                   type="button"
