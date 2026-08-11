@@ -933,7 +933,7 @@ export const useDashboardUptimeIncidents = () => {
         {
           action: 'get_recent_incidents',
           jwt,
-          limit: 50,
+          limit: 30,
           maxAgeDays: 7,
         },
         { throwOnHttpError: false },
