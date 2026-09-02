@@ -75,6 +75,24 @@ export function formatDurationMs(ms: number): string {
   return `${d}d ${h % 24}h`;
 }
 
+/** e.g. `1 month, 4 days, 23 hours` — uses 30-day months; omits zero units. */
+export function formatDurationMonthsDaysHours(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  if (ms === 0) return '0 hours';
+
+  const totalHours = Math.floor(ms / 3_600_000);
+  const months = Math.floor(totalHours / (30 * 24));
+  let remHours = totalHours % (30 * 24);
+  const days = Math.floor(remHours / 24);
+  const hours = remHours % 24;
+
+  const parts: string[] = [];
+  if (months > 0) parts.push(`${months} month${months === 1 ? '' : 's'}`);
+  if (days > 0) parts.push(`${days} day${days === 1 ? '' : 's'}`);
+  if (hours > 0 || parts.length === 0) parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
+  return parts.join(', ');
+}
+
 export function incidentDurationDisplay(row: Record<string, unknown>): string {
   const nowMs = Date.now();
   const s = incidentStartedMs(row);

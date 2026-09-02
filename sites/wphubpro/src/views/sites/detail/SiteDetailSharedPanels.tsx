@@ -13,6 +13,8 @@ import {
   last24HourBarWindowStats,
   uptimeWindowStatsFromIncidents,
 } from '@/lib/uptimeIncidentHours';
+import { formatDurationMonthsDaysHours } from '@/lib/uptimeIncidentDisplay';
+import { urMonitorStatusDisplay } from '@/lib/uptimeMonitorStatus';
 import { getChecksForDashboard, parseSiteHealthMeta, severityTotalsForChecks } from '@/lib/parseSiteHealthMeta';
 import type { Site, SiteHealthSeverity } from '@/types';
 import SiteUptimeBars from '@/components/sites/SiteUptimeBars';
@@ -408,15 +410,6 @@ function formatDowntimeHmsCommaSeparated(ms: number): string {
   return parts.join(', ');
 }
 
-function urMonitorStatusBadge(status: unknown): { label: string; variant: string } {
-  const n = Number(status);
-  if (n === 2) return { label: 'Up', variant: 'success' };
-  if (n === 9) return { label: 'Down', variant: 'danger' };
-  if (n === 8) return { label: 'Seems down', variant: 'warning' };
-  if (n === 0) return { label: 'Paused', variant: 'secondary' };
-  return { label: 'Unknown', variant: 'secondary' };
-}
-
 function SiteMonitorSubpanel({ site }: { site: Site }) {
   const { data, isLoading, isError, error } = useSiteUptimeMonitor(site.$id);
   const incidents = data?.incidents ?? [];
@@ -455,12 +448,11 @@ function SiteMonitorSubpanel({ site }: { site: Site }) {
   }
 
   const mon = data.monitor;
-  const title =
-    (typeof mon.friendly_name === 'string' && mon.friendly_name.trim()) ||
-    (typeof mon.name === 'string' && mon.name.trim()) ||
-    'Monitor';
-  const url = typeof mon.url === 'string' && mon.url.trim() ? mon.url.trim() : '—';
-  const st = urMonitorStatusBadge(mon.status);
+  const st = urMonitorStatusDisplay(mon.status);
+  const stateDurationSec =
+    typeof mon.currentStateDuration === 'number' && Number.isFinite(mon.currentStateDuration)
+      ? mon.currentStateDuration
+      : null;
 
   const n24 = last24BarWindow.incidentCount;
   const last24IncidentPart = n24 === 1 ? '1 incident' : `${n24} incidents`;
@@ -471,19 +463,23 @@ function SiteMonitorSubpanel({ site }: { site: Site }) {
       <Row className="g-3 align-items-stretch">
         <Col xs={12} lg={4}>
           <Card className="h-100">
-            <CardBody>
+            <CardBody className="d-flex flex-column">
               <h6 className="fs-base mb-3">Current Status</h6>
-              <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                <div className="min-w-0">
-                  <div className="fs-sm fw-medium mb-1">{title}</div>
-                  <div className="fs-xs text-muted text-break">{url}</div>
-                </div>
-                <span className={`badge badge-soft-${st.variant} text-uppercase fs-xxs`}>{st.label}</span>
+              <div className="d-flex align-items-center gap-2 mb-2">
+                {st.variant === 'success' || st.variant === 'danger' || st.variant === 'warning' ? (
+                  <span
+                    className={`site-uptime-dot ${st.variant === 'success' ? 'site-uptime-dot--up' : 'site-uptime-dot--down'}`}
+                    aria-hidden
+                  />
+                ) : null}
+                <span className={`fs-2 fw-semibold text-${st.variant}`}>{st.label}</span>
               </div>
-              {typeof mon.interval === 'number' ? (
-                <p className="fs-xs text-muted mb-0">
-                  Check interval: {mon.interval}s
+              {stateDurationSec != null ? (
+                <p className="fs-sm text-muted mb-0">
+                  In this state for {formatDurationMonthsDaysHours(stateDurationSec * 1000)}
                 </p>
+              ) : typeof mon.interval === 'number' ? (
+                <p className="fs-xs text-muted mb-0">Check interval: {mon.interval}s</p>
               ) : null}
             </CardBody>
           </Card>
