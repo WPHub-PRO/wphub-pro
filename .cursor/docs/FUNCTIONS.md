@@ -130,6 +130,11 @@ Detailed handler docs: [`functions/wp-proxy/README.md`](../../functions/wp-proxy
 | `themes/deactivate` | `POST …/themes/manage/deactivate` |
 | `themes/delete` | `POST …/themes/manage/delete` |
 | `bridge/forceUpdate` | bridge self-update (separate concern) |
+| `sync` | `POST wphubpro/v1/hub/invoke` with `handler: sync` — bridge runs plugins/themes/wp_meta + Site Health and posts `sync_site_meta` |
+
+### Manual Site Health refresh (Hub UI)
+
+Site detail stethoscope button → `useRequestSiteHealthRefresh` → **wp-proxy** `handler: sync` → bridge `hub/invoke` `sync` → **`sites`** `sync_site_meta` (includes `health_meta`). Legacy `sites` action `check_site_health` / bridge `/health/push` remain for cron and backward compatibility.
 
 ### Install row fields (each `plugins[]` / `themes[]` entry)
 

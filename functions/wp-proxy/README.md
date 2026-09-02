@@ -30,6 +30,7 @@ Appwrite function: **Hub → WordPress bridge** for plugin/theme management and 
 - **`body.plugins`** or **`body.themes`** must be a **non-empty array of objects** (never top-level `plugin` / `slug`).
 - **`handler`** must match a key in `handler.ts` `HANDLERS` exactly (no `plugins/de-install`, `themes/uninstall`, or underscore aliases).
 - wp-proxy strips Hub-only metadata, injects `bridge_secret`, rejects `zip_base64`.
+- For `hub/invoke`, the body `handler` key is **kept** (required by the bridge registry).
 
 ---
 
@@ -48,6 +49,7 @@ Appwrite function: **Hub → WordPress bridge** for plugin/theme management and 
 | `themes/deactivate` | `handlers/themes/deactivate.ts` | bulk `manage/deactivate` |
 | `themes/delete` | `handlers/themes/delete.ts` | bulk `manage/delete` |
 | `bridge/forceUpdate` | `handlers/bridge/forceUpdate.ts` | bridge release update |
+| `sync` | `handlers/sync.ts` | `POST hub/invoke` with `handler: sync` (full meta + Site Health → `sync_site_meta`) |
 
 ---
 

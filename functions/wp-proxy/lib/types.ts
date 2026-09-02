@@ -35,7 +35,8 @@ export type WpProxyHandlerKey =
   | 'themes/activate'
   | 'themes/deactivate'
   | 'themes/delete'
-  | 'bridge/forceUpdate';
+  | 'bridge/forceUpdate'
+  | 'sync';
 
 export type WpProxyCtx = {
   req: WpProxyAppwriteReq;

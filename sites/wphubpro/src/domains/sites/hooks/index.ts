@@ -117,7 +117,7 @@ export const useRequestBridgeHeartbeatPoke = () => {
 };
 
 /**
- * Triggers `check_site_health` on the sites function so the bridge sends fresh health data to the Hub.
+ * Triggers wp-proxy `sync` so the bridge runs Site Health + meta sync and pushes via `sync_site_meta`.
  */
 export const useRequestSiteHealthRefresh = () => {
   const queryClient = useQueryClient();
@@ -125,10 +125,9 @@ export const useRequestSiteHealthRefresh = () => {
 
   return useMutation<{ message: string }, Error, string>({
     mutationFn: async (siteId: string) => {
-      const jwt = jwtFromCreateResponse(await account.createJWT());
-      const { statusCode, data } = await executeFunctionWithMeta<Record<string, unknown>>(
-        SITES_FUNCTION_ID,
-        { action: 'check_site_health', siteId, jwt },
+      const { statusCode, data } = await postBridgeApiJsonWithMeta<Record<string, unknown>>(
+        '/wp-proxy',
+        { siteId, handler: 'sync' },
         { timeoutMs: 120_000, throwOnHttpError: false },
       );
       if (statusCode < 200 || statusCode >= 300) {
@@ -146,10 +145,14 @@ export const useRequestSiteHealthRefresh = () => {
         throw new Error(msg);
       }
       const raw = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+      const dataObj =
+        raw.data && typeof raw.data === 'object' ? (raw.data as Record<string, unknown>) : null;
       const message =
-        typeof raw.message === 'string' && raw.message.trim()
+        (typeof raw.message === 'string' && raw.message.trim()
           ? raw.message.trim()
-          : 'Updated health data was sent from the site to the hub.';
+          : typeof dataObj?.message === 'string' && dataObj.message.trim()
+            ? dataObj.message.trim()
+            : null) ?? 'Site meta and health data were synced from WordPress.';
       return { message };
     },
     onSuccess: (_, siteId) => {

@@ -262,7 +262,9 @@ async function callBridgeRest(ctx, opts) {
       };
     }
 
-    delete normalized.handler;
+    if (!cleanedPath.includes('hub/invoke')) {
+      delete normalized.handler;
+    }
     delete normalized.hubCallContext;
     delete normalized.hub_call_context;
     delete normalized.siteId;

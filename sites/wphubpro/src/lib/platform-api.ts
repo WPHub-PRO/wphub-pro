@@ -19,7 +19,7 @@ export type WpProxyExecutionBody = {
 /**
  * POST JSON to the `wp-proxy` Appwrite function. `_path` is ignored.
  *
- * Requires `{ siteId, handler, body? }` — `handler` like `plugins/update`, `themes/install`, `bridge/forceUpdate`.
+ * Requires `{ siteId, handler, body? }` — `handler` like `plugins/update`, `themes/install`, `bridge/forceUpdate`, `sync`.
  */
 export async function postBridgeApiJsonWithMeta<T>(
   _path: string,
