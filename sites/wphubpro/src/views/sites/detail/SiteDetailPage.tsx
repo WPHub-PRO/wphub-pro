@@ -24,6 +24,7 @@ import type { LibraryItem, Site, WordPressPlugin, WordPressTheme } from '@/types
 import { useLibraryAddItemFlow } from '@/views/library/hooks/useLibraryAddItemFlow';
 import ViewModeToggle, { type LibraryViewMode } from '@/views/library/components/ViewModeToggle';
 import SiteDetailSidebarCard from '@/views/sites/detail/SiteDetailSidebarCard';
+import SiteOverviewHealthCard from '@/views/sites/detail/SiteOverviewHealthCard';
 import SiteOverviewSitespeedCard from '@/views/sites/detail/SiteOverviewSitespeedCard';
 import SiteInstalledExtensionGrid from '@/views/sites/detail/SiteInstalledExtensionGrid';
 import SiteInstallFromLibraryModal from '@/views/sites/detail/SiteInstallFromLibraryModal';
@@ -78,7 +79,6 @@ function SiteDetailOverview({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationContext();
-  const healthOk = site.healthStatus === 'healthy';
   const nPlugins = pluginsWithUpdates.length;
   const nThemes = themesWithUpdates.length;
   const [updatesTab, setUpdatesTab] = useState<'plugins' | 'themes'>('plugins');
@@ -274,15 +274,7 @@ function SiteDetailOverview({
               </p>
           </CardBody>
         </Card>
-          <Card className="border shadow-none d-flex flex-column flex-shrink-0">
-            <CardBody className="d-flex flex-column flex-grow-1">
-            <p className="text-muted fs-xs text-uppercase fw-semibold mb-1">Health</p>
-            <p className="mb-2">{healthOk ? 'Status: Healthy' : 'Status: Needs attention'}</p>
-            <Button variant="link" className="align-self-start p-0 mt-auto" onClick={onGoHealth}>
-              View health details →
-            </Button>
-          </CardBody>
-        </Card>
+          <SiteOverviewHealthCard site={site} onGoHealth={onGoHealth} />
       </Col>
         <Col xs={12} md={6} className="d-flex min-h-0">
           <SiteOverviewSitespeedCard
