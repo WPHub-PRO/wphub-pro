@@ -63,6 +63,10 @@
 // Dashboard sites table — uptime up/down indicator (vivid green / red)
 $site-uptime-up: #2dff6a;
 $site-uptime-down: #ff3b3b;
+$uptime-bar-count: 24;
+$uptime-bar-max-width: 9px;
+$uptime-bar-gap: 2px;
+$uptime-bars-track-max-width: calc(#{$uptime-bar-count} * #{$uptime-bar-max-width} + (#{$uptime-bar-count} - 1) * #{$uptime-bar-gap});
 
 .site-uptime-dot {
     display: inline-block;
@@ -120,7 +124,7 @@ $site-uptime-down: #ff3b3b;
 .site-uptime-bars__bar {
     display: inline-block;
     width: 3px;
-    max-width: 9px;
+    max-width: $uptime-bar-max-width;
     height: 30px;
     border-radius: 1px;
     flex-shrink: 0;
@@ -141,15 +145,20 @@ $site-uptime-down: #ff3b3b;
 
 .site-uptime-bars--fill {
     display: flex;
-    width: 100%;
+    width: min(100%, #{$uptime-bars-track-max-width});
     min-width: 0;
 
     .site-uptime-bars__bar {
         flex: 1 1 0;
         min-width: 2px;
-        max-width: 9px;
+        max-width: $uptime-bar-max-width;
         width: auto;
     }
+}
+
+// Label + percentage row aligned to the bar track width (Overview / Health cards)
+.site-uptime-bars-block {
+    width: min(100%, #{$uptime-bars-track-max-width});
 }
 
 .site-uptime-bars--loading {

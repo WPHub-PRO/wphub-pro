@@ -47,7 +47,7 @@ const SiteOverviewHealthCard = ({ site, onGoHealth }: SiteOverviewHealthCardProp
         <p className="text-muted fs-xs text-uppercase fw-semibold mb-1">Health</p>
         <p className="mb-3">{healthOk ? 'Status: Healthy' : 'Status: Needs attention'}</p>
 
-        <div className="mb-3">
+        <div className="site-uptime-bars-block mb-3">
           <div className="d-flex justify-content-between align-items-baseline gap-2 flex-wrap mb-2">
             <p className="text-muted fs-xs text-uppercase fw-semibold mb-0">Uptime (24h)</p>
             {hasMonitor && !isLoading ? (
