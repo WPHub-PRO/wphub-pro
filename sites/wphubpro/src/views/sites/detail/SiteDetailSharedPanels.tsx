@@ -505,13 +505,13 @@ function SiteMonitorSubpanel({ site }: { site: Site }) {
         <Col xs={12} lg={4}>
           <Card className="h-100">
             <CardBody>
-              <div className="d-flex justify-content-between align-items-baseline gap-2 mb-3 flex-wrap">
-                <h6 className="fs-base mb-0">Last 24 hours</h6>
-                <span className="fs-4 fw-semibold text-body text-nowrap mb-0">
-                  {last24BarWindow.uptimePercent.toFixed(1)}%
-                </span>
-              </div>
-              <div className="w-100">
+              <div className="site-uptime-bars-block">
+                <div className="d-flex justify-content-between align-items-baseline gap-2 mb-3 flex-wrap">
+                  <h6 className="fs-base mb-0">Last 24 hours</h6>
+                  <span className="fs-4 fw-semibold text-body text-nowrap mb-0">
+                    {last24BarWindow.uptimePercent.toFixed(1)}%
+                  </span>
+                </div>
                 <SiteUptimeBars bars={uptimeBars} fullWidth className="site-uptime-bars--health-tab" />
               </div>
               <p className="fs-sm text-muted mb-0 mt-3">{last24BarSummaryLine}</p>
