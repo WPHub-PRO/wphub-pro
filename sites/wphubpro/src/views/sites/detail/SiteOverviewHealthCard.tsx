@@ -1,6 +1,7 @@
 import { useSiteUptimeMonitor } from '@/domains/sites';
 import SiteUptimeBars from '@/components/sites/SiteUptimeBars';
 import { buildUptimeBarsForIncidents, last24HourBarWindowStats } from '@/lib/uptimeIncidentHours';
+import { urMonitorStatusDisplay } from '@/lib/uptimeMonitorStatus';
 import type { Site } from '@/types';
 import { useMemo } from 'react';
 import { Button, Card, CardBody, Spinner } from 'react-bootstrap';
@@ -9,23 +10,6 @@ type SiteOverviewHealthCardProps = {
   site: Site;
   onGoHealth: () => void;
 };
-
-function urMonitorStatusLabel(status: unknown): string {
-  const n = Number(status);
-  if (n === 2) return 'Up';
-  if (n === 9) return 'Down';
-  if (n === 8) return 'Seems down';
-  if (n === 0) return 'Paused';
-  return 'Unknown';
-}
-
-function urMonitorStatusVariant(status: unknown): string {
-  const n = Number(status);
-  if (n === 2) return 'success';
-  if (n === 9) return 'danger';
-  if (n === 8) return 'warning';
-  return 'secondary';
-}
 
 const SiteOverviewHealthCard = ({ site, onGoHealth }: SiteOverviewHealthCardProps) => {
   const healthOk = site.healthStatus === 'healthy';
@@ -40,6 +24,7 @@ const SiteOverviewHealthCard = ({ site, onGoHealth }: SiteOverviewHealthCardProp
     [incidents],
   );
   const hasMonitor = Boolean(data?.monitor);
+  const monitorStatus = urMonitorStatusDisplay(data?.monitor?.status);
 
   return (
     <Card className="border shadow-none d-flex flex-column flex-shrink-0">
@@ -71,10 +56,8 @@ const SiteOverviewHealthCard = ({ site, onGoHealth }: SiteOverviewHealthCardProp
           ) : (
             <>
               <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
-                <span
-                  className={`badge badge-soft-${urMonitorStatusVariant(data?.monitor?.status)} text-uppercase fs-xxs`}
-                >
-                  {urMonitorStatusLabel(data?.monitor?.status)}
+                <span className={`badge badge-soft-${monitorStatus.variant} text-uppercase fs-xxs`}>
+                  {monitorStatus.label}
                 </span>
                 {last24BarWindow.incidentCount > 0 ? (
                   <span className="fs-xs text-muted">
