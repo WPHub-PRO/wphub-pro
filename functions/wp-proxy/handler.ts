@@ -27,6 +27,7 @@ import handleThemesActivate from './handlers/themes/activate.ts';
 import handleThemesDeactivate from './handlers/themes/deactivate.ts';
 import handleThemesDelete from './handlers/themes/delete.ts';
 import handleBridgeForceUpdate from './handlers/bridge/forceUpdate.ts';
+import handleSync from './handlers/sync.ts';
 
 const HANDLERS: Record<WpProxyHandlerKey, WpProxyHandler> = {
   'plugins/update': handlePluginsUpdate,
@@ -40,6 +41,7 @@ const HANDLERS: Record<WpProxyHandlerKey, WpProxyHandler> = {
   'themes/deactivate': handleThemesDeactivate,
   'themes/delete': handleThemesDelete,
   'bridge/forceUpdate': handleBridgeForceUpdate,
+  sync: handleSync,
 };
 
 function normalizeHandler(handlerRaw: unknown): WpProxyHandlerKey | '' {

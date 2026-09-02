@@ -27,7 +27,7 @@ Hub UI → extensionBulkFromSite / library*Install
 
 1. **Always** send `body.plugins[]` or `body.themes[]` — non-empty **object arrays**. Single-row actions = array length **1**.
 2. **Never** send top-level `body.plugin`, `body.slug`, or string-only array entries.
-3. **Handler keys** (canonical only): `plugins/install|update|activate|deactivate|uninstall`, `themes/install|update|activate|deactivate|delete`, `bridge/forceUpdate`. No aliases (`plugins/de-install`, `themes/uninstall`, underscore forms).
+3. **Handler keys** (canonical only): `plugins/install|update|activate|deactivate|uninstall`, `themes/install|update|activate|deactivate|delete`, `bridge/forceUpdate`, `sync`. No aliases (`plugins/de-install`, `themes/uninstall`, underscore forms).
 4. **ZIPs:** HTTPS `zip_url` only — wp-proxy resolves library items; **`zip_base64` forbidden**.
 
 ---
