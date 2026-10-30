@@ -165,7 +165,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/wp-proxy",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -291,7 +291,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/recovery-manager",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -675,7 +675,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/platform-settings",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -803,7 +803,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/bridge",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -931,7 +931,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/sites",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -1059,7 +1059,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/users",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -1177,7 +1177,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/support",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -1296,7 +1296,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/library",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -1424,7 +1424,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/messaging",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
@@ -1552,7 +1552,7 @@
             "providerRepositoryId": "1260883337",
             "providerBranch": "main",
             "providerRootDirectory": "/functions/user-mailbox",
-            "providerSilentMode": true,
+            "providerSilentMode": false,
             "providerBranches": [
                 "main"
             ],
